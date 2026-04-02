@@ -1,4 +1,9 @@
 using BLL_ConstruccionAPI.Models.Auth;
+using BLL_ConstruccionAPI.Models.Inventario;
+using BLL_ConstruccionAPI.Models.Inventario.Cátalogos;
+using BLL_ConstruccionAPI.Models.Inventario.Herramientas;
+using BLL_ConstruccionAPI.Models.Inventario.Materiales;
+using BLL_ConstruccionAPI.Models.Inventario.Proyectos;
 using Microsoft.EntityFrameworkCore;
 
 namespace BLL_ConstruccionAPI.Data;
@@ -7,62 +12,115 @@ public class AppDbContext : DbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-    public DbSet<Rol> Roles { get; set; }
+    // ─── AUTH ─────────────────────────────────────────────────────────────────
     public DbSet<Usuario> Usuarios { get; set; }
+    public DbSet<Rol> Roles { get; set; }
     public DbSet<TokenSesion> TokensSesion { get; set; }
     public DbSet<Usuario2FA> Usuarios2FA { get; set; }
     public DbSet<LogAcceso> LogAccesos { get; set; }
+
+    // ─── CATÁLOGOS ────────────────────────────────────────────────────────────
+    public DbSet<CategoriaMaterial> Categorias { get; set; }
+    public DbSet<UnidadMedida> UnidadesMedida { get; set; }
+    public DbSet<CategoriaHerramienta> CategoriasHerramienta { get; set; }
+
+    // ─── PROVEEDORES Y CLIENTES ───────────────────────────────────────────────
+    public DbSet<Proveedor> Proveedores { get; set; }
+    public DbSet<Cliente> Clientes { get; set; }
+
+    // ─── PROYECTOS ────────────────────────────────────────────────────────────
+    public DbSet<Proyecto> Proyectos { get; set; }
+
+    // ─── MATERIALES ───────────────────────────────────────────────────────────
+    public DbSet<Material> Materiales { get; set; }
+    public DbSet<AlmacenCentral> AlmacenCentral { get; set; }
+    public DbSet<AlmacenProyecto> AlmacenProyecto { get; set; }
+    public DbSet<Entrada> Entradas { get; set; }
+    public DbSet<EntradaDetalle> EntradasDetalle { get; set; }
+    public DbSet<Salida> Salidas { get; set; }
+    public DbSet<SalidaDetalle> SalidasDetalle { get; set; }
+
+    // ─── HERRAMIENTAS ─────────────────────────────────────────────────────────
+    public DbSet<Herramienta> Herramientas { get; set; }
+    public DbSet<AsignacionHerramienta> AsignacionesHerramienta { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        // Rol
-        modelBuilder.Entity<Rol>(entity =>
-        {
-            entity.ToTable("Roles");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Nombre).HasMaxLength(50).IsRequired();
-            entity.Property(e => e.Descripcion).HasMaxLength(200);
-        });
+        // Evitar ciclos de relaciones en Proyecto
+        modelBuilder.Entity<Proyecto>()
+            .HasOne(p => p.Cliente)
+            .WithMany()
+            .HasForeignKey(p => p.ClienteId)
+            .OnDelete(DeleteBehavior.Restrict);
 
-        // Usuario
-        modelBuilder.Entity<Usuario>(entity =>
-        {
-            entity.ToTable("Usuarios");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.NombreUsuario).HasMaxLength(50).IsRequired();
-            entity.HasIndex(e => e.NombreUsuario).IsUnique();  // ← nuevo
-            entity.Property(e => e.Nombre).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.Email).HasMaxLength(150).IsRequired();
-            entity.HasIndex(e => e.Email).IsUnique();
-            entity.Property(e => e.PasswordHash).HasMaxLength(255).IsRequired();
-        });
+        // Evitar ciclos en Entrada
+        modelBuilder.Entity<Entrada>()
+            .HasOne(e => e.Proveedor)
+            .WithMany()
+            .HasForeignKey(e => e.ProveedorId)
+            .OnDelete(DeleteBehavior.Restrict);
 
-        // TokenSesion
-        modelBuilder.Entity<TokenSesion>(entity =>
-        {
-            entity.ToTable("TokensSesion");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Token).HasMaxLength(500).IsRequired();
-            entity.Property(e => e.IpOrigen).HasMaxLength(50);
-        });
+        // Evitar ciclos en Salida
+        modelBuilder.Entity<Salida>()
+            .HasOne(s => s.Proyecto)
+            .WithMany()
+            .HasForeignKey(s => s.ProyectoId)
+            .OnDelete(DeleteBehavior.Restrict);
 
-        // Usuario2FA
-        modelBuilder.Entity<Usuario2FA>(entity =>
-        {
-            entity.ToTable("Usuarios2FA");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.SecretKey).HasMaxLength(255).IsRequired();
-        });
+        // Evitar ciclos en AsignacionHerramienta
+        modelBuilder.Entity<AsignacionHerramienta>()
+            .HasOne(a => a.Herramienta)
+            .WithMany()
+            .HasForeignKey(a => a.HerramientaId)
+            .OnDelete(DeleteBehavior.Restrict);
 
-        // LogAcceso
-        modelBuilder.Entity<LogAcceso>(entity =>
-        {
-            entity.ToTable("LogAccesos");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.IpOrigen).HasMaxLength(50);
-            entity.Property(e => e.Descripcion).HasMaxLength(200);
-        });
+        modelBuilder.Entity<AsignacionHerramienta>()
+            .HasOne(a => a.Proyecto)
+            .WithMany()
+            .HasForeignKey(a => a.ProyectoId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Decimales
+        modelBuilder.Entity<Material>()
+            .Property(m => m.StockMinimo)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<Material>()
+            .Property(m => m.PrecioUnitario)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<AlmacenCentral>()
+            .Property(a => a.Stock)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<AlmacenProyecto>()
+            .Property(a => a.Stock)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<Entrada>()
+            .Property(e => e.Total)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<EntradaDetalle>()
+            .Property(e => e.Cantidad)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<EntradaDetalle>()
+            .Property(e => e.PrecioUnitario)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<EntradaDetalle>()
+            .Property(e => e.Subtotal)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<SalidaDetalle>()
+            .Property(s => s.Cantidad)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<Herramienta>()
+            .Property(h => h.ValorAdquisicion)
+            .HasColumnType("decimal(18,2)");
     }
 }
