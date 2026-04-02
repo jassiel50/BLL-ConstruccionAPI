@@ -1,0 +1,69 @@
+using BLL_ConstruccionAPI.DTOs.Proyectos;
+using BLL_ConstruccionAPI.Services.Interfaces;
+using Microsoft.AspNetCore.Mvc;
+
+namespace BLL_ConstruccionAPI.Controllers;
+
+[ApiController]
+[Route("api/proyectos")]
+public class ProyectoController : ControllerBase
+{
+    private readonly IProyectosService _service;
+
+    public ProyectoController(IProyectosService service)
+    {
+        _service = service;
+    }
+
+    // GET api/proyectos
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+    {
+        var proyectos = await _service.GetAllAsync();
+        return Ok(proyectos);
+    }
+
+    // GET api/proyectos/{id}
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetById(int id)
+    {
+        var proyecto = await _service.GetByIdAsync(id);
+        if (proyecto is null) return NotFound(new { message = "Proyecto no encontrado." });
+        return Ok(proyecto);
+    }
+
+    // GET api/proyectos/cliente/{clienteId}
+    [HttpGet("cliente/{clienteId:int}")]
+    public async Task<IActionResult> GetByCliente(int clienteId)
+    {
+        var proyectos = await _service.GetByClienteAsync(clienteId);
+        return Ok(proyectos);
+    }
+
+    // POST api/proyectos
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] ProyectoRequestDto dto)
+    {
+        var (success, message, data) = await _service.CreateAsync(dto);
+        if (!success) return BadRequest(new { message });
+        return CreatedAtAction(nameof(GetById), new { id = data!.Id }, new { message, data });
+    }
+
+    // PUT api/proyectos/{id}
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Update(int id, [FromBody] ProyectoRequestDto dto)
+    {
+        var (success, message) = await _service.UpdateAsync(id, dto);
+        if (!success) return BadRequest(new { message });
+        return Ok(new { message });
+    }
+
+    // DELETE api/proyectos/{id}
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var (success, message) = await _service.DeleteAsync(id);
+        if (!success) return NotFound(new { message });
+        return Ok(new { message });
+    }
+}

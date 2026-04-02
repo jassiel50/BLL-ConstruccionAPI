@@ -18,6 +18,34 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+// Catálogos
+builder.Services.AddScoped<ICatalogosRepository, CatalogosRepository>();
+builder.Services.AddScoped<ICatalogosService, CatalogosService>();
+
+// Proveedores y Clientes
+builder.Services.AddScoped<IProveedoresClientesRepository, ProveedoresClientesRepository>();
+builder.Services.AddScoped<IProveedoresClientesService, ProveedoresClientesService>();
+
+// Proyectos
+builder.Services.AddScoped<IProyectosRepository, ProyectosRepository>();
+builder.Services.AddScoped<IProyectosService, ProyectosService>();
+
+// Materiales
+builder.Services.AddScoped<IMaterialesRepository, MaterialesRepository>();
+builder.Services.AddScoped<IMaterialesService, MaterialesService>();
+
+// Herramientas
+builder.Services.AddScoped<IHerramientasRepository, HerramientasRepository>();
+builder.Services.AddScoped<IHerramientasService, HerramientasService>();
+
+// Entradas
+builder.Services.AddScoped<IEntradasRepository, EntradasRepository>();
+builder.Services.AddScoped<IEntradasService, EntradasService>();
+
+// Salidas
+builder.Services.AddScoped<ISalidasRepository, SalidasRepository>();
+builder.Services.AddScoped<ISalidasService, SalidasService>();
+
 // JWT
 var jwtKey = builder.Configuration["Jwt:SecretKey"]!;
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
