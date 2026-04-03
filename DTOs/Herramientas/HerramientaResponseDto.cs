@@ -1,0 +1,31 @@
+using BLL_ConstruccionAPI.Models.Inventario.Herramientas;
+
+namespace BLL_ConstruccionAPI.DTOs.Herramientas;
+
+public class HerramientaResponseDto
+{
+    public int Id { get; set; }
+    public string Nombre { get; set; } = string.Empty;
+    public string Descripcion { get; set; } = string.Empty;
+    public string Codigo { get; set; } = string.Empty;
+    public string NumeroSerie { get; set; } = string.Empty;
+    public int CategoriaHerramientaId { get; set; }
+    public string NombreCategoria { get; set; } = string.Empty;
+    public string Estado { get; set; } = string.Empty;
+    public decimal ValorAdquisicion { get; set; }
+    public DateTime FechaAdquisicion { get; set; }
+
+    public static HerramientaResponseDto FromEntity(Herramienta e) => new()
+    {
+        Id = e.Id,
+        Nombre = e.Nombre,
+        Descripcion = e.Descripcion,
+        Codigo = e.Codigo,
+        NumeroSerie = e.NumeroSerie,
+        CategoriaHerramientaId = e.CategoriaHerramientaId,
+        NombreCategoria = e.CategoriaHerramienta?.Nombre ?? string.Empty,
+        Estado = e.Estado.ToString(),
+        ValorAdquisicion = e.ValorAdquisicion,
+        FechaAdquisicion = e.FechaAdquisicion
+    };
+}

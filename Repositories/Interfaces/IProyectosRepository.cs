@@ -10,4 +10,5 @@ public interface IProyectosRepository
     Task<int> CreateAsync(Proyecto proyecto);
     Task UpdateAsync(Proyecto proyecto);
     Task DeleteAsync(Proyecto proyecto);
+    Task TerminarAsync(Proyecto proyecto);
 }

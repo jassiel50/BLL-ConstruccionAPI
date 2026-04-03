@@ -16,6 +16,7 @@ public class SalidasRepository : ISalidasRepository
 
     public async Task<IEnumerable<Salida>> GetAllAsync()
         => await _context.Salidas
+            .AsNoTracking()
             .Include(s => s.Proyecto)
             .Include(s => s.Detalles)
                 .ThenInclude(d => d.Material)
@@ -24,6 +25,7 @@ public class SalidasRepository : ISalidasRepository
 
     public async Task<IEnumerable<Salida>> GetByProyectoAsync(int proyectoId)
         => await _context.Salidas
+            .AsNoTracking()
             .Include(s => s.Proyecto)
             .Include(s => s.Detalles)
                 .ThenInclude(d => d.Material)
@@ -47,6 +49,7 @@ public class SalidasRepository : ISalidasRepository
 
     public async Task<IEnumerable<AlmacenProyecto>> GetAlmacenProyectoAsync(int proyectoId)
         => await _context.AlmacenProyecto
+            .AsNoTracking()
             .Include(ap => ap.Material)
             .Where(ap => ap.ProyectoId == proyectoId)
             .ToListAsync();

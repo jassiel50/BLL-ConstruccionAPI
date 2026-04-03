@@ -17,6 +17,7 @@ public class MaterialesRepository : IMaterialesRepository
     // ─── Material ─────────────────────────────────────────────────────────────
     public async Task<IEnumerable<Material>> GetAllAsync()
         => await _context.Materiales
+            .AsNoTracking()
             .Include(m => m.Categoria)
             .Include(m => m.UnidadMedida)
             .Where(m => m.Activo)
@@ -24,6 +25,7 @@ public class MaterialesRepository : IMaterialesRepository
 
     public async Task<IEnumerable<Material>> GetBajoStockAsync()
         => await _context.Materiales
+            .AsNoTracking()
             .Include(m => m.Categoria)
             .Include(m => m.UnidadMedida)
             .Where(m => m.Activo &&

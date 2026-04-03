@@ -1,9 +1,12 @@
 using BLL_ConstruccionAPI.DTOs.Entradas;
 using BLL_ConstruccionAPI.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace BLL_ConstruccionAPI.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/entradas")]
 public class EntradaController : ControllerBase
@@ -36,7 +39,10 @@ public class EntradaController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Registrar([FromBody] EntradaRequestDto dto)
     {
-        var (success, message, data) = await _service.RegistrarAsync(dto);
+        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var usuarioId))
+            return Unauthorized(new { message = "Token inválido." });
+
+        var (success, message, data) = await _service.RegistrarAsync(dto, usuarioId);
         if (!success) return BadRequest(new { message });
         return CreatedAtAction(nameof(GetById), new { id = data!.Id }, new { message, data });
     }

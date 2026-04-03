@@ -1,4 +1,5 @@
 using BLL_ConstruccionAPI.DTOs.Herramientas;
+using BLL_ConstruccionAPI.Models.Enums;
 using BLL_ConstruccionAPI.Models.Inventario.Herramientas;
 using BLL_ConstruccionAPI.Repositories.Interfaces;
 using BLL_ConstruccionAPI.Services.Interfaces;
@@ -11,7 +12,8 @@ public class HerramientasService : IHerramientasService
     private readonly ICatalogosRepository _catalogosRepo;
     private readonly IProyectosRepository _proyectosRepo;
 
-    private static readonly string[] EstadosValidos = ["Disponible", "Asignada", "Mantenimiento", "Baja"];
+    private static readonly EstadoHerramienta[] EstadosValidos =
+        [EstadoHerramienta.Disponible, EstadoHerramienta.Asignada, EstadoHerramienta.Mantenimiento, EstadoHerramienta.Baja];
 
     public HerramientasService(
         IHerramientasRepository herramientasRepo,
@@ -23,22 +25,34 @@ public class HerramientasService : IHerramientasService
         _proyectosRepo = proyectosRepo;
     }
 
-    public async Task<IEnumerable<Herramienta>> GetAllAsync()
-        => await _herramientasRepo.GetAllAsync();
-
-    public async Task<IEnumerable<Herramienta>> GetDisponiblesAsync()
-        => await _herramientasRepo.GetDisponiblesAsync();
-
-    public async Task<Herramienta?> GetByIdAsync(int id)
-        => await _herramientasRepo.GetByIdAsync(id);
-
-    public async Task<IEnumerable<AsignacionHerramienta>> GetAsignacionesAsync(int herramientaId)
-        => await _herramientasRepo.GetAsignacionesByHerramientaAsync(herramientaId);
-
-    public async Task<(bool Success, string Message, Herramienta? Data)> CreateAsync(HerramientaRequestDto dto)
+    public async Task<IEnumerable<HerramientaResponseDto>> GetAllAsync()
     {
-        if (!EstadosValidos.Contains(dto.Estado))
-            return (false, $"Estado inválido. Valores permitidos: {string.Join(", ", EstadosValidos)}.", null);
+        var herramientas = await _herramientasRepo.GetAllAsync();
+        return herramientas.Select(HerramientaResponseDto.FromEntity);
+    }
+
+    public async Task<IEnumerable<HerramientaResponseDto>> GetDisponiblesAsync()
+    {
+        var herramientas = await _herramientasRepo.GetDisponiblesAsync();
+        return herramientas.Select(HerramientaResponseDto.FromEntity);
+    }
+
+    public async Task<HerramientaResponseDto?> GetByIdAsync(int id)
+    {
+        var herramienta = await _herramientasRepo.GetByIdAsync(id);
+        return herramienta is null ? null : HerramientaResponseDto.FromEntity(herramienta);
+    }
+
+    public async Task<IEnumerable<AsignacionHerramientaResponseDto>> GetAsignacionesAsync(int herramientaId)
+    {
+        var asignaciones = await _herramientasRepo.GetAsignacionesByHerramientaAsync(herramientaId);
+        return asignaciones.Select(AsignacionHerramientaResponseDto.FromEntity);
+    }
+
+    public async Task<(bool Success, string Message, HerramientaResponseDto? Data)> CreateAsync(HerramientaRequestDto dto)
+    {
+        if (!Enum.TryParse<EstadoHerramienta>(dto.Estado, out var estadoHerramienta))
+            return (false, $"Estado inválido. Valores permitidos: {string.Join(", ", Enum.GetNames<EstadoHerramienta>())}.", null);
 
         if (await _herramientasRepo.ExisteCodigoAsync(dto.Codigo))
             return (false, "Ya existe una herramienta con ese código.", null);
@@ -57,7 +71,7 @@ public class HerramientasService : IHerramientasService
             Codigo = dto.Codigo,
             NumeroSerie = dto.NumeroSerie,
             CategoriaHerramientaId = dto.CategoriaHerramientaId,
-            Estado = dto.Estado,
+            Estado = estadoHerramienta,
             ValorAdquisicion = dto.ValorAdquisicion,
             FechaAdquisicion = dto.FechaAdquisicion,
             Activo = true,
@@ -65,7 +79,7 @@ public class HerramientasService : IHerramientasService
         };
 
         await _herramientasRepo.CreateAsync(herramienta);
-        return (true, "Herramienta registrada correctamente.", herramienta);
+        return (true, "Herramienta registrada correctamente.", HerramientaResponseDto.FromEntity(herramienta));
     }
 
     public async Task<(bool Success, string Message)> UpdateAsync(int id, HerramientaRequestDto dto)
@@ -73,8 +87,8 @@ public class HerramientasService : IHerramientasService
         var herramienta = await _herramientasRepo.GetByIdAsync(id);
         if (herramienta is null) return (false, "Herramienta no encontrada.");
 
-        if (!EstadosValidos.Contains(dto.Estado))
-            return (false, $"Estado inválido. Valores permitidos: {string.Join(", ", EstadosValidos)}.");
+        if (!Enum.TryParse<EstadoHerramienta>(dto.Estado, out var estadoActualizado))
+            return (false, $"Estado inválido. Valores permitidos: {string.Join(", ", Enum.GetNames<EstadoHerramienta>())}.");
 
         if (herramienta.Codigo != dto.Codigo && await _herramientasRepo.ExisteCodigoAsync(dto.Codigo))
             return (false, "Ya existe una herramienta con ese código.");
@@ -91,7 +105,7 @@ public class HerramientasService : IHerramientasService
         herramienta.Codigo = dto.Codigo;
         herramienta.NumeroSerie = dto.NumeroSerie;
         herramienta.CategoriaHerramientaId = dto.CategoriaHerramientaId;
-        herramienta.Estado = dto.Estado;
+        herramienta.Estado = estadoActualizado;
         herramienta.ValorAdquisicion = dto.ValorAdquisicion;
         herramienta.FechaAdquisicion = dto.FechaAdquisicion;
 
@@ -104,20 +118,20 @@ public class HerramientasService : IHerramientasService
         var herramienta = await _herramientasRepo.GetByIdAsync(id);
         if (herramienta is null) return (false, "Herramienta no encontrada.");
 
-        if (herramienta.Estado == "Asignada")
+        if (herramienta.Estado == EstadoHerramienta.Asignada)
             return (false, "No se puede dar de baja una herramienta que está asignada a un proyecto.");
 
         await _herramientasRepo.DeleteAsync(herramienta);
         return (true, "Herramienta dada de baja correctamente.");
     }
 
-    public async Task<(bool Success, string Message, AsignacionHerramienta? Data)> AsignarAsync(AsignacionRequestDto dto)
+    public async Task<(bool Success, string Message, AsignacionHerramientaResponseDto? Data)> AsignarAsync(AsignacionRequestDto dto, int usuarioId)
     {
         var herramienta = await _herramientasRepo.GetByIdAsync(dto.HerramientaId);
         if (herramienta is null || !herramienta.Activo)
             return (false, "Herramienta no encontrada.", null);
 
-        if (herramienta.Estado != "Disponible")
+        if (herramienta.Estado != EstadoHerramienta.Disponible)
             return (false, $"La herramienta no está disponible. Estado actual: {herramienta.Estado}.", null);
 
         var proyecto = await _proyectosRepo.GetByIdAsync(dto.ProyectoId);
@@ -128,19 +142,17 @@ public class HerramientasService : IHerramientasService
         {
             HerramientaId = dto.HerramientaId,
             ProyectoId = dto.ProyectoId,
-            UsuarioAsignoId = dto.UsuarioAsignoId,
+            UsuarioAsignoId = usuarioId,
             UsuarioRecibeId = dto.UsuarioRecibeId,
             FechaAsignacion = DateTime.UtcNow,
-            Estado = "Asignada",
+            Estado = EstadoAsignacion.Asignada,
             Observaciones = dto.Observaciones
         };
 
-        await _herramientasRepo.CreateAsignacionAsync(asignacion);
+        herramienta.Estado = EstadoHerramienta.Asignada;
+        await _herramientasRepo.AsignarHerramientaAsync(asignacion, herramienta);
 
-        herramienta.Estado = "Asignada";
-        await _herramientasRepo.UpdateAsync(herramienta);
-
-        return (true, "Herramienta asignada correctamente.", asignacion);
+        return (true, "Herramienta asignada correctamente.", AsignacionHerramientaResponseDto.FromEntity(asignacion));
     }
 
     public async Task<(bool Success, string Message)> DevolverAsync(int asignacionId, DevolucionRequestDto dto)
@@ -148,20 +160,20 @@ public class HerramientasService : IHerramientasService
         var asignacion = await _herramientasRepo.GetAsignacionByIdAsync(asignacionId);
         if (asignacion is null) return (false, "Asignación no encontrada.");
 
-        if (asignacion.Estado != "Asignada")
+        if (asignacion.Estado != EstadoAsignacion.Asignada)
             return (false, "Esta asignación ya fue devuelta.");
 
-        asignacion.Estado = "Devuelta";
+        asignacion.Estado = EstadoAsignacion.Devuelta;
         asignacion.FechaDevolucion = DateTime.UtcNow;
         asignacion.ObservacionesDevolucion = dto.ObservacionesDevolucion;
-        await _herramientasRepo.UpdateAsignacionAsync(asignacion);
 
         var herramienta = await _herramientasRepo.GetByIdAsync(asignacion.HerramientaId);
-        if (herramienta is not null)
-        {
-            herramienta.Estado = "Disponible";
-            await _herramientasRepo.UpdateAsync(herramienta);
-        }
+        if (herramienta is null)
+            return (false, "La herramienta asociada a la asignación no fue encontrada.");
+
+        herramienta.Estado = EstadoHerramienta.Disponible;
+
+        await _herramientasRepo.DevolverHerramientaAsync(asignacion, herramienta);
 
         return (true, "Herramienta devuelta correctamente.");
     }

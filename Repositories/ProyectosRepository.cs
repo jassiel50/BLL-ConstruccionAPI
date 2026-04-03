@@ -1,4 +1,5 @@
 using BLL_ConstruccionAPI.Data;
+using BLL_ConstruccionAPI.Models.Enums;
 using BLL_ConstruccionAPI.Models.Inventario.Proyectos;
 using BLL_ConstruccionAPI.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -16,13 +17,16 @@ public class ProyectosRepository : IProyectosRepository
 
     public async Task<IEnumerable<Proyecto>> GetAllAsync()
         => await _context.Proyectos
+            .AsNoTracking()
             .Include(p => p.Cliente)
+            .Where(p => p.Activo)
             .ToListAsync();
 
     public async Task<IEnumerable<Proyecto>> GetByClienteAsync(int clienteId)
         => await _context.Proyectos
+            .AsNoTracking()
             .Include(p => p.Cliente)
-            .Where(p => p.ClienteId == clienteId)
+            .Where(p => p.ClienteId == clienteId && p.Activo)
             .ToListAsync();
 
     public async Task<Proyecto?> GetByIdAsync(int id)
@@ -45,7 +49,14 @@ public class ProyectosRepository : IProyectosRepository
 
     public async Task DeleteAsync(Proyecto proyecto)
     {
-        proyecto.Estado = "Terminado";
+        proyecto.Activo = false;
+        _context.Proyectos.Update(proyecto);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task TerminarAsync(Proyecto proyecto)
+    {
+        proyecto.Estado = EstadoProyecto.Terminado;
         _context.Proyectos.Update(proyecto);
         await _context.SaveChangesAsync();
     }

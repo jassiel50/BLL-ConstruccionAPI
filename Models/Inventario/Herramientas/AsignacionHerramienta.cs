@@ -1,4 +1,5 @@
-﻿using BLL_ConstruccionAPI.Models.Inventario.Proyectos;
+﻿using BLL_ConstruccionAPI.Models.Enums;
+using BLL_ConstruccionAPI.Models.Inventario.Proyectos;
 
 namespace BLL_ConstruccionAPI.Models.Inventario.Herramientas
 {
@@ -11,7 +12,7 @@ namespace BLL_ConstruccionAPI.Models.Inventario.Herramientas
         public int? UsuarioRecibeId { get; set; }    // quien la recibió en el proyecto
         public DateTime FechaAsignacion { get; set; } = DateTime.UtcNow;
         public DateTime? FechaDevolucion { get; set; }
-        public string Estado { get; set; } = "Asignada"; // Asignada, Devuelta
+        public EstadoAsignacion Estado { get; set; } = EstadoAsignacion.Asignada;
         public string Observaciones { get; set; } = string.Empty;
         public string? ObservacionesDevolucion { get; set; }
 

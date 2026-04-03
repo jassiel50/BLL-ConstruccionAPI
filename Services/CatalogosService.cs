@@ -15,13 +15,19 @@ public class CatalogosService : ICatalogosService
     }
 
     // ─── CategoriaMaterial ────────────────────────────────────────────────────
-    public async Task<IEnumerable<CategoriaMaterial>> GetAllCategoriasAsync()
-        => await _catalogosRepo.GetAllCategoriasAsync();
+    public async Task<IEnumerable<CategoriaMaterialResponseDto>> GetAllCategoriasAsync()
+    {
+        var categorias = await _catalogosRepo.GetAllCategoriasAsync();
+        return categorias.Select(CategoriaMaterialResponseDto.FromEntity);
+    }
 
-    public async Task<CategoriaMaterial?> GetCategoriaByIdAsync(int id)
-        => await _catalogosRepo.GetCategoriaByIdAsync(id);
+    public async Task<CategoriaMaterialResponseDto?> GetCategoriaByIdAsync(int id)
+    {
+        var categoria = await _catalogosRepo.GetCategoriaByIdAsync(id);
+        return categoria is null ? null : CategoriaMaterialResponseDto.FromEntity(categoria);
+    }
 
-    public async Task<(bool Success, string Message, CategoriaMaterial? Data)> CreateCategoriaAsync(CategoriaMaterialRequestDto dto)
+    public async Task<(bool Success, string Message, CategoriaMaterialResponseDto? Data)> CreateCategoriaAsync(CategoriaMaterialRequestDto dto)
     {
         if (await _catalogosRepo.ExisteCategoriaAsync(dto.Nombre))
             return (false, "Ya existe una categoría con ese nombre.", null);
@@ -34,7 +40,7 @@ public class CatalogosService : ICatalogosService
         };
 
         await _catalogosRepo.CreateCategoriaAsync(categoria);
-        return (true, "Categoría creada correctamente.", categoria);
+        return (true, "Categoría creada correctamente.", CategoriaMaterialResponseDto.FromEntity(categoria));
     }
 
     public async Task<(bool Success, string Message)> UpdateCategoriaAsync(int id, CategoriaMaterialRequestDto dto)
@@ -63,13 +69,19 @@ public class CatalogosService : ICatalogosService
     }
 
     // ─── CategoriaHerramienta ─────────────────────────────────────────────────
-    public async Task<IEnumerable<CategoriaHerramienta>> GetAllCategoriasHerramientaAsync()
-        => await _catalogosRepo.GetAllCategoriasHerramientaAsync();
+    public async Task<IEnumerable<CategoriaHerramientaResponseDto>> GetAllCategoriasHerramientaAsync()
+    {
+        var categorias = await _catalogosRepo.GetAllCategoriasHerramientaAsync();
+        return categorias.Select(CategoriaHerramientaResponseDto.FromEntity);
+    }
 
-    public async Task<CategoriaHerramienta?> GetCategoriaHerramientaByIdAsync(int id)
-        => await _catalogosRepo.GetCategoriaHerramientaByIdAsync(id);
+    public async Task<CategoriaHerramientaResponseDto?> GetCategoriaHerramientaByIdAsync(int id)
+    {
+        var categoria = await _catalogosRepo.GetCategoriaHerramientaByIdAsync(id);
+        return categoria is null ? null : CategoriaHerramientaResponseDto.FromEntity(categoria);
+    }
 
-    public async Task<(bool Success, string Message, CategoriaHerramienta? Data)> CreateCategoriaHerramientaAsync(CategoriaHerramientaRequestDto dto)
+    public async Task<(bool Success, string Message, CategoriaHerramientaResponseDto? Data)> CreateCategoriaHerramientaAsync(CategoriaHerramientaRequestDto dto)
     {
         if (await _catalogosRepo.ExisteCategoriaHerramientaAsync(dto.Nombre))
             return (false, "Ya existe una categoría de herramienta con ese nombre.", null);
@@ -82,7 +94,7 @@ public class CatalogosService : ICatalogosService
         };
 
         await _catalogosRepo.CreateCategoriaHerramientaAsync(categoria);
-        return (true, "Categoría de herramienta creada correctamente.", categoria);
+        return (true, "Categoría de herramienta creada correctamente.", CategoriaHerramientaResponseDto.FromEntity(categoria));
     }
 
     public async Task<(bool Success, string Message)> UpdateCategoriaHerramientaAsync(int id, CategoriaHerramientaRequestDto dto)
@@ -111,13 +123,19 @@ public class CatalogosService : ICatalogosService
     }
 
     // ─── UnidadMedida ─────────────────────────────────────────────────────────
-    public async Task<IEnumerable<UnidadMedida>> GetAllUnidadesAsync()
-        => await _catalogosRepo.GetAllUnidadesAsync();
+    public async Task<IEnumerable<UnidadMedidaResponseDto>> GetAllUnidadesAsync()
+    {
+        var unidades = await _catalogosRepo.GetAllUnidadesAsync();
+        return unidades.Select(UnidadMedidaResponseDto.FromEntity);
+    }
 
-    public async Task<UnidadMedida?> GetUnidadByIdAsync(int id)
-        => await _catalogosRepo.GetUnidadByIdAsync(id);
+    public async Task<UnidadMedidaResponseDto?> GetUnidadByIdAsync(int id)
+    {
+        var unidad = await _catalogosRepo.GetUnidadByIdAsync(id);
+        return unidad is null ? null : UnidadMedidaResponseDto.FromEntity(unidad);
+    }
 
-    public async Task<(bool Success, string Message, UnidadMedida? Data)> CreateUnidadAsync(UnidadMedidaRequestDto dto)
+    public async Task<(bool Success, string Message, UnidadMedidaResponseDto? Data)> CreateUnidadAsync(UnidadMedidaRequestDto dto)
     {
         if (await _catalogosRepo.ExisteUnidadAsync(dto.Abreviatura))
             return (false, "Ya existe una unidad de medida con esa abreviatura.", null);
@@ -130,7 +148,7 @@ public class CatalogosService : ICatalogosService
         };
 
         await _catalogosRepo.CreateUnidadAsync(unidad);
-        return (true, "Unidad de medida creada correctamente.", unidad);
+        return (true, "Unidad de medida creada correctamente.", UnidadMedidaResponseDto.FromEntity(unidad));
     }
 
     public async Task<(bool Success, string Message)> UpdateUnidadAsync(int id, UnidadMedidaRequestDto dto)

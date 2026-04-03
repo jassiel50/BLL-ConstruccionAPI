@@ -95,12 +95,15 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.Property<string>("Token")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<int>("UsuarioId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
 
                     b.ToTable("TokensSesion");
                 });
@@ -118,7 +121,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("FechaCreacion")
                         .HasColumnType("datetime2");
@@ -129,7 +132,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.Property<string>("NombreUsuario")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
@@ -142,6 +145,12 @@ namespace BLL_ConstruccionAPI.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("NombreUsuario")
+                        .IsUnique();
 
                     b.ToTable("Usuarios");
                 });
@@ -204,13 +213,16 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.Property<string>("RFC")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Telefono")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("RFC")
+                        .IsUnique();
 
                     b.ToTable("Clientes");
                 });
@@ -273,7 +285,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.Property<string>("Abreviatura")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<bool>("Activo")
                         .HasColumnType("bit");
@@ -283,6 +295,9 @@ namespace BLL_ConstruccionAPI.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Abreviatura")
+                        .IsUnique();
 
                     b.ToTable("UnidadesMedida");
                 });
@@ -349,7 +364,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.Property<string>("Codigo")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Descripcion")
                         .IsRequired()
@@ -371,7 +386,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.Property<string>("NumeroSerie")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<decimal>("ValorAdquisicion")
                         .HasColumnType("decimal(18,2)");
@@ -379,6 +394,12 @@ namespace BLL_ConstruccionAPI.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CategoriaHerramientaId");
+
+                    b.HasIndex("Codigo")
+                        .IsUnique();
+
+                    b.HasIndex("NumeroSerie")
+                        .IsUnique();
 
                     b.ToTable("Herramientas");
                 });
@@ -402,7 +423,8 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MaterialId");
+                    b.HasIndex("MaterialId")
+                        .IsUnique();
 
                     b.ToTable("AlmacenCentral");
                 });
@@ -431,7 +453,8 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasIndex("MaterialId");
 
-                    b.HasIndex("ProyectoId");
+                    b.HasIndex("ProyectoId", "MaterialId")
+                        .IsUnique();
 
                     b.ToTable("AlmacenProyecto");
                 });
@@ -519,7 +542,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.Property<string>("Codigo")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Descripcion")
                         .IsRequired()
@@ -544,6 +567,9 @@ namespace BLL_ConstruccionAPI.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CategoriaId");
+
+                    b.HasIndex("Codigo")
+                        .IsUnique();
 
                     b.HasIndex("UnidadMedidaId");
 
@@ -640,13 +666,16 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.Property<string>("RFC")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Telefono")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("RFC")
+                        .IsUnique();
 
                     b.ToTable("Proveedores");
                 });
@@ -658,6 +687,9 @@ namespace BLL_ConstruccionAPI.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Activo")
+                        .HasColumnType("bit");
 
                     b.Property<int>("ClienteId")
                         .HasColumnType("int");

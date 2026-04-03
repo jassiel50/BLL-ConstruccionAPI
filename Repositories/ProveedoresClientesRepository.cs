@@ -16,7 +16,7 @@ public class ProveedoresClientesRepository : IProveedoresClientesRepository
 
     // ─── Proveedores ──────────────────────────────────────────────────────────
     public async Task<IEnumerable<Proveedor>> GetAllProveedoresAsync()
-        => await _context.Proveedores.Where(p => p.Activo).ToListAsync();
+        => await _context.Proveedores.AsNoTracking().Where(p => p.Activo).ToListAsync();
 
     public async Task<Proveedor?> GetProveedorByIdAsync(int id)
         => await _context.Proveedores.FindAsync(id);
@@ -46,7 +46,7 @@ public class ProveedoresClientesRepository : IProveedoresClientesRepository
 
     // ─── Clientes ─────────────────────────────────────────────────────────────
     public async Task<IEnumerable<Cliente>> GetAllClientesAsync()
-        => await _context.Clientes.Where(c => c.Activo).ToListAsync();
+        => await _context.Clientes.AsNoTracking().Where(c => c.Activo).ToListAsync();
 
     public async Task<Cliente?> GetClienteByIdAsync(int id)
         => await _context.Clientes.FindAsync(id);
