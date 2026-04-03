@@ -1,4 +1,7 @@
-﻿namespace BLL_ConstruccionAPI.Models.Inventario.Proyectos
+﻿using BLL_ConstruccionAPI.Models.Enums;
+using BLL_ConstruccionAPI.Models.Inventario;
+
+namespace BLL_ConstruccionAPI.Models.Inventario.Proyectos
 {
     public class Proyecto
     {
@@ -10,7 +13,8 @@
         public int ResponsableId { get; set; }  // UsuarioId
         public DateTime FechaInicio { get; set; }
         public DateTime? FechaFin { get; set; }
-        public string Estado { get; set; } = "Activo"; // Activo, Pausado, Terminado
+        public EstadoProyecto Estado { get; set; } = EstadoProyecto.Activo;
+        public bool Activo { get; set; } = true;
         public DateTime FechaRegistro { get; set; } = DateTime.UtcNow;
 
         // Navegación

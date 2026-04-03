@@ -1,4 +1,5 @@
 using BLL_ConstruccionAPI.DTOs.Proyectos;
+using BLL_ConstruccionAPI.Models.Enums;
 using BLL_ConstruccionAPI.Models.Inventario.Proyectos;
 using BLL_ConstruccionAPI.Repositories.Interfaces;
 using BLL_ConstruccionAPI.Services.Interfaces;
@@ -10,7 +11,8 @@ public class ProyectosService : IProyectosService
     private readonly IProyectosRepository _proyectosRepo;
     private readonly IProveedoresClientesRepository _provClientesRepo;
 
-    private static readonly string[] EstadosValidos = ["Activo", "Pausado", "Terminado"];
+    private static readonly EstadoProyecto[] EstadosValidos =
+        [EstadoProyecto.Activo, EstadoProyecto.Pausado, EstadoProyecto.Terminado];
 
     public ProyectosService(IProyectosRepository proyectosRepo, IProveedoresClientesRepository provClientesRepo)
     {
@@ -18,19 +20,28 @@ public class ProyectosService : IProyectosService
         _provClientesRepo = provClientesRepo;
     }
 
-    public async Task<IEnumerable<Proyecto>> GetAllAsync()
-        => await _proyectosRepo.GetAllAsync();
-
-    public async Task<IEnumerable<Proyecto>> GetByClienteAsync(int clienteId)
-        => await _proyectosRepo.GetByClienteAsync(clienteId);
-
-    public async Task<Proyecto?> GetByIdAsync(int id)
-        => await _proyectosRepo.GetByIdAsync(id);
-
-    public async Task<(bool Success, string Message, Proyecto? Data)> CreateAsync(ProyectoRequestDto dto)
+    public async Task<IEnumerable<ProyectoResponseDto>> GetAllAsync()
     {
-        if (!EstadosValidos.Contains(dto.Estado))
-            return (false, $"Estado inválido. Los valores permitidos son: {string.Join(", ", EstadosValidos)}.", null);
+        var proyectos = await _proyectosRepo.GetAllAsync();
+        return proyectos.Select(ProyectoResponseDto.FromEntity);
+    }
+
+    public async Task<IEnumerable<ProyectoResponseDto>> GetByClienteAsync(int clienteId)
+    {
+        var proyectos = await _proyectosRepo.GetByClienteAsync(clienteId);
+        return proyectos.Select(ProyectoResponseDto.FromEntity);
+    }
+
+    public async Task<ProyectoResponseDto?> GetByIdAsync(int id)
+    {
+        var proyecto = await _proyectosRepo.GetByIdAsync(id);
+        return proyecto is null ? null : ProyectoResponseDto.FromEntity(proyecto);
+    }
+
+    public async Task<(bool Success, string Message, ProyectoResponseDto? Data)> CreateAsync(ProyectoRequestDto dto)
+    {
+        if (!Enum.TryParse<EstadoProyecto>(dto.Estado, out var estadoProyecto))
+            return (false, $"Estado inválido. Los valores permitidos son: {string.Join(", ", Enum.GetNames<EstadoProyecto>())}.", null);
 
         var cliente = await _provClientesRepo.GetClienteByIdAsync(dto.ClienteId);
         if (cliente is null || !cliente.Activo)
@@ -45,12 +56,13 @@ public class ProyectosService : IProyectosService
             ResponsableId = dto.ResponsableId,
             FechaInicio = dto.FechaInicio,
             FechaFin = dto.FechaFin,
-            Estado = dto.Estado,
-            FechaRegistro = DateTime.UtcNow
+            Estado = estadoProyecto,
+            FechaRegistro = DateTime.UtcNow,
+            Cliente = cliente
         };
 
         await _proyectosRepo.CreateAsync(proyecto);
-        return (true, "Proyecto creado correctamente.", proyecto);
+        return (true, "Proyecto creado correctamente.", ProyectoResponseDto.FromEntity(proyecto));
     }
 
     public async Task<(bool Success, string Message)> UpdateAsync(int id, ProyectoRequestDto dto)
@@ -58,8 +70,8 @@ public class ProyectosService : IProyectosService
         var proyecto = await _proyectosRepo.GetByIdAsync(id);
         if (proyecto is null) return (false, "Proyecto no encontrado.");
 
-        if (!EstadosValidos.Contains(dto.Estado))
-            return (false, $"Estado inválido. Los valores permitidos son: {string.Join(", ", EstadosValidos)}.");
+        if (!Enum.TryParse<EstadoProyecto>(dto.Estado, out var estadoActualizado))
+            return (false, $"Estado inválido. Los valores permitidos son: {string.Join(", ", Enum.GetNames<EstadoProyecto>())}.");
 
         if (proyecto.ClienteId != dto.ClienteId)
         {
@@ -75,7 +87,7 @@ public class ProyectosService : IProyectosService
         proyecto.ResponsableId = dto.ResponsableId;
         proyecto.FechaInicio = dto.FechaInicio;
         proyecto.FechaFin = dto.FechaFin;
-        proyecto.Estado = dto.Estado;
+        proyecto.Estado = estadoActualizado;
 
         await _proyectosRepo.UpdateAsync(proyecto);
         return (true, "Proyecto actualizado correctamente.");
@@ -87,6 +99,18 @@ public class ProyectosService : IProyectosService
         if (proyecto is null) return (false, "Proyecto no encontrado.");
 
         await _proyectosRepo.DeleteAsync(proyecto);
+        return (true, "Proyecto eliminado correctamente.");
+    }
+
+    public async Task<(bool Success, string Message)> TerminarAsync(int id)
+    {
+        var proyecto = await _proyectosRepo.GetByIdAsync(id);
+        if (proyecto is null) return (false, "Proyecto no encontrado.");
+
+        if (proyecto.Estado == EstadoProyecto.Terminado)
+            return (false, "El proyecto ya está marcado como Terminado.");
+
+        await _proyectosRepo.TerminarAsync(proyecto);
         return (true, "Proyecto marcado como Terminado correctamente.");
     }
 }

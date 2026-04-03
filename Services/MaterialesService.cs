@@ -16,19 +16,31 @@ public class MaterialesService : IMaterialesService
         _catalogosRepo = catalogosRepo;
     }
 
-    public async Task<IEnumerable<Material>> GetAllAsync()
-        => await _materialesRepo.GetAllAsync();
+    public async Task<IEnumerable<MaterialResponseDto>> GetAllAsync()
+    {
+        var materiales = await _materialesRepo.GetAllAsync();
+        return materiales.Select(MaterialResponseDto.FromEntity);
+    }
 
-    public async Task<IEnumerable<Material>> GetBajoStockAsync()
-        => await _materialesRepo.GetBajoStockAsync();
+    public async Task<IEnumerable<MaterialResponseDto>> GetBajoStockAsync()
+    {
+        var materiales = await _materialesRepo.GetBajoStockAsync();
+        return materiales.Select(MaterialResponseDto.FromEntity);
+    }
 
-    public async Task<Material?> GetByIdAsync(int id)
-        => await _materialesRepo.GetByIdAsync(id);
+    public async Task<MaterialResponseDto?> GetByIdAsync(int id)
+    {
+        var material = await _materialesRepo.GetByIdAsync(id);
+        return material is null ? null : MaterialResponseDto.FromEntity(material);
+    }
 
-    public async Task<AlmacenCentral?> GetStockAsync(int materialId)
-        => await _materialesRepo.GetStockCentralAsync(materialId);
+    public async Task<AlmacenCentralResponseDto?> GetStockAsync(int materialId)
+    {
+        var stock = await _materialesRepo.GetStockCentralAsync(materialId);
+        return stock is null ? null : AlmacenCentralResponseDto.FromEntity(stock);
+    }
 
-    public async Task<(bool Success, string Message, Material? Data)> CreateAsync(MaterialRequestDto dto)
+    public async Task<(bool Success, string Message, MaterialResponseDto? Data)> CreateAsync(MaterialRequestDto dto)
     {
         if (await _materialesRepo.ExisteCodigoAsync(dto.Codigo))
             return (false, "Ya existe un material con ese código.", null);
@@ -64,7 +76,7 @@ public class MaterialesService : IMaterialesService
             UltimaActualizacion = DateTime.UtcNow
         });
 
-        return (true, "Material registrado correctamente.", material);
+        return (true, "Material registrado correctamente.", MaterialResponseDto.FromEntity(material));
     }
 
     public async Task<(bool Success, string Message)> UpdateAsync(int id, MaterialRequestDto dto)

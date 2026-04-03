@@ -1,4 +1,5 @@
 using BLL_ConstruccionAPI.Models.Auth;
+using BLL_ConstruccionAPI.Models.Enums;
 using BLL_ConstruccionAPI.Models.Inventario;
 using BLL_ConstruccionAPI.Models.Inventario.Cátalogos;
 using BLL_ConstruccionAPI.Models.Inventario.Herramientas;
@@ -122,5 +123,54 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Herramienta>()
             .Property(h => h.ValorAdquisicion)
             .HasColumnType("decimal(18,2)");
+
+        // ─── Conversión string para enums ─────────────────────────────────────
+
+        modelBuilder.Entity<Herramienta>()
+            .Property(h => h.Estado)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<AsignacionHerramienta>()
+            .Property(a => a.Estado)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<Proyecto>()
+            .Property(p => p.Estado)
+            .HasConversion<string>();
+
+        // ─── Índices únicos ───────────────────────────────────────────────────
+
+        modelBuilder.Entity<Usuario>()
+            .HasIndex(u => u.NombreUsuario).IsUnique();
+
+        modelBuilder.Entity<Usuario>()
+            .HasIndex(u => u.Email).IsUnique();
+
+        modelBuilder.Entity<TokenSesion>()
+            .HasIndex(t => t.Token).IsUnique();
+
+        modelBuilder.Entity<Material>()
+            .HasIndex(m => m.Codigo).IsUnique();
+
+        modelBuilder.Entity<Herramienta>()
+            .HasIndex(h => h.Codigo).IsUnique();
+
+        modelBuilder.Entity<Herramienta>()
+            .HasIndex(h => h.NumeroSerie).IsUnique();
+
+        modelBuilder.Entity<Proveedor>()
+            .HasIndex(p => p.RFC).IsUnique();
+
+        modelBuilder.Entity<Cliente>()
+            .HasIndex(c => c.RFC).IsUnique();
+
+        modelBuilder.Entity<AlmacenCentral>()
+            .HasIndex(a => a.MaterialId).IsUnique();
+
+        modelBuilder.Entity<AlmacenProyecto>()
+            .HasIndex(a => new { a.ProyectoId, a.MaterialId }).IsUnique();
+
+        modelBuilder.Entity<UnidadMedida>()
+            .HasIndex(u => u.Abreviatura).IsUnique();
     }
 }

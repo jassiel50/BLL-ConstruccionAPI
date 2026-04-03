@@ -1,13 +1,13 @@
+using BLL_ConstruccionAPI.DTOs.Materiales;
 using BLL_ConstruccionAPI.DTOs.Salidas;
-using BLL_ConstruccionAPI.Models.Inventario.Materiales;
 
 namespace BLL_ConstruccionAPI.Services.Interfaces;
 
 public interface ISalidasService
 {
-    Task<IEnumerable<Salida>> GetAllAsync();
-    Task<IEnumerable<Salida>> GetByProyectoAsync(int proyectoId);
-    Task<Salida?> GetByIdAsync(int id);
-    Task<IEnumerable<AlmacenProyecto>> GetAlmacenProyectoAsync(int proyectoId);
-    Task<(bool Success, string Message, Salida? Data)> RegistrarAsync(SalidaRequestDto dto);
+    Task<IEnumerable<SalidaResponseDto>> GetAllAsync();
+    Task<IEnumerable<SalidaResponseDto>> GetByProyectoAsync(int proyectoId);
+    Task<SalidaResponseDto?> GetByIdAsync(int id);
+    Task<IEnumerable<AlmacenProyectoResponseDto>> GetAlmacenProyectoAsync(int proyectoId);
+    Task<(bool Success, string Message, SalidaResponseDto? Data)> RegistrarAsync(SalidaRequestDto dto, int usuarioId);
 }

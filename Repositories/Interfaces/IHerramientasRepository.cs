@@ -20,4 +20,8 @@ public interface IHerramientasRepository
     Task<AsignacionHerramienta?> GetAsignacionActivaAsync(int herramientaId);
     Task<int> CreateAsignacionAsync(AsignacionHerramienta asignacion);
     Task UpdateAsignacionAsync(AsignacionHerramienta asignacion);
+
+    // ─── Operaciones atómicas ─────────────────────────────────────────────────
+    Task AsignarHerramientaAsync(AsignacionHerramienta asignacion, Herramienta herramienta);
+    Task DevolverHerramientaAsync(AsignacionHerramienta asignacion, Herramienta herramienta);
 }

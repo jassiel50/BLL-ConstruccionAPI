@@ -1,9 +1,11 @@
 using BLL_ConstruccionAPI.DTOs.Materiales;
 using BLL_ConstruccionAPI.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BLL_ConstruccionAPI.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/materiales")]
 public class MaterialController : ControllerBase

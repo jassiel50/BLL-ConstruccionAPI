@@ -1,3 +1,4 @@
+using BLL_ConstruccionAPI.DTOs.Materiales;
 using BLL_ConstruccionAPI.DTOs.Salidas;
 using BLL_ConstruccionAPI.Models.Inventario.Materiales;
 using BLL_ConstruccionAPI.Repositories.Interfaces;
@@ -21,19 +22,31 @@ public class SalidasService : ISalidasService
         _proyectosRepo = proyectosRepo;
     }
 
-    public async Task<IEnumerable<Salida>> GetAllAsync()
-        => await _salidasRepo.GetAllAsync();
+    public async Task<IEnumerable<SalidaResponseDto>> GetAllAsync()
+    {
+        var salidas = await _salidasRepo.GetAllAsync();
+        return salidas.Select(SalidaResponseDto.FromEntity);
+    }
 
-    public async Task<IEnumerable<Salida>> GetByProyectoAsync(int proyectoId)
-        => await _salidasRepo.GetByProyectoAsync(proyectoId);
+    public async Task<IEnumerable<SalidaResponseDto>> GetByProyectoAsync(int proyectoId)
+    {
+        var salidas = await _salidasRepo.GetByProyectoAsync(proyectoId);
+        return salidas.Select(SalidaResponseDto.FromEntity);
+    }
 
-    public async Task<Salida?> GetByIdAsync(int id)
-        => await _salidasRepo.GetByIdAsync(id);
+    public async Task<SalidaResponseDto?> GetByIdAsync(int id)
+    {
+        var salida = await _salidasRepo.GetByIdAsync(id);
+        return salida is null ? null : SalidaResponseDto.FromEntity(salida);
+    }
 
-    public async Task<IEnumerable<AlmacenProyecto>> GetAlmacenProyectoAsync(int proyectoId)
-        => await _salidasRepo.GetAlmacenProyectoAsync(proyectoId);
+    public async Task<IEnumerable<AlmacenProyectoResponseDto>> GetAlmacenProyectoAsync(int proyectoId)
+    {
+        var almacen = await _salidasRepo.GetAlmacenProyectoAsync(proyectoId);
+        return almacen.Select(AlmacenProyectoResponseDto.FromEntity);
+    }
 
-    public async Task<(bool Success, string Message, Salida? Data)> RegistrarAsync(SalidaRequestDto dto)
+    public async Task<(bool Success, string Message, SalidaResponseDto? Data)> RegistrarAsync(SalidaRequestDto dto, int usuarioId)
     {
         if (!dto.Detalles.Any())
             return (false, "La salida debe tener al menos un detalle.", null);
@@ -95,7 +108,7 @@ public class SalidasService : ISalidasService
         {
             NumeroFolio = dto.NumeroFolio,
             ProyectoId = dto.ProyectoId,
-            UsuarioId = dto.UsuarioId,
+            UsuarioId = usuarioId,
             Fecha = DateTime.UtcNow,
             Observaciones = dto.Observaciones,
             Detalles = detalles
@@ -104,6 +117,6 @@ public class SalidasService : ISalidasService
         // Único SaveChangesAsync: guarda Salida + Detalles + AlmacenCentral - stock + AlmacenProyecto + stock
         await _salidasRepo.RegistrarSalidaAsync(salida);
 
-        return (true, "Salida registrada correctamente.", salida);
+        return (true, "Salida registrada correctamente.", SalidaResponseDto.FromEntity(salida));
     }
 }

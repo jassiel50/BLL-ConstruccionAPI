@@ -16,7 +16,7 @@ public class CatalogosRepository : ICatalogosRepository
 
     // ─── CategoriaMaterial ────────────────────────────────────────────────────
     public async Task<IEnumerable<CategoriaMaterial>> GetAllCategoriasAsync()
-        => await _context.Categorias.Where(c => c.Activo).ToListAsync();
+        => await _context.Categorias.AsNoTracking().Where(c => c.Activo).ToListAsync();
 
     public async Task<CategoriaMaterial?> GetCategoriaByIdAsync(int id)
         => await _context.Categorias.FindAsync(id);
@@ -46,7 +46,7 @@ public class CatalogosRepository : ICatalogosRepository
 
     // ─── CategoriaHerramienta ─────────────────────────────────────────────────
     public async Task<IEnumerable<CategoriaHerramienta>> GetAllCategoriasHerramientaAsync()
-        => await _context.CategoriasHerramienta.Where(c => c.Activo).ToListAsync();
+        => await _context.CategoriasHerramienta.AsNoTracking().Where(c => c.Activo).ToListAsync();
 
     public async Task<CategoriaHerramienta?> GetCategoriaHerramientaByIdAsync(int id)
         => await _context.CategoriasHerramienta.FindAsync(id);

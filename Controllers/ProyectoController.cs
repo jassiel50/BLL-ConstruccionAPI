@@ -1,9 +1,11 @@
 using BLL_ConstruccionAPI.DTOs.Proyectos;
 using BLL_ConstruccionAPI.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BLL_ConstruccionAPI.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/proyectos")]
 public class ProyectoController : ControllerBase
@@ -64,6 +66,15 @@ public class ProyectoController : ControllerBase
     {
         var (success, message) = await _service.DeleteAsync(id);
         if (!success) return NotFound(new { message });
+        return Ok(new { message });
+    }
+
+    // PUT api/proyectos/{id}/terminar
+    [HttpPut("{id:int}/terminar")]
+    public async Task<IActionResult> Terminar(int id)
+    {
+        var (success, message) = await _service.TerminarAsync(id);
+        if (!success) return BadRequest(new { message });
         return Ok(new { message });
     }
 }

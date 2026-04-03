@@ -1,9 +1,12 @@
 using BLL_ConstruccionAPI.DTOs.Herramientas;
 using BLL_ConstruccionAPI.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace BLL_ConstruccionAPI.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/herramientas")]
 public class HerramientaController : ControllerBase
@@ -79,7 +82,10 @@ public class HerramientaController : ControllerBase
     [HttpPost("asignar")]
     public async Task<IActionResult> Asignar([FromBody] AsignacionRequestDto dto)
     {
-        var (success, message, data) = await _service.AsignarAsync(dto);
+        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var usuarioId))
+            return Unauthorized(new { message = "Token inválido." });
+
+        var (success, message, data) = await _service.AsignarAsync(dto, usuarioId);
         if (!success) return BadRequest(new { message });
         return Ok(new { message, data });
     }

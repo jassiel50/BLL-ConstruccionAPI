@@ -15,13 +15,19 @@ public class ProveedoresClientesService : IProveedoresClientesService
     }
 
     // ─── Proveedores ──────────────────────────────────────────────────────────
-    public async Task<IEnumerable<Proveedor>> GetAllProveedoresAsync()
-        => await _repo.GetAllProveedoresAsync();
+    public async Task<IEnumerable<ProveedorResponseDto>> GetAllProveedoresAsync()
+    {
+        var proveedores = await _repo.GetAllProveedoresAsync();
+        return proveedores.Select(ProveedorResponseDto.FromEntity);
+    }
 
-    public async Task<Proveedor?> GetProveedorByIdAsync(int id)
-        => await _repo.GetProveedorByIdAsync(id);
+    public async Task<ProveedorResponseDto?> GetProveedorByIdAsync(int id)
+    {
+        var proveedor = await _repo.GetProveedorByIdAsync(id);
+        return proveedor is null ? null : ProveedorResponseDto.FromEntity(proveedor);
+    }
 
-    public async Task<(bool Success, string Message, Proveedor? Data)> CreateProveedorAsync(ProveedorRequestDto dto)
+    public async Task<(bool Success, string Message, ProveedorResponseDto? Data)> CreateProveedorAsync(ProveedorRequestDto dto)
     {
         if (await _repo.ExisteProveedorRFCAsync(dto.RFC))
             return (false, "Ya existe un proveedor con ese RFC.", null);
@@ -39,7 +45,7 @@ public class ProveedoresClientesService : IProveedoresClientesService
         };
 
         await _repo.CreateProveedorAsync(proveedor);
-        return (true, "Proveedor registrado correctamente.", proveedor);
+        return (true, "Proveedor registrado correctamente.", ProveedorResponseDto.FromEntity(proveedor));
     }
 
     public async Task<(bool Success, string Message)> UpdateProveedorAsync(int id, ProveedorRequestDto dto)
@@ -71,13 +77,19 @@ public class ProveedoresClientesService : IProveedoresClientesService
     }
 
     // ─── Clientes ─────────────────────────────────────────────────────────────
-    public async Task<IEnumerable<Cliente>> GetAllClientesAsync()
-        => await _repo.GetAllClientesAsync();
+    public async Task<IEnumerable<ClienteResponseDto>> GetAllClientesAsync()
+    {
+        var clientes = await _repo.GetAllClientesAsync();
+        return clientes.Select(ClienteResponseDto.FromEntity);
+    }
 
-    public async Task<Cliente?> GetClienteByIdAsync(int id)
-        => await _repo.GetClienteByIdAsync(id);
+    public async Task<ClienteResponseDto?> GetClienteByIdAsync(int id)
+    {
+        var cliente = await _repo.GetClienteByIdAsync(id);
+        return cliente is null ? null : ClienteResponseDto.FromEntity(cliente);
+    }
 
-    public async Task<(bool Success, string Message, Cliente? Data)> CreateClienteAsync(ClienteRequestDto dto)
+    public async Task<(bool Success, string Message, ClienteResponseDto? Data)> CreateClienteAsync(ClienteRequestDto dto)
     {
         if (await _repo.ExisteClienteRFCAsync(dto.RFC))
             return (false, "Ya existe un cliente con ese RFC.", null);
@@ -95,7 +107,7 @@ public class ProveedoresClientesService : IProveedoresClientesService
         };
 
         await _repo.CreateClienteAsync(cliente);
-        return (true, "Cliente registrado correctamente.", cliente);
+        return (true, "Cliente registrado correctamente.", ClienteResponseDto.FromEntity(cliente));
     }
 
     public async Task<(bool Success, string Message)> UpdateClienteAsync(int id, ClienteRequestDto dto)

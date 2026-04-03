@@ -16,6 +16,7 @@ public class EntradasRepository : IEntradasRepository
 
     public async Task<IEnumerable<Entrada>> GetAllAsync()
         => await _context.Entradas
+            .AsNoTracking()
             .Include(e => e.Proveedor)
             .Include(e => e.Detalles)
                 .ThenInclude(d => d.Material)

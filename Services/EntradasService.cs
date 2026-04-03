@@ -21,13 +21,19 @@ public class EntradasService : IEntradasService
         _provClientesRepo = provClientesRepo;
     }
 
-    public async Task<IEnumerable<Entrada>> GetAllAsync()
-        => await _entradasRepo.GetAllAsync();
+    public async Task<IEnumerable<EntradaResponseDto>> GetAllAsync()
+    {
+        var entradas = await _entradasRepo.GetAllAsync();
+        return entradas.Select(EntradaResponseDto.FromEntity);
+    }
 
-    public async Task<Entrada?> GetByIdAsync(int id)
-        => await _entradasRepo.GetByIdAsync(id);
+    public async Task<EntradaResponseDto?> GetByIdAsync(int id)
+    {
+        var entrada = await _entradasRepo.GetByIdAsync(id);
+        return entrada is null ? null : EntradaResponseDto.FromEntity(entrada);
+    }
 
-    public async Task<(bool Success, string Message, Entrada? Data)> RegistrarAsync(EntradaRequestDto dto)
+    public async Task<(bool Success, string Message, EntradaResponseDto? Data)> RegistrarAsync(EntradaRequestDto dto, int usuarioId)
     {
         if (!dto.Detalles.Any())
             return (false, "La entrada debe tener al menos un detalle.", null);
@@ -69,18 +75,18 @@ public class EntradasService : IEntradasService
             // Como todos los repositorios comparten el mismo DbContext (scoped),
             // este cambio se guardará atómicamente en RegistrarEntradaAsync.
             var stockCentral = await _materialesRepo.GetStockCentralAsync(item.MaterialId);
-            if (stockCentral is not null)
-            {
-                stockCentral.Stock += item.Cantidad;
-                stockCentral.UltimaActualizacion = DateTime.UtcNow;
-            }
+            if (stockCentral is null)
+                return (false, $"No existe registro de almacén central para el material ID {item.MaterialId}.", null);
+
+            stockCentral.Stock += item.Cantidad;
+            stockCentral.UltimaActualizacion = DateTime.UtcNow;
         }
 
         var entrada = new Entrada
         {
             NumeroFolio = dto.NumeroFolio,
             ProveedorId = dto.ProveedorId,
-            UsuarioId = dto.UsuarioId,
+            UsuarioId = usuarioId,
             Fecha = DateTime.UtcNow,
             Observaciones = dto.Observaciones,
             Total = total,
@@ -90,6 +96,6 @@ public class EntradasService : IEntradasService
         // Único SaveChangesAsync: guarda Entrada + Detalles + AlmacenCentral actualizado
         await _entradasRepo.RegistrarEntradaAsync(entrada);
 
-        return (true, "Entrada registrada correctamente.", entrada);
+        return (true, "Entrada registrada correctamente.", EntradaResponseDto.FromEntity(entrada));
     }
 }

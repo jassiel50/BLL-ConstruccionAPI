@@ -1,4 +1,5 @@
-﻿using BLL_ConstruccionAPI.Models.Inventario.Cátalogos;
+﻿using BLL_ConstruccionAPI.Models.Enums;
+using BLL_ConstruccionAPI.Models.Inventario.Cátalogos;
 
 namespace BLL_ConstruccionAPI.Models.Inventario.Herramientas
 {
@@ -10,7 +11,7 @@ namespace BLL_ConstruccionAPI.Models.Inventario.Herramientas
         public string Codigo { get; set; } = string.Empty;
         public string NumeroSerie { get; set; } = string.Empty;
         public int CategoriaHerramientaId { get; set; }
-        public string Estado { get; set; } = "Disponible"; // Disponible, Asignada, Mantenimiento, Baja
+        public EstadoHerramienta Estado { get; set; } = EstadoHerramienta.Disponible;
         public decimal ValorAdquisicion { get; set; }
         public DateTime FechaAdquisicion { get; set; }
         public bool Activo { get; set; } = true;

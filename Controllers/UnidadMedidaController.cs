@@ -1,9 +1,11 @@
 using BLL_ConstruccionAPI.DTOs.Catalogos;
 using BLL_ConstruccionAPI.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BLL_ConstruccionAPI.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/catalogos/unidades-medida")]
 public class UnidadMedidaController : ControllerBase
