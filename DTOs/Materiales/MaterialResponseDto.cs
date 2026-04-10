@@ -14,6 +14,9 @@ public class MaterialResponseDto
     public string AbreviaturaUnidad { get; set; } = string.Empty;
     public decimal StockMinimo { get; set; }
     public decimal PrecioUnitario { get; set; }
+    public string Zona { get; set; } = string.Empty;
+    public string TipoUbicacion { get; set; } = string.Empty;
+    public bool EnProyecto { get; set; }
 
     public static MaterialResponseDto FromEntity(Material e) => new()
     {
@@ -26,6 +29,9 @@ public class MaterialResponseDto
         UnidadMedidaId = e.UnidadMedidaId,
         AbreviaturaUnidad = e.UnidadMedida?.Abreviatura ?? string.Empty,
         StockMinimo = e.StockMinimo,
-        PrecioUnitario = e.PrecioUnitario
+        PrecioUnitario = e.PrecioUnitario,
+        Zona = e.Zona.ToString(),
+        TipoUbicacion = e.TipoUbicacion.ToString(),
+        EnProyecto = e.EnProyecto
     };
 }

@@ -26,4 +26,12 @@ public class MaterialRequestDto
 
     [Range(0, double.MaxValue)]
     public decimal PrecioUnitario { get; set; }
+
+    [Required]
+    public string Zona { get; set; } = "Guadalajara";
+
+    [Required]
+    public string TipoUbicacion { get; set; } = "Almacen";
+
+    public bool EnProyecto { get; set; } = false;
 }
