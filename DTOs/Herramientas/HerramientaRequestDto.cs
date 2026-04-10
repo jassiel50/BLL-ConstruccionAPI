@@ -29,4 +29,10 @@ public class HerramientaRequestDto
     public decimal ValorAdquisicion { get; set; }
 
     public DateTime FechaAdquisicion { get; set; }
+
+    [Required]
+    public string Zona { get; set; } = "Guadalajara";
+
+    [Required]
+    public string TipoUbicacion { get; set; } = "Almacen";
 }

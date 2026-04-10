@@ -1,4 +1,5 @@
-﻿using BLL_ConstruccionAPI.Models.Inventario.Cátalogos;
+﻿using BLL_ConstruccionAPI.Models.Enums;
+using BLL_ConstruccionAPI.Models.Inventario.Cátalogos;
 
 namespace BLL_ConstruccionAPI.Models.Inventario.Materiales
 {
@@ -12,6 +13,9 @@ namespace BLL_ConstruccionAPI.Models.Inventario.Materiales
         public int UnidadMedidaId { get; set; }
         public decimal StockMinimo { get; set; }
         public decimal PrecioUnitario { get; set; }
+        public Zona Zona { get; set; } = Zona.Guadalajara;
+        public TipoUbicacion TipoUbicacion { get; set; } = TipoUbicacion.Almacen;
+        public bool EnProyecto { get; set; } = false;
         public bool Activo { get; set; } = true;
         public DateTime FechaRegistro { get; set; } = DateTime.UtcNow;
 

@@ -14,6 +14,8 @@ public class HerramientaResponseDto
     public string Estado { get; set; } = string.Empty;
     public decimal ValorAdquisicion { get; set; }
     public DateTime FechaAdquisicion { get; set; }
+    public string Zona { get; set; } = string.Empty;
+    public string TipoUbicacion { get; set; } = string.Empty;
 
     public static HerramientaResponseDto FromEntity(Herramienta e) => new()
     {
@@ -26,6 +28,8 @@ public class HerramientaResponseDto
         NombreCategoria = e.CategoriaHerramienta?.Nombre ?? string.Empty,
         Estado = e.Estado.ToString(),
         ValorAdquisicion = e.ValorAdquisicion,
-        FechaAdquisicion = e.FechaAdquisicion
+        FechaAdquisicion = e.FechaAdquisicion,
+        Zona = e.Zona.ToString(),
+        TipoUbicacion = e.TipoUbicacion.ToString()
     };
 }
