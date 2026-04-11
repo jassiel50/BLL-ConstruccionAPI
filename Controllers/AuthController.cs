@@ -76,7 +76,7 @@ public class AuthController : ControllerBase
         return Ok(new { message });
     }
 
-    // POST api/auth/2fa/enable
+    // POST api/auth/2fa/enable  (requiere usuario autenticado — desde perfil)
     [HttpPost("2fa/enable")]
     public async Task<IActionResult> Enable2FA()
     {
@@ -89,13 +89,35 @@ public class AuthController : ControllerBase
         return Ok(new { message, data });
     }
 
-    // POST api/auth/2fa/verify
+    // POST api/auth/2fa/setup/{usuarioId}  (AllowAnonymous — primer setup obligatorio)
+    [AllowAnonymous]
+    [HttpPost("2fa/setup/{usuarioId:int}")]
+    public async Task<IActionResult> Setup2FA(int usuarioId)
+    {
+        var (success, message, data) = await _authService.Enable2FAAsync(usuarioId);
+        if (!success) return BadRequest(new { message });
+        return Ok(new { message, data });
+    }
+
+    // POST api/auth/2fa/verify  (requiere Bearer — desde perfil autenticado)
     [HttpPost("2fa/verify")]
     public async Task<IActionResult> Confirm2FA([FromBody] Verify2FARequestDto dto)
     {
         if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var usuarioId))
             return Unauthorized(new { message = "Token inválido." });
 
+        dto.UsuarioId = usuarioId;
+        var (success, message) = await _authService.Confirm2FAAsync(dto);
+
+        if (!success) return BadRequest(new { message });
+        return Ok(new { message });
+    }
+
+    // POST api/auth/2fa/verify/{usuarioId}  (AllowAnonymous — confirmación durante primer setup)
+    [AllowAnonymous]
+    [HttpPost("2fa/verify/{usuarioId:int}")]
+    public async Task<IActionResult> Confirm2FASetup(int usuarioId, [FromBody] Verify2FARequestDto dto)
+    {
         dto.UsuarioId = usuarioId;
         var (success, message) = await _authService.Confirm2FAAsync(dto);
 
