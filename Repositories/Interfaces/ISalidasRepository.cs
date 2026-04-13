@@ -18,4 +18,7 @@ public interface ISalidasRepository
 
     // Guarda la Salida + Detalles + AlmacenCentral + AlmacenProyecto en un único SaveChangesAsync
     Task<int> RegistrarSalidaAsync(Salida salida);
+
+    // Guarda cambios acumulados en el Change Tracker (usado en devoluciones)
+    Task GuardarCambiosAsync();
 }

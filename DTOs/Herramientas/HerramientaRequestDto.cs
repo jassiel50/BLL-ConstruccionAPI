@@ -30,6 +30,9 @@ public class HerramientaRequestDto
 
     public DateTime FechaAdquisicion { get; set; }
 
+    [Range(1, int.MaxValue)]
+    public int Cantidad { get; set; } = 1;
+
     [Required]
     public string Zona { get; set; } = "Guadalajara";
 

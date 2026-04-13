@@ -9,6 +9,8 @@ public class AlmacenProyectoResponseDto
     public string NombreMaterial { get; set; } = string.Empty;
     public string CodigoMaterial { get; set; } = string.Empty;
     public decimal Stock { get; set; }
+    public string Zona { get; set; } = string.Empty;
+    public string TipoUbicacion { get; set; } = string.Empty;
     public DateTime UltimaActualizacion { get; set; }
 
     public static AlmacenProyectoResponseDto FromEntity(AlmacenProyecto e) => new()
@@ -18,6 +20,8 @@ public class AlmacenProyectoResponseDto
         NombreMaterial = e.Material?.Nombre ?? string.Empty,
         CodigoMaterial = e.Material?.Codigo ?? string.Empty,
         Stock = e.Stock,
+        Zona = e.Zona.ToString(),
+        TipoUbicacion = e.TipoUbicacion.ToString(),
         UltimaActualizacion = e.UltimaActualizacion
     };
 }

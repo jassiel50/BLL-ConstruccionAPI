@@ -14,6 +14,7 @@ public class HerramientaResponseDto
     public string Estado { get; set; } = string.Empty;
     public decimal ValorAdquisicion { get; set; }
     public DateTime FechaAdquisicion { get; set; }
+    public int Cantidad { get; set; }
     public string Zona { get; set; } = string.Empty;
     public string TipoUbicacion { get; set; } = string.Empty;
 
@@ -29,6 +30,7 @@ public class HerramientaResponseDto
         Estado = e.Estado.ToString(),
         ValorAdquisicion = e.ValorAdquisicion,
         FechaAdquisicion = e.FechaAdquisicion,
+        Cantidad = e.Cantidad,
         Zona = e.Zona.ToString(),
         TipoUbicacion = e.TipoUbicacion.ToString()
     };

@@ -10,6 +10,8 @@ public class EntradaDetalleResponseDto
     public decimal Cantidad { get; set; }
     public decimal PrecioUnitario { get; set; }
     public decimal Subtotal { get; set; }
+    public string Zona { get; set; } = string.Empty;
+    public string TipoUbicacion { get; set; } = string.Empty;
 
     public static EntradaDetalleResponseDto FromEntity(EntradaDetalle e) => new()
     {
@@ -18,6 +20,8 @@ public class EntradaDetalleResponseDto
         CodigoMaterial = e.Material?.Codigo ?? string.Empty,
         Cantidad = e.Cantidad,
         PrecioUnitario = e.PrecioUnitario,
-        Subtotal = e.Subtotal
+        Subtotal = e.Subtotal,
+        Zona = e.Material?.Zona.ToString() ?? string.Empty,
+        TipoUbicacion = e.Material?.TipoUbicacion.ToString() ?? string.Empty
     };
 }

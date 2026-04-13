@@ -138,6 +138,22 @@ public class AppDbContext : DbContext
             .Property(p => p.Estado)
             .HasConversion<string>();
 
+        modelBuilder.Entity<AlmacenCentral>()
+            .Property(a => a.Zona)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<AlmacenCentral>()
+            .Property(a => a.TipoUbicacion)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<AlmacenProyecto>()
+            .Property(a => a.Zona)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<AlmacenProyecto>()
+            .Property(a => a.TipoUbicacion)
+            .HasConversion<string>();
+
         // ─── Índices únicos ───────────────────────────────────────────────────
 
         modelBuilder.Entity<Usuario>()

@@ -1,4 +1,5 @@
 using BLL_ConstruccionAPI.DTOs.Materiales;
+using BLL_ConstruccionAPI.Models.Enums;
 using BLL_ConstruccionAPI.Models.Inventario.Materiales;
 using BLL_ConstruccionAPI.Repositories.Interfaces;
 using BLL_ConstruccionAPI.Services.Interfaces;
@@ -34,6 +35,12 @@ public class MaterialesService : IMaterialesService
         return material is null ? null : MaterialResponseDto.FromEntity(material);
     }
 
+    public async Task<IEnumerable<AlmacenCentralResponseDto>> GetAlmacenCentralAsync()
+    {
+        var registros = await _materialesRepo.GetAllStockCentralAsync();
+        return registros.Select(AlmacenCentralResponseDto.FromEntity);
+    }
+
     public async Task<AlmacenCentralResponseDto?> GetStockAsync(int materialId)
     {
         var stock = await _materialesRepo.GetStockCentralAsync(materialId);
@@ -42,6 +49,12 @@ public class MaterialesService : IMaterialesService
 
     public async Task<(bool Success, string Message, MaterialResponseDto? Data)> CreateAsync(MaterialRequestDto dto)
     {
+        if (!Enum.TryParse<Zona>(dto.Zona, out var zona))
+            return (false, $"Zona inválida. Valores permitidos: {string.Join(", ", Enum.GetNames<Zona>())}.", null);
+
+        if (!Enum.TryParse<TipoUbicacion>(dto.TipoUbicacion, out var tipoUbicacion))
+            return (false, $"TipoUbicacion inválido. Valores permitidos: {string.Join(", ", Enum.GetNames<TipoUbicacion>())}.", null);
+
         if (await _materialesRepo.ExisteCodigoAsync(dto.Codigo))
             return (false, "Ya existe un material con ese código.", null);
 
@@ -62,6 +75,9 @@ public class MaterialesService : IMaterialesService
             UnidadMedidaId = dto.UnidadMedidaId,
             StockMinimo = dto.StockMinimo,
             PrecioUnitario = dto.PrecioUnitario,
+            Zona = zona,
+            TipoUbicacion = tipoUbicacion,
+            EnProyecto = dto.EnProyecto,
             Activo = true,
             FechaRegistro = DateTime.UtcNow
         };
@@ -73,6 +89,8 @@ public class MaterialesService : IMaterialesService
         {
             MaterialId = material.Id,
             Stock = 0,
+            Zona = material.Zona,
+            TipoUbicacion = material.TipoUbicacion,
             UltimaActualizacion = DateTime.UtcNow
         });
 
@@ -83,6 +101,12 @@ public class MaterialesService : IMaterialesService
     {
         var material = await _materialesRepo.GetByIdAsync(id);
         if (material is null) return (false, "Material no encontrado.");
+
+        if (!Enum.TryParse<Zona>(dto.Zona, out var zonaActualizada))
+            return (false, $"Zona inválida. Valores permitidos: {string.Join(", ", Enum.GetNames<Zona>())}.");
+
+        if (!Enum.TryParse<TipoUbicacion>(dto.TipoUbicacion, out var tipoUbicacionActualizado))
+            return (false, $"TipoUbicacion inválido. Valores permitidos: {string.Join(", ", Enum.GetNames<TipoUbicacion>())}.");
 
         if (material.Codigo != dto.Codigo && await _materialesRepo.ExisteCodigoAsync(dto.Codigo))
             return (false, "Ya existe un material con ese código.");
@@ -102,6 +126,9 @@ public class MaterialesService : IMaterialesService
         material.UnidadMedidaId = dto.UnidadMedidaId;
         material.StockMinimo = dto.StockMinimo;
         material.PrecioUnitario = dto.PrecioUnitario;
+        material.Zona = zonaActualizada;
+        material.TipoUbicacion = tipoUbicacionActualizado;
+        material.EnProyecto = dto.EnProyecto;
 
         await _materialesRepo.UpdateAsync(material);
         return (true, "Material actualizado correctamente.");

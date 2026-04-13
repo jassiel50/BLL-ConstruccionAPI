@@ -88,6 +88,8 @@ public class SalidasService : ISalidasService
                     ProyectoId = dto.ProyectoId,
                     MaterialId = item.MaterialId,
                     Stock = item.Cantidad,
+                    Zona = material.Zona,
+                    TipoUbicacion = material.TipoUbicacion,
                     UltimaActualizacion = DateTime.UtcNow
                 });
             }
@@ -118,5 +120,43 @@ public class SalidasService : ISalidasService
         await _salidasRepo.RegistrarSalidaAsync(salida);
 
         return (true, "Salida registrada correctamente.", SalidaResponseDto.FromEntity(salida));
+    }
+
+    public async Task<(bool Success, string Message)> DevolverMaterialesAsync(int proyectoId, DevolucionRequestDto dto)
+    {
+        var proyecto = await _proyectosRepo.GetByIdAsync(proyectoId);
+        if (proyecto is null)
+            return (false, "El proyecto especificado no existe.");
+
+        if (!dto.Detalles.Any())
+            return (false, "La devolución debe tener al menos un material.");
+
+        foreach (var item in dto.Detalles)
+        {
+            if (item.Cantidad <= 0)
+                return (false, $"La cantidad del material ID {item.MaterialId} debe ser mayor a cero.");
+
+            var material = await _materialesRepo.GetByIdAsync(item.MaterialId);
+            if (material is null)
+                return (false, $"El material con ID {item.MaterialId} no existe.");
+
+            var stockProyecto = await _salidasRepo.GetStockProyectoAsync(proyectoId, item.MaterialId);
+            if (stockProyecto is null || stockProyecto.Stock < item.Cantidad)
+                return (false, $"Stock insuficiente en el proyecto para '{material.Nombre}'. " +
+                    $"Disponible: {stockProyecto?.Stock ?? 0}, Solicitado: {item.Cantidad}.");
+
+            var stockCentral = await _materialesRepo.GetStockCentralAsync(item.MaterialId);
+            if (stockCentral is null)
+                return (false, $"No se encontró el stock central para '{material.Nombre}'.");
+
+            stockProyecto.Stock -= item.Cantidad;
+            stockProyecto.UltimaActualizacion = DateTime.UtcNow;
+
+            stockCentral.Stock += item.Cantidad;
+            stockCentral.UltimaActualizacion = DateTime.UtcNow;
+        }
+
+        await _salidasRepo.GuardarCambiosAsync();
+        return (true, "Devolución registrada. El material fue reintegrado al almacén central.");
     }
 }

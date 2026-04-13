@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace BLL_ConstruccionAPI.Controllers;
-
 [Authorize]
 [ApiController]
 [Route("api/salidas")]
@@ -61,5 +60,14 @@ public class SalidaController : ControllerBase
         var (success, message, data) = await _service.RegistrarAsync(dto, usuarioId);
         if (!success) return BadRequest(new { message });
         return CreatedAtAction(nameof(GetById), new { id = data!.Id }, new { message, data });
+    }
+
+    // POST api/salidas/proyecto/{proyectoId}/devolver
+    [HttpPost("proyecto/{proyectoId:int}/devolver")]
+    public async Task<IActionResult> Devolver(int proyectoId, [FromBody] DevolucionRequestDto dto)
+    {
+        var (success, message) = await _service.DevolverMaterialesAsync(proyectoId, dto);
+        if (!success) return BadRequest(new { message });
+        return Ok(new { message });
     }
 }

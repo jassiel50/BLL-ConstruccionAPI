@@ -54,6 +54,12 @@ public class HerramientasService : IHerramientasService
         if (!Enum.TryParse<EstadoHerramienta>(dto.Estado, out var estadoHerramienta))
             return (false, $"Estado inválido. Valores permitidos: {string.Join(", ", Enum.GetNames<EstadoHerramienta>())}.", null);
 
+        if (!Enum.TryParse<Zona>(dto.Zona, out var zona))
+            return (false, $"Zona inválida. Valores permitidos: {string.Join(", ", Enum.GetNames<Zona>())}.", null);
+
+        if (!Enum.TryParse<TipoUbicacion>(dto.TipoUbicacion, out var tipoUbicacion))
+            return (false, $"TipoUbicacion inválido. Valores permitidos: {string.Join(", ", Enum.GetNames<TipoUbicacion>())}.", null);
+
         if (await _herramientasRepo.ExisteCodigoAsync(dto.Codigo))
             return (false, "Ya existe una herramienta con ese código.", null);
 
@@ -72,8 +78,11 @@ public class HerramientasService : IHerramientasService
             NumeroSerie = dto.NumeroSerie,
             CategoriaHerramientaId = dto.CategoriaHerramientaId,
             Estado = estadoHerramienta,
+            Zona = zona,
+            TipoUbicacion = tipoUbicacion,
             ValorAdquisicion = dto.ValorAdquisicion,
             FechaAdquisicion = dto.FechaAdquisicion,
+            Cantidad = dto.Cantidad,
             Activo = true,
             FechaRegistro = DateTime.UtcNow
         };
@@ -89,6 +98,12 @@ public class HerramientasService : IHerramientasService
 
         if (!Enum.TryParse<EstadoHerramienta>(dto.Estado, out var estadoActualizado))
             return (false, $"Estado inválido. Valores permitidos: {string.Join(", ", Enum.GetNames<EstadoHerramienta>())}.");
+
+        if (!Enum.TryParse<Zona>(dto.Zona, out var zonaActualizada))
+            return (false, $"Zona inválida. Valores permitidos: {string.Join(", ", Enum.GetNames<Zona>())}.");
+
+        if (!Enum.TryParse<TipoUbicacion>(dto.TipoUbicacion, out var tipoUbicacionActualizado))
+            return (false, $"TipoUbicacion inválido. Valores permitidos: {string.Join(", ", Enum.GetNames<TipoUbicacion>())}.");
 
         if (herramienta.Codigo != dto.Codigo && await _herramientasRepo.ExisteCodigoAsync(dto.Codigo))
             return (false, "Ya existe una herramienta con ese código.");
@@ -106,8 +121,11 @@ public class HerramientasService : IHerramientasService
         herramienta.NumeroSerie = dto.NumeroSerie;
         herramienta.CategoriaHerramientaId = dto.CategoriaHerramientaId;
         herramienta.Estado = estadoActualizado;
+        herramienta.Zona = zonaActualizada;
+        herramienta.TipoUbicacion = tipoUbicacionActualizado;
         herramienta.ValorAdquisicion = dto.ValorAdquisicion;
         herramienta.FechaAdquisicion = dto.FechaAdquisicion;
+        herramienta.Cantidad = dto.Cantidad;
 
         await _herramientasRepo.UpdateAsync(herramienta);
         return (true, "Herramienta actualizada correctamente.");

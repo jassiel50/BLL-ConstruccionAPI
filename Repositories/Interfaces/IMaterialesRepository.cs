@@ -14,6 +14,7 @@ public interface IMaterialesRepository
     Task DeleteAsync(Material material);
 
     // ─── AlmacenCentral ───────────────────────────────────────────────────────
+    Task<IEnumerable<AlmacenCentral>> GetAllStockCentralAsync();
     Task<AlmacenCentral?> GetStockCentralAsync(int materialId);
     Task CreateStockCentralAsync(AlmacenCentral almacen);
     Task UpdateStockCentralAsync(AlmacenCentral almacen);

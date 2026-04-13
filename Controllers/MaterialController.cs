@@ -42,6 +42,14 @@ public class MaterialController : ControllerBase
         return Ok(material);
     }
 
+    // GET api/materiales/almacen-central
+    [HttpGet("almacen-central")]
+    public async Task<IActionResult> GetAlmacenCentral()
+    {
+        var data = await _service.GetAlmacenCentralAsync();
+        return Ok(data);
+    }
+
     // GET api/materiales/{id}/stock
     [HttpGet("{id:int}/stock")]
     public async Task<IActionResult> GetStock(int id)

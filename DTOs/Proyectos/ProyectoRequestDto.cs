@@ -11,14 +11,12 @@ public class ProyectoRequestDto
     [StringLength(500)]
     public string Descripcion { get; set; } = string.Empty;
 
-    [Required]
-    [StringLength(300, MinimumLength = 1)]
+    [StringLength(300)]
     public string Ubicacion { get; set; } = string.Empty;
 
     [Range(1, int.MaxValue)]
     public int ClienteId { get; set; }
 
-    [Range(1, int.MaxValue)]
     public int ResponsableId { get; set; }
 
     public DateTime FechaInicio { get; set; }

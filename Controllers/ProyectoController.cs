@@ -2,6 +2,7 @@ using BLL_ConstruccionAPI.DTOs.Proyectos;
 using BLL_ConstruccionAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace BLL_ConstruccionAPI.Controllers;
 
@@ -46,6 +47,10 @@ public class ProyectoController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] ProyectoRequestDto dto)
     {
+        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            return Unauthorized(new { message = "Token inválido." });
+        dto.ResponsableId = userId;
+
         var (success, message, data) = await _service.CreateAsync(dto);
         if (!success) return BadRequest(new { message });
         return CreatedAtAction(nameof(GetById), new { id = data!.Id }, new { message, data });
@@ -55,6 +60,10 @@ public class ProyectoController : ControllerBase
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, [FromBody] ProyectoRequestDto dto)
     {
+        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            return Unauthorized(new { message = "Token inválido." });
+        dto.ResponsableId = userId;
+
         var (success, message) = await _service.UpdateAsync(id, dto);
         if (!success) return BadRequest(new { message });
         return Ok(new { message });

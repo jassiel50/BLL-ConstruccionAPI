@@ -16,6 +16,7 @@ namespace BLL_ConstruccionAPI.Models.Inventario.Herramientas
         public EstadoHerramienta Estado { get; set; } = EstadoHerramienta.Disponible;
         public decimal ValorAdquisicion { get; set; }
         public DateTime FechaAdquisicion { get; set; }
+        public int Cantidad { get; set; } = 1;
         public bool Activo { get; set; } = true;
         public DateTime FechaRegistro { get; set; } = DateTime.UtcNow;
 

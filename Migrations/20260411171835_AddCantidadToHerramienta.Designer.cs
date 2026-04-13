@@ -4,6 +4,7 @@ using BLL_ConstruccionAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BLL_ConstruccionAPI.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260411171835_AddCantidadToHerramienta")]
+    partial class AddCantidadToHerramienta
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -427,16 +430,14 @@ namespace BLL_ConstruccionAPI.Migrations
                     b.Property<decimal>("Stock")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<string>("TipoUbicacion")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("TipoUbicacion")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("UltimaActualizacion")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Zona")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("Zona")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -463,16 +464,8 @@ namespace BLL_ConstruccionAPI.Migrations
                     b.Property<decimal>("Stock")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<string>("TipoUbicacion")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<DateTime>("UltimaActualizacion")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("Zona")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 

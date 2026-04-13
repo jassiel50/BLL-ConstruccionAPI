@@ -62,6 +62,12 @@ public class MaterialesRepository : IMaterialesRepository
     }
 
     // ─── AlmacenCentral ───────────────────────────────────────────────────────
+    public async Task<IEnumerable<AlmacenCentral>> GetAllStockCentralAsync()
+        => await _context.AlmacenCentral
+            .AsNoTracking()
+            .Include(ac => ac.Material)
+            .ToListAsync();
+
     public async Task<AlmacenCentral?> GetStockCentralAsync(int materialId)
         => await _context.AlmacenCentral
             .Include(ac => ac.Material)

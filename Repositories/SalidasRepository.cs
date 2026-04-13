@@ -67,4 +67,7 @@ public class SalidasRepository : ISalidasRepository
         await _context.SaveChangesAsync();
         return salida.Id;
     }
+
+    public async Task GuardarCambiosAsync()
+        => await _context.SaveChangesAsync();
 }

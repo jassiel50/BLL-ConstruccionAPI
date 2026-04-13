@@ -10,4 +10,5 @@ public interface ISalidasService
     Task<SalidaResponseDto?> GetByIdAsync(int id);
     Task<IEnumerable<AlmacenProyectoResponseDto>> GetAlmacenProyectoAsync(int proyectoId);
     Task<(bool Success, string Message, SalidaResponseDto? Data)> RegistrarAsync(SalidaRequestDto dto, int usuarioId);
+    Task<(bool Success, string Message)> DevolverMaterialesAsync(int proyectoId, DevolucionRequestDto dto);
 }
