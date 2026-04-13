@@ -12,4 +12,10 @@ public class EntradaDetalleDto
 
     [Range(0.01, double.MaxValue)]
     public decimal PrecioUnitario { get; set; }
+
+    [Required]
+    public string Zona { get; set; } = string.Empty;
+
+    [Required]
+    public string TipoUbicacion { get; set; } = string.Empty;
 }

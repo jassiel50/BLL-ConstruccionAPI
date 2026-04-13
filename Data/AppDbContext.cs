@@ -146,6 +146,14 @@ public class AppDbContext : DbContext
             .Property(a => a.TipoUbicacion)
             .HasConversion<string>();
 
+        modelBuilder.Entity<EntradaDetalle>()
+            .Property(e => e.Zona)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<EntradaDetalle>()
+            .Property(e => e.TipoUbicacion)
+            .HasConversion<string>();
+
         modelBuilder.Entity<AlmacenProyecto>()
             .Property(a => a.Zona)
             .HasConversion<string>();

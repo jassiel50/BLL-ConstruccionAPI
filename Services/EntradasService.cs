@@ -1,4 +1,5 @@
 using BLL_ConstruccionAPI.DTOs.Entradas;
+using BLL_ConstruccionAPI.Models.Enums;
 using BLL_ConstruccionAPI.Models.Inventario.Materiales;
 using BLL_ConstruccionAPI.Repositories.Interfaces;
 using BLL_ConstruccionAPI.Services.Interfaces;
@@ -56,6 +57,12 @@ public class EntradasService : IEntradasService
             if (item.PrecioUnitario <= 0)
                 return (false, $"El precio unitario del material ID {item.MaterialId} debe ser mayor a cero.", null);
 
+            if (!Enum.TryParse<Zona>(item.Zona, out var zona))
+                return (false, $"Zona inválida para el material ID {item.MaterialId}. Valores permitidos: {string.Join(", ", Enum.GetNames<Zona>())}.", null);
+
+            if (!Enum.TryParse<TipoUbicacion>(item.TipoUbicacion, out var tipoUbicacion))
+                return (false, $"TipoUbicacion inválido para el material ID {item.MaterialId}. Valores permitidos: {string.Join(", ", Enum.GetNames<TipoUbicacion>())}.", null);
+
             var material = await _materialesRepo.GetByIdAsync(item.MaterialId);
             if (material is null || !material.Activo)
                 return (false, $"El material con ID {item.MaterialId} no existe o está inactivo.", null);
@@ -68,7 +75,9 @@ public class EntradasService : IEntradasService
                 MaterialId = item.MaterialId,
                 Cantidad = item.Cantidad,
                 PrecioUnitario = item.PrecioUnitario,
-                Subtotal = subtotal
+                Subtotal = subtotal,
+                Zona = zona,
+                TipoUbicacion = tipoUbicacion
             });
 
             // Carga el registro de AlmacenCentral al Change Tracker y actualiza en memoria.
@@ -79,6 +88,8 @@ public class EntradasService : IEntradasService
                 return (false, $"No existe registro de almacén central para el material ID {item.MaterialId}.", null);
 
             stockCentral.Stock += item.Cantidad;
+            stockCentral.Zona = zona;
+            stockCentral.TipoUbicacion = tipoUbicacion;
             stockCentral.UltimaActualizacion = DateTime.UtcNow;
         }
 

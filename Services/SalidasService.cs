@@ -88,8 +88,8 @@ public class SalidasService : ISalidasService
                     ProyectoId = dto.ProyectoId,
                     MaterialId = item.MaterialId,
                     Stock = item.Cantidad,
-                    Zona = material.Zona,
-                    TipoUbicacion = material.TipoUbicacion,
+                    Zona = stockCentral.Zona,
+                    TipoUbicacion = stockCentral.TipoUbicacion,
                     UltimaActualizacion = DateTime.UtcNow
                 });
             }

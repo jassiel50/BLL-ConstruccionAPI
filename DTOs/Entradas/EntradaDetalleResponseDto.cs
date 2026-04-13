@@ -21,7 +21,7 @@ public class EntradaDetalleResponseDto
         Cantidad = e.Cantidad,
         PrecioUnitario = e.PrecioUnitario,
         Subtotal = e.Subtotal,
-        Zona = e.Material?.Zona.ToString() ?? string.Empty,
-        TipoUbicacion = e.Material?.TipoUbicacion.ToString() ?? string.Empty
+        Zona = e.Zona.ToString(),
+        TipoUbicacion = e.TipoUbicacion.ToString()
     };
 }
