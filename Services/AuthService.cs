@@ -220,8 +220,8 @@ public class AuthService : IAuthService
         {
             UsuarioId = usuario.Id,
             Token = refreshToken,
-            FechaExpira = DateTime.UtcNow.AddDays(
-                int.Parse(_config["Jwt:RefreshTokenDays"]!)),
+            FechaExpira = DateTime.UtcNow.AddMinutes(
+                int.Parse(_config["Jwt:RefreshTokenMinutes"]!)),
             Revocado = false,
             FechaCreacion = DateTime.UtcNow,
             IpOrigen = ipOrigen
