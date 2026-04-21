@@ -12,7 +12,11 @@ public class FaseResponseDto
     public DateTime FechaLimite { get; set; }
     public DateTime? FechaCompletada { get; set; }
     public string Estado { get; set; } = string.Empty;
-    public bool Atrasada => Estado != "Completada" && FechaLimite < DateTime.UtcNow;
+    public bool Atrasada => Estado != "Completada" && FechaLimite.Date < DateTime.UtcNow.Date.AddDays(-1);
+
+    public bool PorVencer => Estado != "Completada"
+        && FechaLimite.Date >= DateTime.UtcNow.Date
+        && FechaLimite.Date <= DateTime.UtcNow.Date.AddDays(2);
 
     public static FaseResponseDto FromEntity(FaseProyecto f) => new()
     {

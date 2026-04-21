@@ -34,6 +34,20 @@ public class FasesRepository : IFasesRepository
             .OrderBy(f => f.FechaLimite)
             .ToListAsync();
 
+    public async Task<List<FaseProyecto>> GetPorVencerAsync()
+    {
+        var hoy = DateTime.UtcNow.Date;
+        var limite = hoy.AddDays(2);
+        return await _context.FaseProyectos
+            .AsNoTracking()
+            .Include(f => f.Proyecto)
+            .Where(f => f.Estado != EstadoFase.Completada
+                     && f.FechaLimite.Date >= hoy
+                     && f.FechaLimite.Date <= limite)
+            .OrderBy(f => f.FechaLimite)
+            .ToListAsync();
+    }
+
     public async Task<int> CreateAsync(FaseProyecto fase)
     {
         _context.FaseProyectos.Add(fase);

@@ -10,4 +10,5 @@ public interface IFasesService
     Task<(bool Success, string Message)> CompletarAsync(int id);
     Task<(bool Success, string Message)> DeleteAsync(int id);
     Task<List<FaseResponseDto>> GetAtrasadasAsync();
+    Task<List<FaseResponseDto>> GetPorVencerAsync();
 }

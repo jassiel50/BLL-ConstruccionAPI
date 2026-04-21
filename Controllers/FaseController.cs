@@ -67,4 +67,12 @@ public class FaseController : ControllerBase
         var fases = await _service.GetAtrasadasAsync();
         return Ok(fases);
     }
+
+    // GET api/fases/por-vencer
+    [HttpGet("api/fases/por-vencer")]
+    public async Task<IActionResult> GetPorVencer()
+    {
+        var fases = await _service.GetPorVencerAsync();
+        return Ok(fases);
+    }
 }

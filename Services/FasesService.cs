@@ -90,4 +90,10 @@ public class FasesService : IFasesService
         var fases = await _fasesRepo.GetAtrasadasAsync();
         return fases.Select(FaseResponseDto.FromEntity).ToList();
     }
+
+    public async Task<List<FaseResponseDto>> GetPorVencerAsync()
+    {
+        var fases = await _fasesRepo.GetPorVencerAsync();
+        return fases.Select(FaseResponseDto.FromEntity).ToList();
+    }
 }
