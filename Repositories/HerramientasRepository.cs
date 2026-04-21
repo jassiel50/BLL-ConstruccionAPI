@@ -81,6 +81,10 @@ public class HerramientasRepository : IHerramientasRepository
         => await _context.AsignacionesHerramienta
             .FirstOrDefaultAsync(a => a.HerramientaId == herramientaId && a.Estado == EstadoAsignacion.Asignada);
 
+    public async Task<int> GetCantidadAsignadaAsync(int herramientaId)
+        => await _context.AsignacionesHerramienta
+            .CountAsync(a => a.HerramientaId == herramientaId && a.Estado == EstadoAsignacion.Asignada);
+
     public async Task<int> CreateAsignacionAsync(AsignacionHerramienta asignacion)
     {
         _context.AsignacionesHerramienta.Add(asignacion);

@@ -18,6 +18,7 @@ public interface IHerramientasRepository
     Task<IEnumerable<AsignacionHerramienta>> GetAsignacionesByHerramientaAsync(int herramientaId);
     Task<AsignacionHerramienta?> GetAsignacionByIdAsync(int id);
     Task<AsignacionHerramienta?> GetAsignacionActivaAsync(int herramientaId);
+    Task<int> GetCantidadAsignadaAsync(int herramientaId);
     Task<int> CreateAsignacionAsync(AsignacionHerramienta asignacion);
     Task UpdateAsignacionAsync(AsignacionHerramienta asignacion);
 

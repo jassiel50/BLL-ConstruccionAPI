@@ -28,19 +28,35 @@ public class HerramientasService : IHerramientasService
     public async Task<IEnumerable<HerramientaResponseDto>> GetAllAsync()
     {
         var herramientas = await _herramientasRepo.GetAllAsync();
-        return herramientas.Select(HerramientaResponseDto.FromEntity);
+        var result = new List<HerramientaResponseDto>();
+        foreach (var h in herramientas)
+        {
+            var asignadas = await _herramientasRepo.GetCantidadAsignadaAsync(h.Id);
+            result.Add(HerramientaResponseDto.FromEntity(h, h.Cantidad - asignadas));
+        }
+        return result;
     }
 
     public async Task<IEnumerable<HerramientaResponseDto>> GetDisponiblesAsync()
     {
-        var herramientas = await _herramientasRepo.GetDisponiblesAsync();
-        return herramientas.Select(HerramientaResponseDto.FromEntity);
+        var herramientas = await _herramientasRepo.GetAllAsync();
+        var result = new List<HerramientaResponseDto>();
+        foreach (var h in herramientas.Where(h => h.Activo))
+        {
+            var asignadas = await _herramientasRepo.GetCantidadAsignadaAsync(h.Id);
+            var disponibles = h.Cantidad - asignadas;
+            if (disponibles > 0)
+                result.Add(HerramientaResponseDto.FromEntity(h, disponibles));
+        }
+        return result;
     }
 
     public async Task<HerramientaResponseDto?> GetByIdAsync(int id)
     {
         var herramienta = await _herramientasRepo.GetByIdAsync(id);
-        return herramienta is null ? null : HerramientaResponseDto.FromEntity(herramienta);
+        if (herramienta is null) return null;
+        var asignadas = await _herramientasRepo.GetCantidadAsignadaAsync(herramienta.Id);
+        return HerramientaResponseDto.FromEntity(herramienta, herramienta.Cantidad - asignadas);
     }
 
     public async Task<IEnumerable<AsignacionHerramientaResponseDto>> GetAsignacionesAsync(int herramientaId)
@@ -149,8 +165,12 @@ public class HerramientasService : IHerramientasService
         if (herramienta is null || !herramienta.Activo)
             return (false, "Herramienta no encontrada.", null);
 
-        if (herramienta.Estado != EstadoHerramienta.Disponible)
-            return (false, $"La herramienta no está disponible. Estado actual: {herramienta.Estado}.", null);
+        if (herramienta.Estado == EstadoHerramienta.Baja)
+            return (false, "La herramienta está dada de baja.", null);
+
+        var cantidadAsignada = await _herramientasRepo.GetCantidadAsignadaAsync(dto.HerramientaId);
+        if (cantidadAsignada >= herramienta.Cantidad)
+            return (false, $"No hay unidades disponibles de esta herramienta. Cantidad total: {herramienta.Cantidad}, asignadas: {cantidadAsignada}.", null);
 
         var proyecto = await _proyectosRepo.GetByIdAsync(dto.ProyectoId);
         if (proyecto is null)
@@ -167,7 +187,9 @@ public class HerramientasService : IHerramientasService
             Observaciones = dto.Observaciones
         };
 
-        herramienta.Estado = EstadoHerramienta.Asignada;
+        herramienta.Estado = (cantidadAsignada + 1 >= herramienta.Cantidad)
+            ? EstadoHerramienta.Asignada
+            : EstadoHerramienta.Disponible;
         await _herramientasRepo.AsignarHerramientaAsync(asignacion, herramienta);
 
         return (true, "Herramienta asignada correctamente.", AsignacionHerramientaResponseDto.FromEntity(asignacion));
@@ -189,7 +211,11 @@ public class HerramientasService : IHerramientasService
         if (herramienta is null)
             return (false, "La herramienta asociada a la asignación no fue encontrada.");
 
-        herramienta.Estado = EstadoHerramienta.Disponible;
+        // Después de marcar como devuelta, la cantidad asignada activa baja en 1
+        var cantidadAsignadaTrasDevolucion = await _herramientasRepo.GetCantidadAsignadaAsync(herramienta.Id) - 1;
+        herramienta.Estado = cantidadAsignadaTrasDevolucion > 0
+            ? EstadoHerramienta.Asignada
+            : EstadoHerramienta.Disponible;
 
         await _herramientasRepo.DevolverHerramientaAsync(asignacion, herramienta);
 

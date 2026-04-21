@@ -15,10 +15,11 @@ public class HerramientaResponseDto
     public decimal ValorAdquisicion { get; set; }
     public DateTime FechaAdquisicion { get; set; }
     public int Cantidad { get; set; }
+    public int CantidadDisponible { get; set; }
     public string Zona { get; set; } = string.Empty;
     public string TipoUbicacion { get; set; } = string.Empty;
 
-    public static HerramientaResponseDto FromEntity(Herramienta e) => new()
+    public static HerramientaResponseDto FromEntity(Herramienta e, int? cantidadDisponible = null) => new()
     {
         Id = e.Id,
         Nombre = e.Nombre,
@@ -31,6 +32,7 @@ public class HerramientaResponseDto
         ValorAdquisicion = e.ValorAdquisicion,
         FechaAdquisicion = e.FechaAdquisicion,
         Cantidad = e.Cantidad,
+        CantidadDisponible = cantidadDisponible ?? e.Cantidad,
         Zona = e.Zona.ToString(),
         TipoUbicacion = e.TipoUbicacion.ToString()
     };
