@@ -1,3 +1,5 @@
+using BLL_ConstruccionAPI.DTOs.Herramientas;
+using BLL_ConstruccionAPI.DTOs.Materiales;
 using BLL_ConstruccionAPI.DTOs.Proyectos;
 using BLL_ConstruccionAPI.Models.Enums;
 using BLL_ConstruccionAPI.Models.Inventario.Proyectos;
@@ -112,5 +114,17 @@ public class ProyectosService : IProyectosService
 
         await _proyectosRepo.TerminarAsync(proyecto);
         return (true, "Proyecto marcado como Terminado correctamente.");
+    }
+
+    public async Task<IEnumerable<AlmacenProyectoResponseDto>> GetMaterialesAsync(int proyectoId)
+    {
+        var materiales = await _proyectosRepo.GetMaterialesAsync(proyectoId);
+        return materiales.Select(AlmacenProyectoResponseDto.FromEntity);
+    }
+
+    public async Task<IEnumerable<AsignacionHerramientaResponseDto>> GetHerramientasAsync(int proyectoId)
+    {
+        var herramientas = await _proyectosRepo.GetHerramientasActivasAsync(proyectoId);
+        return herramientas.Select(AsignacionHerramientaResponseDto.FromEntity);
     }
 }

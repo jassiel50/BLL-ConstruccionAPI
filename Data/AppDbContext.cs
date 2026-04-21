@@ -31,6 +31,7 @@ public class AppDbContext : DbContext
 
     // ─── PROYECTOS ────────────────────────────────────────────────────────────
     public DbSet<Proyecto> Proyectos { get; set; }
+    public DbSet<FaseProyecto> FaseProyectos { get; set; }
 
     // ─── MATERIALES ───────────────────────────────────────────────────────────
     public DbSet<Material> Materiales { get; set; }
@@ -161,6 +162,18 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<AlmacenProyecto>()
             .Property(a => a.TipoUbicacion)
             .HasConversion<string>();
+
+        // ─── FaseProyecto ─────────────────────────────────────────────────────
+
+        modelBuilder.Entity<FaseProyecto>()
+            .Property(f => f.Estado)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<FaseProyecto>()
+            .HasOne(f => f.Proyecto)
+            .WithMany()
+            .HasForeignKey(f => f.ProyectoId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // ─── Índices únicos ───────────────────────────────────────────────────
 

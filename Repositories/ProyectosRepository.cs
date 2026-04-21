@@ -1,5 +1,7 @@
 using BLL_ConstruccionAPI.Data;
 using BLL_ConstruccionAPI.Models.Enums;
+using BLL_ConstruccionAPI.Models.Inventario.Herramientas;
+using BLL_ConstruccionAPI.Models.Inventario.Materiales;
 using BLL_ConstruccionAPI.Models.Inventario.Proyectos;
 using BLL_ConstruccionAPI.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -60,4 +62,20 @@ public class ProyectosRepository : IProyectosRepository
         _context.Proyectos.Update(proyecto);
         await _context.SaveChangesAsync();
     }
+
+    public async Task<IEnumerable<AlmacenProyecto>> GetMaterialesAsync(int proyectoId)
+        => await _context.AlmacenProyecto
+            .AsNoTracking()
+            .Include(ap => ap.Material)
+                .ThenInclude(m => m!.UnidadMedida)
+            .Where(ap => ap.ProyectoId == proyectoId)
+            .ToListAsync();
+
+    public async Task<IEnumerable<AsignacionHerramienta>> GetHerramientasActivasAsync(int proyectoId)
+        => await _context.AsignacionesHerramienta
+            .AsNoTracking()
+            .Include(a => a.Herramienta)
+            .Where(a => a.ProyectoId == proyectoId && a.Estado == EstadoAsignacion.Asignada)
+            .OrderByDescending(a => a.FechaAsignacion)
+            .ToListAsync();
 }

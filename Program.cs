@@ -31,6 +31,10 @@ builder.Services.AddScoped<IProveedoresClientesService, ProveedoresClientesServi
 builder.Services.AddScoped<IProyectosRepository, ProyectosRepository>();
 builder.Services.AddScoped<IProyectosService, ProyectosService>();
 
+// Fases
+builder.Services.AddScoped<IFasesRepository, FasesRepository>();
+builder.Services.AddScoped<IFasesService, FasesService>();
+
 // Materiales
 builder.Services.AddScoped<IMaterialesRepository, MaterialesRepository>();
 builder.Services.AddScoped<IMaterialesService, MaterialesService>();

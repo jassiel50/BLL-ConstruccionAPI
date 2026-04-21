@@ -86,4 +86,20 @@ public class ProyectoController : ControllerBase
         if (!success) return BadRequest(new { message });
         return Ok(new { message });
     }
+
+    // GET api/proyectos/{id}/materiales
+    [HttpGet("{id:int}/materiales")]
+    public async Task<IActionResult> GetMateriales(int id)
+    {
+        var materiales = await _service.GetMaterialesAsync(id);
+        return Ok(materiales);
+    }
+
+    // GET api/proyectos/{id}/herramientas
+    [HttpGet("{id:int}/herramientas")]
+    public async Task<IActionResult> GetHerramientas(int id)
+    {
+        var herramientas = await _service.GetHerramientasAsync(id);
+        return Ok(herramientas);
+    }
 }
