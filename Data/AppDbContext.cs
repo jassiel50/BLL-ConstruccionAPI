@@ -4,6 +4,7 @@ using BLL_ConstruccionAPI.Models.Inventario;
 using BLL_ConstruccionAPI.Models.Inventario.Cátalogos;
 using BLL_ConstruccionAPI.Models.Inventario.Herramientas;
 using BLL_ConstruccionAPI.Models.Inventario.Materiales;
+using BLL_ConstruccionAPI.Models.Inventario.Perdidas;
 using BLL_ConstruccionAPI.Models.Inventario.Proyectos;
 using Microsoft.EntityFrameworkCore;
 
@@ -42,9 +43,15 @@ public class AppDbContext : DbContext
     public DbSet<Salida> Salidas { get; set; }
     public DbSet<SalidaDetalle> SalidasDetalle { get; set; }
 
+    // ─── DEVOLUCIONES MATERIAL ────────────────────────────────────────────────
+    public DbSet<DevolucionMaterial> DevolucionesMaterial { get; set; }
+
     // ─── HERRAMIENTAS ─────────────────────────────────────────────────────────
     public DbSet<Herramienta> Herramientas { get; set; }
     public DbSet<AsignacionHerramienta> AsignacionesHerramienta { get; set; }
+
+    // ─── PÉRDIDAS ─────────────────────────────────────────────────────────────
+    public DbSet<RegistroPerdida> RegistrosPerdidas { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -174,6 +181,56 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(f => f.ProyectoId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // ─── RegistroPerdida ──────────────────────────────────────────────────
+
+        modelBuilder.Entity<RegistroPerdida>()
+            .Property(r => r.Tipo)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<RegistroPerdida>()
+            .Property(r => r.Motivo)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<RegistroPerdida>()
+            .Property(r => r.CantidadPerdida)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<RegistroPerdida>()
+            .HasOne(r => r.Material)
+            .WithMany()
+            .HasForeignKey(r => r.MaterialId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<RegistroPerdida>()
+            .HasOne(r => r.Herramienta)
+            .WithMany()
+            .HasForeignKey(r => r.HerramientaId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<RegistroPerdida>()
+            .HasOne(r => r.Proyecto)
+            .WithMany()
+            .HasForeignKey(r => r.ProyectoId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // ─── DevolucionMaterial ───────────────────────────────────────────────
+
+        modelBuilder.Entity<DevolucionMaterial>()
+            .Property(d => d.CantidadDevuelta)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<DevolucionMaterial>()
+            .HasOne(d => d.Proyecto)
+            .WithMany()
+            .HasForeignKey(d => d.ProyectoId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<DevolucionMaterial>()
+            .HasOne(d => d.Material)
+            .WithMany()
+            .HasForeignKey(d => d.MaterialId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         // ─── Índices únicos ───────────────────────────────────────────────────
 

@@ -1,5 +1,6 @@
 using System.Text;
 using BLL_ConstruccionAPI.Data;
+using QuestPDF.Infrastructure;
 using BLL_ConstruccionAPI.Repositories;
 using BLL_ConstruccionAPI.Repositories.Interfaces;
 using BLL_ConstruccionAPI.Services;
@@ -50,6 +51,18 @@ builder.Services.AddScoped<IEntradasService, EntradasService>();
 // Salidas
 builder.Services.AddScoped<ISalidasRepository, SalidasRepository>();
 builder.Services.AddScoped<ISalidasService, SalidasService>();
+
+// Alertas
+builder.Services.AddScoped<IAlertasService, AlertasService>();
+
+// Pérdidas
+builder.Services.AddScoped<IPerdidasService, PerdidasService>();
+
+// Devoluciones de material
+builder.Services.AddScoped<IDevolucionesMaterialService, DevolucionesMaterialService>();
+
+// Reportes
+builder.Services.AddScoped<IReportesService, ReportesService>();
 
 // JWT
 var jwtKey = builder.Configuration["Jwt:SecretKey"];
@@ -104,6 +117,9 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
+
+// QuestPDF licencia Community
+QuestPDF.Settings.License = LicenseType.Community;
 
 var app = builder.Build();
 
