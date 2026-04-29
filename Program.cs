@@ -17,8 +17,11 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Repositorios y Servicios
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IBitacoraService, BitacoraService>();
+builder.Services.AddScoped<IUsuariosService, UsuariosService>();
 
 // Catálogos
 builder.Services.AddScoped<ICatalogosRepository, CatalogosRepository>();

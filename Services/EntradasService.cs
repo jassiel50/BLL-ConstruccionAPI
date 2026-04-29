@@ -3,6 +3,7 @@ using BLL_ConstruccionAPI.Models.Enums;
 using BLL_ConstruccionAPI.Models.Inventario.Materiales;
 using BLL_ConstruccionAPI.Repositories.Interfaces;
 using BLL_ConstruccionAPI.Services.Interfaces;
+using System.Security.Claims;
 
 namespace BLL_ConstruccionAPI.Services;
 
@@ -11,15 +12,21 @@ public class EntradasService : IEntradasService
     private readonly IEntradasRepository _entradasRepo;
     private readonly IMaterialesRepository _materialesRepo;
     private readonly IProveedoresClientesRepository _provClientesRepo;
+    private readonly IBitacoraService _bitacora;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     public EntradasService(
         IEntradasRepository entradasRepo,
         IMaterialesRepository materialesRepo,
-        IProveedoresClientesRepository provClientesRepo)
+        IProveedoresClientesRepository provClientesRepo,
+        IBitacoraService bitacora,
+        IHttpContextAccessor httpContextAccessor)
     {
         _entradasRepo = entradasRepo;
         _materialesRepo = materialesRepo;
         _provClientesRepo = provClientesRepo;
+        _bitacora = bitacora;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<IEnumerable<EntradaResponseDto>> GetAllAsync()
@@ -107,6 +114,17 @@ public class EntradasService : IEntradasService
         // Único SaveChangesAsync: guarda Entrada + Detalles + AlmacenCentral actualizado
         await _entradasRepo.RegistrarEntradaAsync(entrada);
 
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Registró", "Entrada", $"Entrada folio '{entrada.NumeroFolio}' con {detalles.Count} material(es)");
+
         return (true, "Entrada registrada correctamente.", EntradaResponseDto.FromEntity(entrada));
+    }
+
+    private (int UsuarioId, string NombreUsuario) GetUsuarioInfo()
+    {
+        var user = _httpContextAccessor.HttpContext?.User;
+        var id = int.TryParse(user?.FindFirstValue(ClaimTypes.NameIdentifier), out var parsed) ? parsed : 0;
+        var nombre = user?.FindFirstValue("nombreUsuario") ?? "Sistema";
+        return (id, nombre);
     }
 }

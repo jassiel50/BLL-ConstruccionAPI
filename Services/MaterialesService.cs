@@ -3,6 +3,7 @@ using BLL_ConstruccionAPI.Models.Enums;
 using BLL_ConstruccionAPI.Models.Inventario.Materiales;
 using BLL_ConstruccionAPI.Repositories.Interfaces;
 using BLL_ConstruccionAPI.Services.Interfaces;
+using System.Security.Claims;
 
 namespace BLL_ConstruccionAPI.Services;
 
@@ -10,11 +11,19 @@ public class MaterialesService : IMaterialesService
 {
     private readonly IMaterialesRepository _materialesRepo;
     private readonly ICatalogosRepository _catalogosRepo;
+    private readonly IBitacoraService _bitacora;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public MaterialesService(IMaterialesRepository materialesRepo, ICatalogosRepository catalogosRepo)
+    public MaterialesService(
+        IMaterialesRepository materialesRepo,
+        ICatalogosRepository catalogosRepo,
+        IBitacoraService bitacora,
+        IHttpContextAccessor httpContextAccessor)
     {
         _materialesRepo = materialesRepo;
         _catalogosRepo = catalogosRepo;
+        _bitacora = bitacora;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<IEnumerable<MaterialResponseDto>> GetAllAsync()
@@ -85,6 +94,9 @@ public class MaterialesService : IMaterialesService
             UltimaActualizacion = DateTime.UtcNow
         });
 
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Creó", "Material", $"Material '{material.Nombre}' creado");
+
         return (true, "Material registrado correctamente.", MaterialResponseDto.FromEntity(material));
     }
 
@@ -113,6 +125,8 @@ public class MaterialesService : IMaterialesService
         material.PrecioUnitario = dto.PrecioUnitario;
 
         await _materialesRepo.UpdateAsync(material);
+        var (uid2, uname2) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid2, uname2, "Actualizó", "Material", $"Material '{material.Nombre}' actualizado");
         return (true, "Material actualizado correctamente.");
     }
 
@@ -122,6 +136,16 @@ public class MaterialesService : IMaterialesService
         if (material is null) return (false, "Material no encontrado.");
 
         await _materialesRepo.DeleteAsync(material);
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Eliminó", "Material", $"Material '{material.Nombre}' eliminado");
         return (true, "Material desactivado correctamente.");
+    }
+
+    private (int UsuarioId, string NombreUsuario) GetUsuarioInfo()
+    {
+        var user = _httpContextAccessor.HttpContext?.User;
+        var id = int.TryParse(user?.FindFirstValue(ClaimTypes.NameIdentifier), out var parsed) ? parsed : 0;
+        var nombre = user?.FindFirstValue("nombreUsuario") ?? "Sistema";
+        return (id, nombre);
     }
 }

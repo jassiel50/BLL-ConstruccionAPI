@@ -11,6 +11,8 @@ public interface IUsuarioRepository
     Task<bool> ExisteEmailAsync(string email);
     Task<int> CreateAsync(Usuario usuario);
     Task UpdateAsync(Usuario usuario);
+    Task<IEnumerable<Usuario>> GetAllAsync();
+    Task<Usuario?> GetByIdConRolAsync(int id);
 
     // Tokens
     Task<TokenSesion?> GetTokenAsync(string token);

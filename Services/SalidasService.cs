@@ -3,6 +3,7 @@ using BLL_ConstruccionAPI.DTOs.Salidas;
 using BLL_ConstruccionAPI.Models.Inventario.Materiales;
 using BLL_ConstruccionAPI.Repositories.Interfaces;
 using BLL_ConstruccionAPI.Services.Interfaces;
+using System.Security.Claims;
 
 namespace BLL_ConstruccionAPI.Services;
 
@@ -11,15 +12,21 @@ public class SalidasService : ISalidasService
     private readonly ISalidasRepository _salidasRepo;
     private readonly IMaterialesRepository _materialesRepo;
     private readonly IProyectosRepository _proyectosRepo;
+    private readonly IBitacoraService _bitacora;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     public SalidasService(
         ISalidasRepository salidasRepo,
         IMaterialesRepository materialesRepo,
-        IProyectosRepository proyectosRepo)
+        IProyectosRepository proyectosRepo,
+        IBitacoraService bitacora,
+        IHttpContextAccessor httpContextAccessor)
     {
         _salidasRepo = salidasRepo;
         _materialesRepo = materialesRepo;
         _proyectosRepo = proyectosRepo;
+        _bitacora = bitacora;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<IEnumerable<SalidaResponseDto>> GetAllAsync()
@@ -119,6 +126,9 @@ public class SalidasService : ISalidasService
         // Único SaveChangesAsync: guarda Salida + Detalles + AlmacenCentral - stock + AlmacenProyecto + stock
         await _salidasRepo.RegistrarSalidaAsync(salida);
 
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Registró", "Salida", $"Salida folio '{salida.NumeroFolio}' al proyecto '{proyecto.Nombre}'");
+
         return (true, "Salida registrada correctamente.", SalidaResponseDto.FromEntity(salida));
     }
 
@@ -158,5 +168,13 @@ public class SalidasService : ISalidasService
 
         await _salidasRepo.GuardarCambiosAsync();
         return (true, "Devolución registrada. El material fue reintegrado al almacén central.");
+    }
+
+    private (int UsuarioId, string NombreUsuario) GetUsuarioInfo()
+    {
+        var user = _httpContextAccessor.HttpContext?.User;
+        var id = int.TryParse(user?.FindFirstValue(ClaimTypes.NameIdentifier), out var parsed) ? parsed : 0;
+        var nombre = user?.FindFirstValue("nombreUsuario") ?? "Sistema";
+        return (id, nombre);
     }
 }

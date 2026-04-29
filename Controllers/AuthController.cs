@@ -19,10 +19,12 @@ public class AuthController : ControllerBase
     }
 
     // POST api/auth/register
-    [AllowAnonymous]
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequestDto dto)
     {
+        var rolId = User.FindFirstValue("rolId");
+        if (rolId != "1") return Forbid();
+
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "";
         var (success, message) = await _authService.RegisterAsync(dto, ip);
 

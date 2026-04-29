@@ -3,6 +3,7 @@ using BLL_ConstruccionAPI.Models.Enums;
 using BLL_ConstruccionAPI.Models.Inventario.Herramientas;
 using BLL_ConstruccionAPI.Repositories.Interfaces;
 using BLL_ConstruccionAPI.Services.Interfaces;
+using System.Security.Claims;
 
 namespace BLL_ConstruccionAPI.Services;
 
@@ -11,6 +12,8 @@ public class HerramientasService : IHerramientasService
     private readonly IHerramientasRepository _herramientasRepo;
     private readonly ICatalogosRepository _catalogosRepo;
     private readonly IProyectosRepository _proyectosRepo;
+    private readonly IBitacoraService _bitacora;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     private static readonly EstadoHerramienta[] EstadosValidos =
         [EstadoHerramienta.Disponible, EstadoHerramienta.Asignada, EstadoHerramienta.Mantenimiento, EstadoHerramienta.Baja];
@@ -18,11 +21,15 @@ public class HerramientasService : IHerramientasService
     public HerramientasService(
         IHerramientasRepository herramientasRepo,
         ICatalogosRepository catalogosRepo,
-        IProyectosRepository proyectosRepo)
+        IProyectosRepository proyectosRepo,
+        IBitacoraService bitacora,
+        IHttpContextAccessor httpContextAccessor)
     {
         _herramientasRepo = herramientasRepo;
         _catalogosRepo = catalogosRepo;
         _proyectosRepo = proyectosRepo;
+        _bitacora = bitacora;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<IEnumerable<HerramientaResponseDto>> GetAllAsync()
@@ -104,6 +111,8 @@ public class HerramientasService : IHerramientasService
         };
 
         await _herramientasRepo.CreateAsync(herramienta);
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Creó", "Herramienta", $"Herramienta '{herramienta.Nombre}' creada");
         return (true, "Herramienta registrada correctamente.", HerramientaResponseDto.FromEntity(herramienta));
     }
 
@@ -144,6 +153,8 @@ public class HerramientasService : IHerramientasService
         herramienta.Cantidad = dto.Cantidad;
 
         await _herramientasRepo.UpdateAsync(herramienta);
+        var (uid2, uname2) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid2, uname2, "Actualizó", "Herramienta", $"Herramienta '{herramienta.Nombre}' actualizada");
         return (true, "Herramienta actualizada correctamente.");
     }
 
@@ -156,6 +167,8 @@ public class HerramientasService : IHerramientasService
             return (false, "No se puede dar de baja una herramienta que está asignada a un proyecto.");
 
         await _herramientasRepo.DeleteAsync(herramienta);
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Eliminó", "Herramienta", $"Herramienta '{herramienta.Nombre}' eliminada");
         return (true, "Herramienta dada de baja correctamente.");
     }
 
@@ -192,6 +205,9 @@ public class HerramientasService : IHerramientasService
             : EstadoHerramienta.Disponible;
         await _herramientasRepo.AsignarHerramientaAsync(asignacion, herramienta);
 
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Asignó", "Herramienta", $"'{herramienta.Nombre}' asignada al proyecto '{proyecto.Nombre}'");
+
         return (true, "Herramienta asignada correctamente.", AsignacionHerramientaResponseDto.FromEntity(asignacion));
     }
 
@@ -219,6 +235,17 @@ public class HerramientasService : IHerramientasService
 
         await _herramientasRepo.DevolverHerramientaAsync(asignacion, herramienta);
 
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Devolvió", "Herramienta", $"'{herramienta.Nombre}' devuelta");
+
         return (true, "Herramienta devuelta correctamente.");
+    }
+
+    private (int UsuarioId, string NombreUsuario) GetUsuarioInfo()
+    {
+        var user = _httpContextAccessor.HttpContext?.User;
+        var id = int.TryParse(user?.FindFirstValue(ClaimTypes.NameIdentifier), out var parsed) ? parsed : 0;
+        var nombre = user?.FindFirstValue("nombreUsuario") ?? "Sistema";
+        return (id, nombre);
     }
 }

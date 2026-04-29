@@ -95,4 +95,15 @@ public class UsuarioRepository : IUsuarioRepository
         _context.LogAccesos.Add(log);
         await _context.SaveChangesAsync();
     }
+
+    public async Task<IEnumerable<Usuario>> GetAllAsync()
+        => await _context.Usuarios
+            .Include(u => u.Rol)
+            .OrderByDescending(u => u.FechaCreacion)
+            .ToListAsync();
+
+    public async Task<Usuario?> GetByIdConRolAsync(int id)
+        => await _context.Usuarios
+            .Include(u => u.Rol)
+            .FirstOrDefaultAsync(u => u.Id == id);
 }

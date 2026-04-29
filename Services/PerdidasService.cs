@@ -5,6 +5,7 @@ using BLL_ConstruccionAPI.Models.Inventario.Perdidas;
 using BLL_ConstruccionAPI.Repositories.Interfaces;
 using BLL_ConstruccionAPI.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace BLL_ConstruccionAPI.Services;
 
@@ -13,15 +14,21 @@ public class PerdidasService : IPerdidasService
     private readonly AppDbContext _context;
     private readonly IMaterialesRepository _materialesRepo;
     private readonly IHerramientasRepository _herramientasRepo;
+    private readonly IBitacoraService _bitacora;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     public PerdidasService(
         AppDbContext context,
         IMaterialesRepository materialesRepo,
-        IHerramientasRepository herramientasRepo)
+        IHerramientasRepository herramientasRepo,
+        IBitacoraService bitacora,
+        IHttpContextAccessor httpContextAccessor)
     {
         _context = context;
         _materialesRepo = materialesRepo;
         _herramientasRepo = herramientasRepo;
+        _bitacora = bitacora;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<IEnumerable<RegistroPerdidaResponseDto>> GetAllAsync()
@@ -160,6 +167,12 @@ public class PerdidasService : IPerdidasService
             .Include(r => r.Proyecto)
             .FirstAsync(r => r.Id == registro.Id);
 
+        var tipoBitacora = result.Tipo.ToString();
+        var nombreBitacora = result.Material?.Nombre ?? result.Herramienta?.Nombre ?? "N/A";
+        var motivoBitacora = result.Motivo.ToString();
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Registró", "Pérdida", $"Pérdida de {tipoBitacora}: '{nombreBitacora}', motivo: {motivoBitacora}");
+
         return (true, "Pérdida registrada correctamente.", RegistroPerdidaResponseDto.FromEntity(result));
     }
 
@@ -172,6 +185,16 @@ public class PerdidasService : IPerdidasService
         _context.RegistrosPerdidas.Remove(registro);
         await _context.SaveChangesAsync();
 
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Eliminó", "Pérdida", $"Registro de pérdida #{id} eliminado");
         return (true, "Registro de pérdida eliminado correctamente.");
+    }
+
+    private (int UsuarioId, string NombreUsuario) GetUsuarioInfo()
+    {
+        var user = _httpContextAccessor.HttpContext?.User;
+        var id = int.TryParse(user?.FindFirstValue(ClaimTypes.NameIdentifier), out var parsed) ? parsed : 0;
+        var nombre = user?.FindFirstValue("nombreUsuario") ?? "Sistema";
+        return (id, nombre);
     }
 }

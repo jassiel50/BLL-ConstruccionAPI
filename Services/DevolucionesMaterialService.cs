@@ -4,16 +4,24 @@ using BLL_ConstruccionAPI.Models.Enums;
 using BLL_ConstruccionAPI.Models.Inventario.Materiales;
 using BLL_ConstruccionAPI.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace BLL_ConstruccionAPI.Services;
 
 public class DevolucionesMaterialService : IDevolucionesMaterialService
 {
     private readonly AppDbContext _context;
+    private readonly IBitacoraService _bitacora;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public DevolucionesMaterialService(AppDbContext context)
+    public DevolucionesMaterialService(
+        AppDbContext context,
+        IBitacoraService bitacora,
+        IHttpContextAccessor httpContextAccessor)
     {
         _context = context;
+        _bitacora = bitacora;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<IEnumerable<DevolucionMaterialResponseDto>> GetAllAsync()
@@ -115,6 +123,17 @@ public class DevolucionesMaterialService : IDevolucionesMaterialService
             .Include(d => d.Proyecto)
             .FirstAsync(d => d.Id == devolucion.Id);
 
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Registró", "Devolución", $"Devuelto {dto.CantidadDevuelta} de '{result.Material?.Nombre}' al almacén central");
+
         return (true, "Devolución de material registrada correctamente.", DevolucionMaterialResponseDto.FromEntity(result));
+    }
+
+    private (int UsuarioId, string NombreUsuario) GetUsuarioInfo()
+    {
+        var user = _httpContextAccessor.HttpContext?.User;
+        var id = int.TryParse(user?.FindFirstValue(ClaimTypes.NameIdentifier), out var parsed) ? parsed : 0;
+        var nombre = user?.FindFirstValue("nombreUsuario") ?? "Sistema";
+        return (id, nombre);
     }
 }

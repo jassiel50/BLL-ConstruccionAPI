@@ -53,6 +53,9 @@ public class AppDbContext : DbContext
     // ─── PÉRDIDAS ─────────────────────────────────────────────────────────────
     public DbSet<RegistroPerdida> RegistrosPerdidas { get; set; }
 
+    // ─── BITÁCORA ─────────────────────────────────────────────────────────────
+    public DbSet<BitacoraActividad> Bitacora { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

@@ -5,6 +5,7 @@ using BLL_ConstruccionAPI.Models.Enums;
 using BLL_ConstruccionAPI.Models.Inventario.Proyectos;
 using BLL_ConstruccionAPI.Repositories.Interfaces;
 using BLL_ConstruccionAPI.Services.Interfaces;
+using System.Security.Claims;
 
 namespace BLL_ConstruccionAPI.Services;
 
@@ -12,14 +13,22 @@ public class ProyectosService : IProyectosService
 {
     private readonly IProyectosRepository _proyectosRepo;
     private readonly IProveedoresClientesRepository _provClientesRepo;
+    private readonly IBitacoraService _bitacora;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     private static readonly EstadoProyecto[] EstadosValidos =
         [EstadoProyecto.Activo, EstadoProyecto.Pausado, EstadoProyecto.Terminado];
 
-    public ProyectosService(IProyectosRepository proyectosRepo, IProveedoresClientesRepository provClientesRepo)
+    public ProyectosService(
+        IProyectosRepository proyectosRepo,
+        IProveedoresClientesRepository provClientesRepo,
+        IBitacoraService bitacora,
+        IHttpContextAccessor httpContextAccessor)
     {
         _proyectosRepo = proyectosRepo;
         _provClientesRepo = provClientesRepo;
+        _bitacora = bitacora;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<IEnumerable<ProyectoResponseDto>> GetAllAsync()
@@ -64,6 +73,8 @@ public class ProyectosService : IProyectosService
         };
 
         await _proyectosRepo.CreateAsync(proyecto);
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Creó", "Proyecto", $"Proyecto '{proyecto.Nombre}' creado");
         return (true, "Proyecto creado correctamente.", ProyectoResponseDto.FromEntity(proyecto));
     }
 
@@ -92,6 +103,8 @@ public class ProyectosService : IProyectosService
         proyecto.Estado = estadoActualizado;
 
         await _proyectosRepo.UpdateAsync(proyecto);
+        var (uid2, uname2) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid2, uname2, "Actualizó", "Proyecto", $"Proyecto '{proyecto.Nombre}' actualizado");
         return (true, "Proyecto actualizado correctamente.");
     }
 
@@ -101,6 +114,8 @@ public class ProyectosService : IProyectosService
         if (proyecto is null) return (false, "Proyecto no encontrado.");
 
         await _proyectosRepo.DeleteAsync(proyecto);
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Eliminó", "Proyecto", $"Proyecto '{proyecto.Nombre}' eliminado");
         return (true, "Proyecto eliminado correctamente.");
     }
 
@@ -113,6 +128,8 @@ public class ProyectosService : IProyectosService
             return (false, "El proyecto ya está marcado como Terminado.");
 
         await _proyectosRepo.TerminarAsync(proyecto);
+        var (uid2, uname2) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid2, uname2, "Finalizó", "Proyecto", $"Proyecto '{proyecto.Nombre}' marcado como Terminado");
         return (true, "Proyecto marcado como Terminado correctamente.");
     }
 
@@ -126,5 +143,13 @@ public class ProyectosService : IProyectosService
     {
         var herramientas = await _proyectosRepo.GetHerramientasActivasAsync(proyectoId);
         return herramientas.Select(AsignacionHerramientaResponseDto.FromEntity);
+    }
+
+    private (int UsuarioId, string NombreUsuario) GetUsuarioInfo()
+    {
+        var user = _httpContextAccessor.HttpContext?.User;
+        var id = int.TryParse(user?.FindFirstValue(ClaimTypes.NameIdentifier), out var parsed) ? parsed : 0;
+        var nombre = user?.FindFirstValue("nombreUsuario") ?? "Sistema";
+        return (id, nombre);
     }
 }
