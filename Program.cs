@@ -119,6 +119,7 @@ builder.Services.AddSwaggerGen(c =>
             new List<string>()
         }
     });
+    c.CustomSchemaIds(type => type.FullName?.Replace("+", ".") ?? type.Name);
 });
 
 // QuestPDF licencia Community
