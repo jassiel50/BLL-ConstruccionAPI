@@ -91,7 +91,8 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(
                 "http://localhost:7284",
-                "https://localhost:7284"
+                "https://localhost:7284",
+                "https://ambitious-plant-0ef799810.7.azurestaticapps.net"
             )
             .AllowAnyHeader()
             .AllowAnyMethod()
