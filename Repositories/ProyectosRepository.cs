@@ -94,16 +94,25 @@ public class ProyectosRepository : IProyectosRepository
             asignacion.FechaDevolucion = DateTime.UtcNow;
         }
 
-        // Recalculate herramienta states based on remaining active assignments
-        var herramientaIds = asignaciones.Select(a => a.HerramientaId).Distinct().ToList();
-        foreach (var herramientaId in herramientaIds)
+        // Build a dictionary of herramientaId -> Herramienta to avoid repeated linear searches
+        var herramientaDict = asignaciones
+            .GroupBy(a => a.HerramientaId)
+            .ToDictionary(g => g.Key, g => g.First().Herramienta!);
+
+        var herramientaIds = herramientaDict.Keys.ToList();
+
+        // Single batch query: count remaining active assignments per herramienta outside this project
+        var remainingCounts = await _context.AsignacionesHerramienta
+            .Where(a => herramientaIds.Contains(a.HerramientaId)
+                     && a.Estado == EstadoAsignacion.Asignada
+                     && a.ProyectoId != proyectoId)
+            .GroupBy(a => a.HerramientaId)
+            .Select(g => new { HerramientaId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.HerramientaId, x => x.Count);
+
+        foreach (var (herramientaId, herramienta) in herramientaDict)
         {
-            var herramienta = asignaciones.First(a => a.HerramientaId == herramientaId).Herramienta!;
-            var cantidadAsignadaRestante = await _context.AsignacionesHerramienta
-                .CountAsync(a => a.HerramientaId == herramientaId
-                              && a.Estado == EstadoAsignacion.Asignada
-                              && !asignaciones.Select(x => x.Id).Contains(a.Id));
-            herramienta.Estado = cantidadAsignadaRestante > 0
+            herramienta.Estado = remainingCounts.TryGetValue(herramientaId, out var remaining) && remaining > 0
                 ? EstadoHerramienta.Asignada
                 : EstadoHerramienta.Disponible;
             _context.Herramientas.Update(herramienta);
