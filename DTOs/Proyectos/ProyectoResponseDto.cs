@@ -17,10 +17,16 @@ public class ProyectoResponseDto
     public DateTime FechaRegistro { get; set; }
     public string NumeroCotizacion { get; set; } = string.Empty;
     public string OrdenCompra { get; set; } = string.Empty;
-    public decimal Presupuesto { get; set; } = 0;
-    public decimal GastoActual { get; set; } = 0;
+    public decimal MontoContrato { get; set; } = 0;
+    public decimal PresupuestoEstimado { get; set; } = 0;
+    public decimal GastoMateriales { get; set; } = 0;
+    public decimal GastoHerramientas { get; set; } = 0;
+    public decimal GastoExtras { get; set; } = 0;
+    public decimal GastoReal { get; set; } = 0;
     public decimal Utilidad { get; set; } = 0;
+    public decimal Varianza { get; set; } = 0;
     public bool SobrepasadoPresupuesto { get; set; }
+    public bool SobrepasadoContrato { get; set; }
 
     public static ProyectoResponseDto FromEntity(Proyecto e) => new()
     {
@@ -37,6 +43,7 @@ public class ProyectoResponseDto
         FechaRegistro = e.FechaRegistro,
         NumeroCotizacion = e.NumeroCotizacion,
         OrdenCompra = e.OrdenCompra,
-        Presupuesto = e.Presupuesto
+        MontoContrato = e.MontoContrato,
+        PresupuestoEstimado = e.PresupuestoEstimado
     };
 }

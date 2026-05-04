@@ -1,8 +1,10 @@
+using BLL_ConstruccionAPI.Data;
 using BLL_ConstruccionAPI.DTOs.Materiales;
 using BLL_ConstruccionAPI.DTOs.Salidas;
 using BLL_ConstruccionAPI.Models.Inventario.Materiales;
 using BLL_ConstruccionAPI.Repositories.Interfaces;
 using BLL_ConstruccionAPI.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace BLL_ConstruccionAPI.Services;
@@ -14,19 +16,22 @@ public class SalidasService : ISalidasService
     private readonly IProyectosRepository _proyectosRepo;
     private readonly IBitacoraService _bitacora;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly AppDbContext _context;
 
     public SalidasService(
         ISalidasRepository salidasRepo,
         IMaterialesRepository materialesRepo,
         IProyectosRepository proyectosRepo,
         IBitacoraService bitacora,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor,
+        AppDbContext context)
     {
         _salidasRepo = salidasRepo;
         _materialesRepo = materialesRepo;
         _proyectosRepo = proyectosRepo;
         _bitacora = bitacora;
         _httpContextAccessor = httpContextAccessor;
+        _context = context;
     }
 
     public async Task<IEnumerable<SalidaResponseDto>> GetAllAsync()
@@ -109,7 +114,12 @@ public class SalidasService : ISalidasService
             detalles.Add(new SalidaDetalle
             {
                 MaterialId = item.MaterialId,
-                Cantidad = item.Cantidad
+                Cantidad = item.Cantidad,
+                PrecioUnitario = (await _context.EntradasDetalle
+                    .Where(e => e.MaterialId == item.MaterialId)
+                    .OrderByDescending(e => e.Id)
+                    .Select(e => (decimal?)e.PrecioUnitario)
+                    .FirstOrDefaultAsync()) ?? 0
             });
         }
 

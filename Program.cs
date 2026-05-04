@@ -38,6 +38,7 @@ builder.Services.AddScoped<IProyectosService, ProyectosService>();
 // Fases
 builder.Services.AddScoped<IFasesRepository, FasesRepository>();
 builder.Services.AddScoped<IFasesService, FasesService>();
+builder.Services.AddScoped<IGastoExtraService, GastoExtraService>();
 
 // Materiales
 builder.Services.AddScoped<IMaterialesRepository, MaterialesRepository>();

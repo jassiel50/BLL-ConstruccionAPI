@@ -6,6 +6,7 @@
         public int SalidaId { get; set; }
         public int MaterialId { get; set; }
         public decimal Cantidad { get; set; }
+        public decimal PrecioUnitario { get; set; } = 0;
 
         // Navegación
         public Material? Material { get; set; }

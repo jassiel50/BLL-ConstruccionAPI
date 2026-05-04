@@ -1,3 +1,4 @@
+using BLL_ConstruccionAPI.DTOs.GastosExtras;
 using BLL_ConstruccionAPI.Models.Inventario.Proyectos;
 
 namespace BLL_ConstruccionAPI.DTOs.Fases;
@@ -17,6 +18,9 @@ public class FaseResponseDto
     public bool PorVencer => Estado != "Completada"
         && FechaLimite.Date >= DateTime.UtcNow.Date
         && FechaLimite.Date <= DateTime.UtcNow.Date.AddDays(2);
+
+    public decimal GastoExtra { get; set; } = 0;
+    public List<GastoExtraDto> GastosExtras { get; set; } = [];
 
     public static FaseResponseDto FromEntity(FaseProyecto f) => new()
     {

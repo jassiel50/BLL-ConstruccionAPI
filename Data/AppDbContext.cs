@@ -33,6 +33,7 @@ public class AppDbContext : DbContext
     // ─── PROYECTOS ────────────────────────────────────────────────────────────
     public DbSet<Proyecto> Proyectos { get; set; }
     public DbSet<FaseProyecto> FaseProyectos { get; set; }
+    public DbSet<GastoExtra> GastosExtras { get; set; }
 
     // ─── MATERIALES ───────────────────────────────────────────────────────────
     public DbSet<Material> Materiales { get; set; }
@@ -131,9 +132,27 @@ public class AppDbContext : DbContext
             .Property(s => s.Cantidad)
             .HasColumnType("decimal(18,2)");
 
-        modelBuilder.Entity<Proyecto>()
-            .Property(p => p.Presupuesto)
+        modelBuilder.Entity<SalidaDetalle>()
+            .Property(s => s.PrecioUnitario)
             .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<Proyecto>()
+            .Property(p => p.MontoContrato)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<Proyecto>()
+            .Property(p => p.PresupuestoEstimado)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<GastoExtra>()
+            .Property(g => g.Monto)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<GastoExtra>()
+            .HasOne(g => g.Fase)
+            .WithMany()
+            .HasForeignKey(g => g.FaseId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<Herramienta>()
             .Property(h => h.ValorAdquisicion)

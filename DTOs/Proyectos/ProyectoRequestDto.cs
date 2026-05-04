@@ -32,5 +32,8 @@ public class ProyectoRequestDto
     public string OrdenCompra { get; set; } = string.Empty;
 
     [Range(0, double.MaxValue)]
-    public decimal Presupuesto { get; set; } = 0;
+    public decimal MontoContrato { get; set; } = 0;
+
+    [Range(0, double.MaxValue)]
+    public decimal PresupuestoEstimado { get; set; } = 0;
 }

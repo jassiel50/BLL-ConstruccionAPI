@@ -1,3 +1,4 @@
+using BLL_ConstruccionAPI.Data;
 using BLL_ConstruccionAPI.DTOs.Herramientas;
 using BLL_ConstruccionAPI.DTOs.Materiales;
 using BLL_ConstruccionAPI.DTOs.Proyectos;
@@ -5,6 +6,7 @@ using BLL_ConstruccionAPI.Models.Enums;
 using BLL_ConstruccionAPI.Models.Inventario.Proyectos;
 using BLL_ConstruccionAPI.Repositories.Interfaces;
 using BLL_ConstruccionAPI.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace BLL_ConstruccionAPI.Services;
@@ -16,6 +18,7 @@ public class ProyectosService : IProyectosService
     private readonly ISalidasRepository _salidasRepo;
     private readonly IBitacoraService _bitacora;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly AppDbContext _context;
 
     private static readonly EstadoProyecto[] EstadosValidos =
         [EstadoProyecto.Activo, EstadoProyecto.Pausado, EstadoProyecto.Terminado];
@@ -25,13 +28,15 @@ public class ProyectosService : IProyectosService
         IProveedoresClientesRepository provClientesRepo,
         ISalidasRepository salidasRepo,
         IBitacoraService bitacora,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor,
+        AppDbContext context)
     {
         _proyectosRepo = proyectosRepo;
         _provClientesRepo = provClientesRepo;
         _salidasRepo = salidasRepo;
         _bitacora = bitacora;
         _httpContextAccessor = httpContextAccessor;
+        _context = context;
     }
 
     public async Task<IEnumerable<ProyectoResponseDto>> GetAllAsync()
@@ -53,14 +58,43 @@ public class ProyectosService : IProyectosService
 
         var dto = ProyectoResponseDto.FromEntity(proyecto);
 
-        // Calculate GastoActual: sum of Cantidad * Material.PrecioUnitario for all salida details of this project
-        var salidas = await _salidasRepo.GetByProyectoAsync(id);
-        dto.GastoActual = salidas
-            .SelectMany(s => s.Detalles)
-            .Sum(d => d.Cantidad * (d.Material?.PrecioUnitario ?? 0));
+        // GastoMateriales: sum of Cantidad * PrecioUnitario stored at salida time
+        var salidas = await _context.Salidas
+            .Include(s => s.Detalles)
+            .Where(s => s.ProyectoId == id)
+            .ToListAsync();
 
-        dto.Utilidad = dto.Presupuesto - dto.GastoActual;
-        dto.SobrepasadoPresupuesto = dto.GastoActual > dto.Presupuesto && dto.Presupuesto > 0;
+        var gastoMateriales = salidas
+            .SelectMany(s => s.Detalles)
+            .Sum(d => d.Cantidad * d.PrecioUnitario);
+
+        // GastoHerramientas: sum of ValorAdquisicion for all assigned herramientas
+        var gastoHerramientas = await _context.AsignacionesHerramienta
+            .Include(a => a.Herramienta)
+            .Where(a => a.ProyectoId == id)
+            .SumAsync(a => a.Herramienta!.ValorAdquisicion);
+
+        // GastoExtras: sum of all GastosExtras of all fases of this project
+        var faseIds = await _context.FaseProyectos
+            .Where(f => f.ProyectoId == id)
+            .Select(f => f.Id)
+            .ToListAsync();
+
+        var gastoExtras = faseIds.Any()
+            ? await _context.GastosExtras
+                .Where(g => faseIds.Contains(g.FaseId))
+                .SumAsync(g => g.Monto)
+            : 0;
+
+        var gastoReal = gastoMateriales + gastoHerramientas + gastoExtras;
+        dto.GastoMateriales = gastoMateriales;
+        dto.GastoHerramientas = gastoHerramientas;
+        dto.GastoExtras = gastoExtras;
+        dto.GastoReal = gastoReal;
+        dto.Utilidad = dto.MontoContrato - gastoReal;
+        dto.Varianza = dto.PresupuestoEstimado - gastoReal;
+        dto.SobrepasadoPresupuesto = dto.PresupuestoEstimado > 0 && gastoReal > dto.PresupuestoEstimado;
+        dto.SobrepasadoContrato = dto.MontoContrato > 0 && gastoReal > dto.MontoContrato;
 
         return dto;
     }
@@ -88,7 +122,8 @@ public class ProyectosService : IProyectosService
             Cliente = cliente,
             NumeroCotizacion = dto.NumeroCotizacion,
             OrdenCompra = dto.OrdenCompra,
-            Presupuesto = dto.Presupuesto
+            MontoContrato = dto.MontoContrato,
+            PresupuestoEstimado = dto.PresupuestoEstimado
         };
 
         await _proyectosRepo.CreateAsync(proyecto);
@@ -122,7 +157,8 @@ public class ProyectosService : IProyectosService
         proyecto.Estado = estadoActualizado;
         proyecto.NumeroCotizacion = dto.NumeroCotizacion;
         proyecto.OrdenCompra = dto.OrdenCompra;
-        proyecto.Presupuesto = dto.Presupuesto;
+        proyecto.MontoContrato = dto.MontoContrato;
+        proyecto.PresupuestoEstimado = dto.PresupuestoEstimado;
 
         await _proyectosRepo.UpdateAsync(proyecto);
         var (uid2, uname2) = GetUsuarioInfo();

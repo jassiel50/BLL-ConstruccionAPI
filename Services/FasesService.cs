@@ -1,8 +1,11 @@
+using BLL_ConstruccionAPI.Data;
 using BLL_ConstruccionAPI.DTOs.Fases;
+using BLL_ConstruccionAPI.DTOs.GastosExtras;
 using BLL_ConstruccionAPI.Models.Enums;
 using BLL_ConstruccionAPI.Models.Inventario.Proyectos;
 using BLL_ConstruccionAPI.Repositories.Interfaces;
 using BLL_ConstruccionAPI.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace BLL_ConstruccionAPI.Services;
 
@@ -10,17 +13,40 @@ public class FasesService : IFasesService
 {
     private readonly IFasesRepository _fasesRepo;
     private readonly IProyectosRepository _proyectosRepo;
+    private readonly AppDbContext _context;
 
-    public FasesService(IFasesRepository fasesRepo, IProyectosRepository proyectosRepo)
+    public FasesService(IFasesRepository fasesRepo, IProyectosRepository proyectosRepo, AppDbContext context)
     {
         _fasesRepo = fasesRepo;
         _proyectosRepo = proyectosRepo;
+        _context = context;
     }
 
     public async Task<List<FaseResponseDto>> GetByProyectoAsync(int proyectoId)
     {
         var fases = await _fasesRepo.GetByProyectoAsync(proyectoId);
-        return fases.Select(FaseResponseDto.FromEntity).ToList();
+        var faseIds = fases.Select(f => f.Id).ToList();
+
+        var gastosPorFase = await _context.GastosExtras
+            .Where(g => faseIds.Contains(g.FaseId))
+            .ToListAsync();
+
+        return fases.Select(f =>
+        {
+            var dto = FaseResponseDto.FromEntity(f);
+            var extras = gastosPorFase.Where(g => g.FaseId == f.Id).ToList();
+            dto.GastosExtras = extras.Select(g => new GastoExtraDto
+            {
+                Id = g.Id,
+                FaseId = g.FaseId,
+                Concepto = g.Concepto,
+                Monto = g.Monto,
+                Fecha = g.Fecha,
+                Observaciones = g.Observaciones
+            }).ToList();
+            dto.GastoExtra = extras.Sum(g => g.Monto);
+            return dto;
+        }).ToList();
     }
 
     public async Task<(bool Success, string Message, FaseResponseDto? Data)> CreateAsync(int proyectoId, FaseRequestDto dto)

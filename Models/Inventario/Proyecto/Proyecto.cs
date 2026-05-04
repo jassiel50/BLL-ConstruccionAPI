@@ -18,7 +18,8 @@ namespace BLL_ConstruccionAPI.Models.Inventario.Proyectos
         public DateTime FechaRegistro { get; set; } = DateTime.UtcNow;
         public string NumeroCotizacion { get; set; } = string.Empty;
         public string OrdenCompra { get; set; } = string.Empty;
-        public decimal Presupuesto { get; set; } = 0;
+        public decimal MontoContrato { get; set; } = 0;
+        public decimal PresupuestoEstimado { get; set; } = 0;
 
         // Navegación
         public Cliente? Cliente { get; set; }
