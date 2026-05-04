@@ -15,6 +15,12 @@ public class ProyectoResponseDto
     public DateTime? FechaFin { get; set; }
     public string Estado { get; set; } = string.Empty;
     public DateTime FechaRegistro { get; set; }
+    public string NumeroCotizacion { get; set; } = string.Empty;
+    public string OrdenCompra { get; set; } = string.Empty;
+    public decimal Presupuesto { get; set; } = 0;
+    public decimal GastoActual { get; set; } = 0;
+    public decimal Utilidad { get; set; } = 0;
+    public bool SobrepasadoPresupuesto { get; set; }
 
     public static ProyectoResponseDto FromEntity(Proyecto e) => new()
     {
@@ -28,6 +34,9 @@ public class ProyectoResponseDto
         FechaInicio = e.FechaInicio,
         FechaFin = e.FechaFin,
         Estado = e.Estado.ToString(),
-        FechaRegistro = e.FechaRegistro
+        FechaRegistro = e.FechaRegistro,
+        NumeroCotizacion = e.NumeroCotizacion,
+        OrdenCompra = e.OrdenCompra,
+        Presupuesto = e.Presupuesto
     };
 }

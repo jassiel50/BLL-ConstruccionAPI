@@ -78,4 +78,47 @@ public class ProyectosRepository : IProyectosRepository
             .Where(a => a.ProyectoId == proyectoId && a.Estado == EstadoAsignacion.Asignada)
             .OrderByDescending(a => a.FechaAsignacion)
             .ToListAsync();
+
+    public async Task<int> DevolverTodasHerramientasAsync(int proyectoId)
+    {
+        var asignaciones = await _context.AsignacionesHerramienta
+            .Include(a => a.Herramienta)
+            .Where(a => a.ProyectoId == proyectoId && a.Estado == EstadoAsignacion.Asignada)
+            .ToListAsync();
+
+        if (asignaciones.Count == 0) return 0;
+
+        foreach (var asignacion in asignaciones)
+        {
+            asignacion.Estado = EstadoAsignacion.Devuelta;
+            asignacion.FechaDevolucion = DateTime.UtcNow;
+        }
+
+        // Build a dictionary of herramientaId -> Herramienta to avoid repeated linear searches
+        var herramientaDict = asignaciones
+            .GroupBy(a => a.HerramientaId)
+            .ToDictionary(g => g.Key, g => g.First().Herramienta!);
+
+        var herramientaIds = herramientaDict.Keys.ToList();
+
+        // Single batch query: count remaining active assignments per herramienta outside this project
+        var remainingCounts = await _context.AsignacionesHerramienta
+            .Where(a => herramientaIds.Contains(a.HerramientaId)
+                     && a.Estado == EstadoAsignacion.Asignada
+                     && a.ProyectoId != proyectoId)
+            .GroupBy(a => a.HerramientaId)
+            .Select(g => new { HerramientaId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.HerramientaId, x => x.Count);
+
+        foreach (var (herramientaId, herramienta) in herramientaDict)
+        {
+            herramienta.Estado = remainingCounts.TryGetValue(herramientaId, out var remaining) && remaining > 0
+                ? EstadoHerramienta.Asignada
+                : EstadoHerramienta.Disponible;
+            _context.Herramientas.Update(herramienta);
+        }
+
+        await _context.SaveChangesAsync();
+        return asignaciones.Count;
+    }
 }

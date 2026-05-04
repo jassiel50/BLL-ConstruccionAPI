@@ -129,6 +129,13 @@ QuestPDF.Settings.License = LicenseType.Community;
 
 var app = builder.Build();
 
+// ── Auto-migrate: aplica migraciones pendientes al iniciar ───────────────────
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
+
 app.UseExceptionHandler(err => err.Run(async ctx =>
 {
     ctx.Response.StatusCode = StatusCodes.Status500InternalServerError;
