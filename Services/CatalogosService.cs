@@ -2,16 +2,24 @@ using BLL_ConstruccionAPI.DTOs.Catalogos;
 using BLL_ConstruccionAPI.Models.Inventario.Cátalogos;
 using BLL_ConstruccionAPI.Repositories.Interfaces;
 using BLL_ConstruccionAPI.Services.Interfaces;
+using System.Security.Claims;
 
 namespace BLL_ConstruccionAPI.Services;
 
 public class CatalogosService : ICatalogosService
 {
     private readonly ICatalogosRepository _catalogosRepo;
+    private readonly IBitacoraService _bitacora;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public CatalogosService(ICatalogosRepository catalogosRepo)
+    public CatalogosService(
+        ICatalogosRepository catalogosRepo,
+        IBitacoraService bitacora,
+        IHttpContextAccessor httpContextAccessor)
     {
         _catalogosRepo = catalogosRepo;
+        _bitacora = bitacora;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     // ─── CategoriaMaterial ────────────────────────────────────────────────────
@@ -40,6 +48,8 @@ public class CatalogosService : ICatalogosService
         };
 
         await _catalogosRepo.CreateCategoriaAsync(categoria);
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Creó", "CategoríaMaterial", $"Categoría de material '{categoria.Nombre}' creada");
         return (true, "Categoría creada correctamente.", CategoriaMaterialResponseDto.FromEntity(categoria));
     }
 
@@ -56,6 +66,8 @@ public class CatalogosService : ICatalogosService
         categoria.Descripcion = dto.Descripcion;
 
         await _catalogosRepo.UpdateCategoriaAsync(categoria);
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Actualizó", "CategoríaMaterial", $"Categoría de material '{categoria.Nombre}' actualizada");
         return (true, "Categoría actualizada correctamente.");
     }
 
@@ -65,6 +77,8 @@ public class CatalogosService : ICatalogosService
         if (categoria is null) return (false, "Categoría no encontrada.");
 
         await _catalogosRepo.DeleteCategoriaAsync(categoria);
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Eliminó", "CategoríaMaterial", $"Categoría de material '{categoria.Nombre}' desactivada");
         return (true, "Categoría desactivada correctamente.");
     }
 
@@ -94,6 +108,8 @@ public class CatalogosService : ICatalogosService
         };
 
         await _catalogosRepo.CreateCategoriaHerramientaAsync(categoria);
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Creó", "CategoríaHerramienta", $"Categoría de herramienta '{categoria.Nombre}' creada");
         return (true, "Categoría de herramienta creada correctamente.", CategoriaHerramientaResponseDto.FromEntity(categoria));
     }
 
@@ -110,6 +126,8 @@ public class CatalogosService : ICatalogosService
         categoria.Descripcion = dto.Descripcion;
 
         await _catalogosRepo.UpdateCategoriaHerramientaAsync(categoria);
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Actualizó", "CategoríaHerramienta", $"Categoría de herramienta '{categoria.Nombre}' actualizada");
         return (true, "Categoría de herramienta actualizada correctamente.");
     }
 
@@ -119,6 +137,8 @@ public class CatalogosService : ICatalogosService
         if (categoria is null) return (false, "Categoría de herramienta no encontrada.");
 
         await _catalogosRepo.DeleteCategoriaHerramientaAsync(categoria);
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Eliminó", "CategoríaHerramienta", $"Categoría de herramienta '{categoria.Nombre}' desactivada");
         return (true, "Categoría de herramienta desactivada correctamente.");
     }
 
@@ -148,6 +168,8 @@ public class CatalogosService : ICatalogosService
         };
 
         await _catalogosRepo.CreateUnidadAsync(unidad);
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Creó", "UnidadMedida", $"Unidad de medida '{unidad.Nombre} ({unidad.Abreviatura})' creada");
         return (true, "Unidad de medida creada correctamente.", UnidadMedidaResponseDto.FromEntity(unidad));
     }
 
@@ -164,6 +186,8 @@ public class CatalogosService : ICatalogosService
         unidad.Abreviatura = dto.Abreviatura;
 
         await _catalogosRepo.UpdateUnidadAsync(unidad);
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Actualizó", "UnidadMedida", $"Unidad de medida '{unidad.Nombre}' actualizada");
         return (true, "Unidad de medida actualizada correctamente.");
     }
 
@@ -173,6 +197,16 @@ public class CatalogosService : ICatalogosService
         if (unidad is null) return (false, "Unidad de medida no encontrada.");
 
         await _catalogosRepo.DeleteUnidadAsync(unidad);
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Eliminó", "UnidadMedida", $"Unidad de medida '{unidad.Nombre}' desactivada");
         return (true, "Unidad de medida desactivada correctamente.");
+    }
+
+    private (int UsuarioId, string NombreUsuario) GetUsuarioInfo()
+    {
+        var user = _httpContextAccessor.HttpContext?.User;
+        var id = int.TryParse(user?.FindFirstValue(ClaimTypes.NameIdentifier), out var parsed) ? parsed : 0;
+        var nombre = user?.FindFirstValue("nombreUsuario") ?? "Sistema";
+        return (id, nombre);
     }
 }
