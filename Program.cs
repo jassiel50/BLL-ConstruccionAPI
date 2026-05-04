@@ -92,7 +92,8 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(
                 "http://localhost:7284",
                 "https://localhost:7284",
-                "https://ambitious-plant-0ef799810.7.azurestaticapps.net"
+                "https://ambitious-plant-0ef799810.7.azurestaticapps.net",
+                "https://app.bll.com.mx"
             )
             .AllowAnyHeader()
             .AllowAnyMethod()
@@ -138,11 +139,9 @@ app.UseExceptionHandler(err => err.Run(async ctx =>
     });
 }));
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Swagger siempre disponible (desarrollo y producción)
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 app.UseCors("FrontendPolicy");
