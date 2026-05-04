@@ -102,4 +102,13 @@ public class ProyectoController : ControllerBase
         var herramientas = await _service.GetHerramientasAsync(id);
         return Ok(herramientas);
     }
+
+    // POST api/proyectos/{id}/devolver-herramientas
+    [HttpPost("{id:int}/devolver-herramientas")]
+    public async Task<IActionResult> DevolverHerramientas(int id)
+    {
+        var (success, message, count) = await _service.DevolverTodasHerramientasAsync(id);
+        if (!success) return BadRequest(new { message });
+        return Ok(new { count, message });
+    }
 }

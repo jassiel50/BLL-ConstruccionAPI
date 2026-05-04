@@ -13,6 +13,7 @@ public class ProyectosService : IProyectosService
 {
     private readonly IProyectosRepository _proyectosRepo;
     private readonly IProveedoresClientesRepository _provClientesRepo;
+    private readonly ISalidasRepository _salidasRepo;
     private readonly IBitacoraService _bitacora;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -22,11 +23,13 @@ public class ProyectosService : IProyectosService
     public ProyectosService(
         IProyectosRepository proyectosRepo,
         IProveedoresClientesRepository provClientesRepo,
+        ISalidasRepository salidasRepo,
         IBitacoraService bitacora,
         IHttpContextAccessor httpContextAccessor)
     {
         _proyectosRepo = proyectosRepo;
         _provClientesRepo = provClientesRepo;
+        _salidasRepo = salidasRepo;
         _bitacora = bitacora;
         _httpContextAccessor = httpContextAccessor;
     }
@@ -46,7 +49,20 @@ public class ProyectosService : IProyectosService
     public async Task<ProyectoResponseDto?> GetByIdAsync(int id)
     {
         var proyecto = await _proyectosRepo.GetByIdAsync(id);
-        return proyecto is null ? null : ProyectoResponseDto.FromEntity(proyecto);
+        if (proyecto is null) return null;
+
+        var dto = ProyectoResponseDto.FromEntity(proyecto);
+
+        // Calculate GastoActual: sum of Cantidad * Material.PrecioUnitario for all salida details of this project
+        var salidas = await _salidasRepo.GetByProyectoAsync(id);
+        dto.GastoActual = salidas
+            .SelectMany(s => s.Detalles)
+            .Sum(d => d.Cantidad * (d.Material?.PrecioUnitario ?? 0));
+
+        dto.Utilidad = dto.Presupuesto - dto.GastoActual;
+        dto.SobrepasadoPresupuesto = dto.GastoActual > dto.Presupuesto && dto.Presupuesto > 0;
+
+        return dto;
     }
 
     public async Task<(bool Success, string Message, ProyectoResponseDto? Data)> CreateAsync(ProyectoRequestDto dto)
@@ -69,7 +85,10 @@ public class ProyectosService : IProyectosService
             FechaFin = dto.FechaFin,
             Estado = estadoProyecto,
             FechaRegistro = DateTime.UtcNow,
-            Cliente = cliente
+            Cliente = cliente,
+            NumeroCotizacion = dto.NumeroCotizacion,
+            OrdenCompra = dto.OrdenCompra,
+            Presupuesto = dto.Presupuesto
         };
 
         await _proyectosRepo.CreateAsync(proyecto);
@@ -101,6 +120,9 @@ public class ProyectosService : IProyectosService
         proyecto.FechaInicio = dto.FechaInicio;
         proyecto.FechaFin = dto.FechaFin;
         proyecto.Estado = estadoActualizado;
+        proyecto.NumeroCotizacion = dto.NumeroCotizacion;
+        proyecto.OrdenCompra = dto.OrdenCompra;
+        proyecto.Presupuesto = dto.Presupuesto;
 
         await _proyectosRepo.UpdateAsync(proyecto);
         var (uid2, uname2) = GetUsuarioInfo();
@@ -143,6 +165,20 @@ public class ProyectosService : IProyectosService
     {
         var herramientas = await _proyectosRepo.GetHerramientasActivasAsync(proyectoId);
         return herramientas.Select(AsignacionHerramientaResponseDto.FromEntity);
+    }
+
+    public async Task<(bool Success, string Message, int Count)> DevolverTodasHerramientasAsync(int proyectoId)
+    {
+        var proyecto = await _proyectosRepo.GetByIdAsync(proyectoId);
+        if (proyecto is null) return (false, "Proyecto no encontrado.", 0);
+
+        var count = await _proyectosRepo.DevolverTodasHerramientasAsync(proyectoId);
+
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Devolvió herramientas", "Proyecto",
+            $"{count} herramienta(s) devueltas del proyecto '{proyecto.Nombre}'");
+
+        return (true, $"{count} herramienta(s) devuelta(s) correctamente.", count);
     }
 
     private (int UsuarioId, string NombreUsuario) GetUsuarioInfo()

@@ -15,4 +15,5 @@ public interface IProyectosService
     Task<(bool Success, string Message)> TerminarAsync(int id);
     Task<IEnumerable<AlmacenProyectoResponseDto>> GetMaterialesAsync(int proyectoId);
     Task<IEnumerable<AsignacionHerramientaResponseDto>> GetHerramientasAsync(int proyectoId);
+    Task<(bool Success, string Message, int Count)> DevolverTodasHerramientasAsync(int proyectoId);
 }

@@ -78,4 +78,38 @@ public class ProyectosRepository : IProyectosRepository
             .Where(a => a.ProyectoId == proyectoId && a.Estado == EstadoAsignacion.Asignada)
             .OrderByDescending(a => a.FechaAsignacion)
             .ToListAsync();
+
+    public async Task<int> DevolverTodasHerramientasAsync(int proyectoId)
+    {
+        var asignaciones = await _context.AsignacionesHerramienta
+            .Include(a => a.Herramienta)
+            .Where(a => a.ProyectoId == proyectoId && a.Estado == EstadoAsignacion.Asignada)
+            .ToListAsync();
+
+        if (asignaciones.Count == 0) return 0;
+
+        foreach (var asignacion in asignaciones)
+        {
+            asignacion.Estado = EstadoAsignacion.Devuelta;
+            asignacion.FechaDevolucion = DateTime.UtcNow;
+        }
+
+        // Recalculate herramienta states based on remaining active assignments
+        var herramientaIds = asignaciones.Select(a => a.HerramientaId).Distinct().ToList();
+        foreach (var herramientaId in herramientaIds)
+        {
+            var herramienta = asignaciones.First(a => a.HerramientaId == herramientaId).Herramienta!;
+            var cantidadAsignadaRestante = await _context.AsignacionesHerramienta
+                .CountAsync(a => a.HerramientaId == herramientaId
+                              && a.Estado == EstadoAsignacion.Asignada
+                              && !asignaciones.Select(x => x.Id).Contains(a.Id));
+            herramienta.Estado = cantidadAsignadaRestante > 0
+                ? EstadoHerramienta.Asignada
+                : EstadoHerramienta.Disponible;
+            _context.Herramientas.Update(herramienta);
+        }
+
+        await _context.SaveChangesAsync();
+        return asignaciones.Count;
+    }
 }

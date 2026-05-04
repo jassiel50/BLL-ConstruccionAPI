@@ -24,4 +24,13 @@ public class ProyectoRequestDto
 
     [Required]
     public string Estado { get; set; } = "Activo";
+
+    [StringLength(100)]
+    public string NumeroCotizacion { get; set; } = string.Empty;
+
+    [StringLength(100)]
+    public string OrdenCompra { get; set; } = string.Empty;
+
+    [Range(0, double.MaxValue)]
+    public decimal Presupuesto { get; set; } = 0;
 }

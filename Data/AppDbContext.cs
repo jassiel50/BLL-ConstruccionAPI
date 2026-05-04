@@ -131,6 +131,10 @@ public class AppDbContext : DbContext
             .Property(s => s.Cantidad)
             .HasColumnType("decimal(18,2)");
 
+        modelBuilder.Entity<Proyecto>()
+            .Property(p => p.Presupuesto)
+            .HasColumnType("decimal(18,2)");
+
         modelBuilder.Entity<Herramienta>()
             .Property(h => h.ValorAdquisicion)
             .HasColumnType("decimal(18,2)");

@@ -15,4 +15,5 @@ public interface IProyectosRepository
     Task TerminarAsync(Proyecto proyecto);
     Task<IEnumerable<AlmacenProyecto>> GetMaterialesAsync(int proyectoId);
     Task<IEnumerable<AsignacionHerramienta>> GetHerramientasActivasAsync(int proyectoId);
+    Task<int> DevolverTodasHerramientasAsync(int proyectoId);
 }
