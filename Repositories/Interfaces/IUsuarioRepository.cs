@@ -20,10 +20,28 @@ public interface IUsuarioRepository
     Task RevocarTokenAsync(string token);
     Task RevocarTodosLosTokensAsync(int usuarioId);
 
-    // 2FA
+    // 2FA (Legacy - mantener compatibilidad)
     Task<Usuario2FA?> Get2FAAsync(int usuarioId);
     Task Create2FAAsync(Usuario2FA usuario2FA);
     Task Update2FAAsync(Usuario2FA usuario2FA);
+
+    // MFA Config
+    Task<UsuarioMfaConfig?> GetMfaConfigAsync(int usuarioId);
+    Task CreateMfaConfigAsync(UsuarioMfaConfig config);
+    Task UpdateMfaConfigAsync(UsuarioMfaConfig config);
+
+    // MFA Email Codes
+    Task CreateMfaEmailCodeAsync(MfaEmailCode code);
+    Task<MfaEmailCode?> GetMfaEmailCodeValidoAsync(int usuarioId);
+    Task InvalidarCodigosAnterioresAsync(int usuarioId, string canal);
+    Task RegistrarIntentoFallidoAsync(int codeId);
+    Task MarcarMfaEmailCodigoUsadoAsync(MfaEmailCode code);
+
+    // Password Reset Codes
+    Task CreatePasswordResetCodeAsync(PasswordResetCode code);
+    Task<PasswordResetCode?> GetPasswordResetCodeValidoAsync(int usuarioId);
+    Task InvalidarPasswordResetCodigosAsync(int usuarioId);
+    Task RegistrarIntentoFallidoPasswordResetAsync(int codeId);
 
     // Log
     Task RegistrarLogAsync(LogAcceso log);

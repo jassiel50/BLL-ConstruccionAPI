@@ -23,6 +23,13 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IBitacoraService, BitacoraService>();
 builder.Services.AddScoped<IUsuariosService, UsuariosService>();
 
+// Email (Resend)
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IEmailService, ResendEmailService>();
+
+// Background services
+builder.Services.AddHostedService<ExpiredCodesCleanupService>();
+
 // Catálogos
 builder.Services.AddScoped<ICatalogosRepository, CatalogosRepository>();
 builder.Services.AddScoped<ICatalogosService, CatalogosService>();

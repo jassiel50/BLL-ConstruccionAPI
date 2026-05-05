@@ -20,6 +20,9 @@ public class AppDbContext : DbContext
     public DbSet<TokenSesion> TokensSesion { get; set; }
     public DbSet<Usuario2FA> Usuarios2FA { get; set; }
     public DbSet<LogAcceso> LogAccesos { get; set; }
+    public DbSet<UsuarioMfaConfig> UsuariosMfaConfig { get; set; }
+    public DbSet<MfaEmailCode> MfaEmailCodes { get; set; }
+    public DbSet<PasswordResetCode> PasswordResetCodes { get; set; }
 
     // ─── CATÁLOGOS ────────────────────────────────────────────────────────────
     public DbSet<CategoriaMaterial> Categorias { get; set; }
@@ -292,5 +295,21 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<UnidadMedida>()
             .HasIndex(u => u.Abreviatura).IsUnique();
+
+        // ─── MFA Config ───────────────────────────────────────────────────────
+        modelBuilder.Entity<UsuarioMfaConfig>()
+            .HasIndex(u => u.UsuarioId).IsUnique();
+
+        modelBuilder.Entity<MfaEmailCode>()
+            .HasIndex(m => new { m.UsuarioId, m.Usado, m.FechaExpira });
+
+        modelBuilder.Entity<MfaEmailCode>()
+            .HasIndex(m => m.FechaExpira);
+
+        modelBuilder.Entity<PasswordResetCode>()
+            .HasIndex(p => new { p.UsuarioId, p.Usado, p.FechaExpira });
+
+        modelBuilder.Entity<PasswordResetCode>()
+            .HasIndex(p => p.FechaExpira);
     }
 }

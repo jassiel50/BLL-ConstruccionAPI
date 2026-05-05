@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using BLL_ConstruccionAPI.DTOs.Auth;
+using BLL_ConstruccionAPI.Helpers;
 using BLL_ConstruccionAPI.Models.Auth;
 using BLL_ConstruccionAPI.Repositories.Interfaces;
 using BLL_ConstruccionAPI.Services.Interfaces;
@@ -15,11 +16,20 @@ public class AuthService : IAuthService
 {
     private readonly IUsuarioRepository _usuarioRepo;
     private readonly IConfiguration _config;
+    private readonly IEmailService _emailService;
+    private readonly MfaTicketHelper _mfaTicketHelper;
+    private readonly RateLimitHelper _rateLimitHelper;
 
-    public AuthService(IUsuarioRepository usuarioRepo, IConfiguration config)
+    public AuthService(
+        IUsuarioRepository usuarioRepo, 
+        IConfiguration config,
+        IEmailService emailService)
     {
         _usuarioRepo = usuarioRepo;
         _config = config;
+        _emailService = emailService;
+        _mfaTicketHelper = new MfaTicketHelper(config);
+        _rateLimitHelper = new RateLimitHelper();
     }
 
     // ─── REGISTER ────────────────────────────────────────────────────────────
@@ -69,28 +79,64 @@ public class AuthService : IAuthService
         if (!usuario.Activo)
             return (false, "Usuario inactivo. Contacta al administrador.", null);
 
-        // Verificar si tiene 2FA activo
-        var config2FA = await _usuarioRepo.Get2FAAsync(usuario.Id);
+        // Verificar configuración MFA
+        var mfaConfig = await _usuarioRepo.GetMfaConfigAsync(usuario.Id);
+        var config2FALegacy = await _usuarioRepo.Get2FAAsync(usuario.Id);
 
-        // No tiene 2FA configurado → debe configurarlo primero
-        if (config2FA is null || !config2FA.Habilitado)
+        // Migración automática: usuarios con 2FA legacy
+        if (config2FALegacy?.Habilitado == true && mfaConfig is null)
         {
-            return (true, "Debes configurar el 2FA antes de continuar.", new LoginResponseDto
+            mfaConfig = new UsuarioMfaConfig
             {
-                Requiere2FA = true,
-                Configurado2FA = false,
                 UsuarioId = usuario.Id,
-                NombreUsuario = usuario.NombreUsuario
+                MfaHabilitado = true,
+                MfaMetodoPreferido = "app",
+                MfaAppHabilitado = true,
+                MfaEmailHabilitado = false,
+                MfaUltimaActualizacion = DateTime.UtcNow
+            };
+            await _usuarioRepo.CreateMfaConfigAsync(mfaConfig);
+        }
+
+        // Generar MFA ticket para continuar el flujo
+        var mfaTicket = new MfaTicket
+        {
+            UsuarioId = usuario.Id,
+            Email = usuario.Email,
+            NombreUsuario = usuario.NombreUsuario
+        };
+        var ticketToken = _mfaTicketHelper.GenerarMfaTicket(mfaTicket);
+
+        // No tiene MFA configurado → debe elegir método
+        if (mfaConfig is null || !mfaConfig.MfaHabilitado)
+        {
+            return (true, "Debes configurar MFA para continuar.", new LoginResponseDto
+            {
+                RequiereMfa = true,
+                MfaConfigRequerida = true,
+                MfaTicket = ticketToken,
+                MaskedEmail = OtpHelper.MaskEmail(usuario.Email),
+                UsuarioId = usuario.Id,
+                NombreUsuario = usuario.NombreUsuario,
+                // Backward compatibility
+                Requiere2FA = true,
+                Configurado2FA = false
             });
         }
 
-        // Ya tiene 2FA configurado → pedir código
-        return (true, "Se requiere verificación 2FA.", new LoginResponseDto
+        // Ya tiene MFA configurado → pedir verificación
+        return (true, "Se requiere verificación MFA.", new LoginResponseDto
         {
-            Requiere2FA = true,
-            Configurado2FA = true,
+            RequiereMfa = true,
+            MfaConfigRequerida = false,
+            MfaMetodoSugerido = mfaConfig.MfaMetodoPreferido,
+            MfaTicket = ticketToken,
+            MaskedEmail = OtpHelper.MaskEmail(usuario.Email),
             UsuarioId = usuario.Id,
-            NombreUsuario = usuario.NombreUsuario
+            NombreUsuario = usuario.NombreUsuario,
+            // Backward compatibility
+            Requiere2FA = true,
+            Configurado2FA = true
         });
     }
 
@@ -206,6 +252,441 @@ public class AuthService : IAuthService
         await _usuarioRepo.Update2FAAsync(config2FA);
 
         return (true, "2FA activado correctamente.");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // NUEVOS MÉTODOS MFA FLEXIBLE
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // ─── SELECT MFA METHOD ────────────────────────────────────────────────────
+    public async Task<(bool Success, string Message, Enable2FAResponseDto? Data)> SelectMfaMethodAsync(
+        SelectMfaMethodRequestDto dto, string ipOrigen)
+    {
+        var (valid, ticket) = _mfaTicketHelper.ValidarMfaTicket(dto.MfaTicket);
+        if (!valid || ticket is null)
+            return (false, "Ticket MFA inválido o expirado.", null);
+
+        var usuario = await _usuarioRepo.GetByIdAsync(ticket.UsuarioId);
+        if (usuario is null)
+            return (false, "Usuario no encontrado.", null);
+
+        var metodo = dto.Metodo.ToLower();
+        if (metodo != "app" && metodo != "email")
+            return (false, "Método no válido. Usa 'app' o 'email'.", null);
+
+        // Método APP → generar QR
+        if (metodo == "app")
+        {
+            var secretKey = Base32Encoding.ToString(KeyGeneration.GenerateRandomKey(20));
+
+            // Guardar en Usuario2FA (legacy compatibility)
+            var config2FA = await _usuarioRepo.Get2FAAsync(usuario.Id);
+            if (config2FA is null)
+            {
+                await _usuarioRepo.Create2FAAsync(new Usuario2FA
+                {
+                    UsuarioId = usuario.Id,
+                    SecretKey = secretKey,
+                    Habilitado = false
+                });
+            }
+            else
+            {
+                config2FA.SecretKey = secretKey;
+                config2FA.Habilitado = false;
+                await _usuarioRepo.Update2FAAsync(config2FA);
+            }
+
+            var qrUrl = $"otpauth://totp/BLL-Construccion:{usuario.NombreUsuario}?secret={secretKey}&issuer=BLL-Construccion";
+
+            return (true, "Escanea el código QR con tu app de autenticación.", new Enable2FAResponseDto
+            {
+                SecretKey = secretKey,
+                QrCodeUrl = qrUrl
+            });
+        }
+
+        // Método EMAIL → enviar código
+        var (permitido, mensajeError) = _rateLimitHelper.PuedeEnviarCodigo($"email_{usuario.Email}");
+        if (!permitido)
+            return (false, mensajeError!, null);
+
+        // Invalidar códigos anteriores
+        await _usuarioRepo.InvalidarCodigosAnterioresAsync(usuario.Id, "email");
+
+        // Generar y guardar nuevo código
+        var codigo = OtpHelper.GenerarCodigo();
+        var codigoHash = OtpHelper.HashCodigo(codigo, usuario.Email);
+
+        var emailCode = new MfaEmailCode
+        {
+            UsuarioId = usuario.Id,
+            CodigoHash = codigoHash,
+            Canal = "email",
+            FechaCreacion = DateTime.UtcNow,
+            FechaExpira = DateTime.UtcNow.AddMinutes(10),
+            IpSolicitud = ipOrigen
+        };
+        await _usuarioRepo.CreateMfaEmailCodeAsync(emailCode);
+
+        // Enviar email
+        var enviado = await _emailService.SendMfaCodeAsync(usuario.Email, usuario.Nombre, codigo, 10);
+        if (!enviado)
+            return (false, "Error al enviar el código por email. Intenta de nuevo.", null);
+
+        return (true, "Código enviado a tu correo. Verifica tu bandeja de entrada.", null);
+    }
+
+    // ─── SEND MFA EMAIL CODE ──────────────────────────────────────────────────
+    public async Task<(bool Success, string Message)> SendMfaEmailCodeAsync(
+        SendMfaEmailCodeRequestDto dto, string ipOrigen)
+    {
+        var (valid, ticket) = _mfaTicketHelper.ValidarMfaTicket(dto.MfaTicket);
+        if (!valid || ticket is null)
+            return (false, "Ticket MFA inválido o expirado.");
+
+        var usuario = await _usuarioRepo.GetByIdAsync(ticket.UsuarioId);
+        if (usuario is null)
+            return (false, "Usuario no encontrado.");
+
+        var (permitido, mensajeError) = _rateLimitHelper.PuedeEnviarCodigo($"email_{usuario.Email}");
+        if (!permitido)
+            return (false, mensajeError!);
+
+        // Invalidar códigos anteriores
+        await _usuarioRepo.InvalidarCodigosAnterioresAsync(usuario.Id, "email");
+
+        // Generar y guardar nuevo código
+        var codigo = OtpHelper.GenerarCodigo();
+        var codigoHash = OtpHelper.HashCodigo(codigo, usuario.Email);
+
+        var emailCode = new MfaEmailCode
+        {
+            UsuarioId = usuario.Id,
+            CodigoHash = codigoHash,
+            Canal = "email",
+            FechaCreacion = DateTime.UtcNow,
+            FechaExpira = DateTime.UtcNow.AddMinutes(10),
+            IpSolicitud = ipOrigen
+        };
+        await _usuarioRepo.CreateMfaEmailCodeAsync(emailCode);
+
+        // Enviar email
+        var enviado = await _emailService.SendMfaCodeAsync(usuario.Email, usuario.Nombre, codigo, 10);
+        if (!enviado)
+            return (false, "Error al enviar el código por email. Intenta de nuevo.");
+
+        return (true, "Código enviado a tu correo.");
+    }
+
+    // ─── VERIFY MFA ───────────────────────────────────────────────────────────
+    public async Task<(bool Success, string Message, LoginResponseDto? Data)> VerifyMfaAsync(
+        VerifyMfaRequestDto dto, string ipOrigen)
+    {
+        var (valid, ticket) = _mfaTicketHelper.ValidarMfaTicket(dto.MfaTicket);
+        if (!valid || ticket is null)
+            return (false, "Ticket MFA inválido o expirado.", null);
+
+        var usuario = await _usuarioRepo.GetByIdAsync(ticket.UsuarioId);
+        if (usuario is null)
+            return (false, "Usuario no encontrado.", null);
+
+        var metodo = dto.Metodo.ToLower();
+
+        if (metodo == "app")
+        {
+            var config2FA = await _usuarioRepo.Get2FAAsync(usuario.Id);
+            if (config2FA is null || !config2FA.Habilitado)
+                return (false, "MFA por app no está configurado.", null);
+
+            if (!ValidarCodigo2FA(config2FA.SecretKey, dto.Codigo))
+            {
+                await _usuarioRepo.RegistrarLogAsync(new LogAcceso
+                {
+                    UsuarioId = usuario.Id,
+                    Fecha = DateTime.UtcNow,
+                    Exitoso = false,
+                    IpOrigen = ipOrigen,
+                    Descripcion = "Código MFA app incorrecto"
+                });
+                return (false, "Código incorrecto.", null);
+            }
+        }
+        else if (metodo == "email")
+        {
+            var codigoValido = await _usuarioRepo.GetMfaEmailCodeValidoAsync(usuario.Id);
+            if (codigoValido is null)
+                return (false, "No hay código válido. Solicita uno nuevo.", null);
+
+            if (!OtpHelper.VerificarCodigo(dto.Codigo, codigoValido.CodigoHash, usuario.Email))
+            {
+                await _usuarioRepo.RegistrarIntentoFallidoAsync(codigoValido.Id);
+                await _usuarioRepo.RegistrarLogAsync(new LogAcceso
+                {
+                    UsuarioId = usuario.Id,
+                    Fecha = DateTime.UtcNow,
+                    Exitoso = false,
+                    IpOrigen = ipOrigen,
+                    Descripcion = "Código MFA email incorrecto"
+                });
+                return (false, "Código incorrecto.", null);
+            }
+
+            // Marcar código como usado
+            codigoValido.Usado = true;
+            codigoValido.IpVerificacion = ipOrigen;
+            await _usuarioRepo.MarcarMfaEmailCodigoUsadoAsync(codigoValido);
+        }
+        else
+        {
+            return (false, "Método no válido.", null);
+        }
+
+        // MFA exitoso → generar tokens
+        var response = await GenerarTokensAsync(usuario, ipOrigen);
+        return (true, "Verificación MFA exitosa.", response);
+    }
+
+    // ─── CONFIRM MFA APP SETUP ────────────────────────────────────────────────
+    public async Task<(bool Success, string Message, Enable2FAResponseDto? Data)> ConfirmMfaAppSetupAsync(
+        ConfirmMfaAppSetupRequestDto dto)
+    {
+        var (valid, ticket) = _mfaTicketHelper.ValidarMfaTicket(dto.MfaTicket);
+        if (!valid || ticket is null)
+            return (false, "Ticket MFA inválido o expirado.", null);
+
+        var usuario = await _usuarioRepo.GetByIdAsync(ticket.UsuarioId);
+        if (usuario is null)
+            return (false, "Usuario no encontrado.", null);
+
+        var config2FA = await _usuarioRepo.Get2FAAsync(usuario.Id);
+        if (config2FA is null)
+            return (false, "Primero configura el método app.", null);
+
+        if (!ValidarCodigo2FA(config2FA.SecretKey, dto.CodigoTotp))
+            return (false, "Código incorrecto. Intenta de nuevo.", null);
+
+        // Activar 2FA legacy
+        config2FA.Habilitado = true;
+        config2FA.FechaActivado = DateTime.UtcNow;
+        await _usuarioRepo.Update2FAAsync(config2FA);
+
+        // Activar o crear MfaConfig
+        var mfaConfig = await _usuarioRepo.GetMfaConfigAsync(usuario.Id);
+        if (mfaConfig is null)
+        {
+            mfaConfig = new UsuarioMfaConfig
+            {
+                UsuarioId = usuario.Id,
+                MfaHabilitado = true,
+                MfaMetodoPreferido = "app",
+                MfaAppHabilitado = true,
+                MfaEmailHabilitado = false,
+                MfaUltimaActualizacion = DateTime.UtcNow
+            };
+            await _usuarioRepo.CreateMfaConfigAsync(mfaConfig);
+        }
+        else
+        {
+            mfaConfig.MfaHabilitado = true;
+            mfaConfig.MfaMetodoPreferido = "app";
+            mfaConfig.MfaAppHabilitado = true;
+            mfaConfig.MfaUltimaActualizacion = DateTime.UtcNow;
+            await _usuarioRepo.UpdateMfaConfigAsync(mfaConfig);
+        }
+
+        return (true, "MFA por app activado correctamente.", null);
+    }
+
+    // ─── CHANGE MFA METHOD ────────────────────────────────────────────────────
+    public async Task<(bool Success, string Message, Enable2FAResponseDto? Data)> ChangeMfaMethodAsync(
+        ChangeMfaMethodRequestDto dto, int usuarioId, string ipOrigen)
+    {
+        var usuario = await _usuarioRepo.GetByIdAsync(usuarioId);
+        if (usuario is null)
+            return (false, "Usuario no encontrado.", null);
+
+        // Verificar password actual
+        if (!VerifyPassword(dto.PasswordActual, usuario.PasswordHash))
+            return (false, "Contraseña incorrecta.", null);
+
+        var mfaConfig = await _usuarioRepo.GetMfaConfigAsync(usuarioId);
+        if (mfaConfig is null || !mfaConfig.MfaHabilitado)
+            return (false, "No tienes MFA configurado.", null);
+
+        // Verificar código del método actual
+        if (mfaConfig.MfaMetodoPreferido == "app")
+        {
+            var config2FA = await _usuarioRepo.Get2FAAsync(usuarioId);
+            if (config2FA is null || !ValidarCodigo2FA(config2FA.SecretKey, dto.MetodoActualCodigo))
+                return (false, "Código del método actual incorrecto.", null);
+        }
+        else if (mfaConfig.MfaMetodoPreferido == "email")
+        {
+            var codigoValido = await _usuarioRepo.GetMfaEmailCodeValidoAsync(usuarioId);
+            if (codigoValido is null || !OtpHelper.VerificarCodigo(dto.MetodoActualCodigo, codigoValido.CodigoHash, usuario.Email))
+                return (false, "Código del método actual incorrecto.", null);
+        }
+
+        var metodoNuevo = dto.MetodoNuevo.ToLower();
+        if (metodoNuevo != "app" && metodoNuevo != "email")
+            return (false, "Método no válido.", null);
+
+        // Cambiar a APP
+        if (metodoNuevo == "app")
+        {
+            var secretKey = Base32Encoding.ToString(KeyGeneration.GenerateRandomKey(20));
+            var config2FA = await _usuarioRepo.Get2FAAsync(usuarioId);
+
+            if (config2FA is null)
+            {
+                await _usuarioRepo.Create2FAAsync(new Usuario2FA
+                {
+                    UsuarioId = usuarioId,
+                    SecretKey = secretKey,
+                    Habilitado = true,
+                    FechaActivado = DateTime.UtcNow
+                });
+            }
+            else
+            {
+                config2FA.SecretKey = secretKey;
+                config2FA.Habilitado = true;
+                config2FA.FechaActivado = DateTime.UtcNow;
+                await _usuarioRepo.Update2FAAsync(config2FA);
+            }
+
+            mfaConfig.MfaMetodoPreferido = "app";
+            mfaConfig.MfaAppHabilitado = true;
+            mfaConfig.MfaUltimaActualizacion = DateTime.UtcNow;
+            await _usuarioRepo.UpdateMfaConfigAsync(mfaConfig);
+
+            var qrUrl = $"otpauth://totp/BLL-Construccion:{usuario.NombreUsuario}?secret={secretKey}&issuer=BLL-Construccion";
+
+            return (true, "Método cambiado a app. Escanea el nuevo QR.", new Enable2FAResponseDto
+            {
+                SecretKey = secretKey,
+                QrCodeUrl = qrUrl
+            });
+        }
+
+        // Cambiar a EMAIL
+        mfaConfig.MfaMetodoPreferido = "email";
+        mfaConfig.MfaEmailHabilitado = true;
+        mfaConfig.MfaUltimaActualizacion = DateTime.UtcNow;
+        await _usuarioRepo.UpdateMfaConfigAsync(mfaConfig);
+
+        return (true, "Método cambiado a email correctamente.", null);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PASSWORD RESET
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // ─── REQUEST PASSWORD RESET ───────────────────────────────────────────────
+    public async Task<(bool Success, string Message)> RequestPasswordResetAsync(
+        RequestPasswordResetDto dto, string ipOrigen)
+    {
+        // Rate limiting
+        var (permitido, mensajeError) = _rateLimitHelper.PuedeEnviarCodigo($"reset_{dto.Email}");
+        if (!permitido)
+            return (false, mensajeError!);
+
+        var usuario = await _usuarioRepo.GetByEmailAsync(dto.Email);
+
+        // Mensaje genérico por seguridad (no filtrar si email existe)
+        if (usuario is null)
+            return (true, "Si el correo existe, recibirás un código de recuperación.");
+
+        if (!usuario.Activo)
+            return (true, "Si el correo existe, recibirás un código de recuperación.");
+
+        // Invalidar códigos anteriores
+        await _usuarioRepo.InvalidarPasswordResetCodigosAsync(usuario.Id);
+
+        // Generar código
+        var codigo = OtpHelper.GenerarCodigo();
+        var codigoHash = OtpHelper.HashCodigo(codigo, usuario.Email);
+
+        var resetCode = new PasswordResetCode
+        {
+            UsuarioId = usuario.Id,
+            CodigoHash = codigoHash,
+            FechaCreacion = DateTime.UtcNow,
+            FechaExpira = DateTime.UtcNow.AddMinutes(15),
+            IpSolicitud = ipOrigen
+        };
+        await _usuarioRepo.CreatePasswordResetCodeAsync(resetCode);
+
+        // Enviar email
+        var enviado = await _emailService.SendPasswordResetCodeAsync(usuario.Email, usuario.Nombre, codigo, 15);
+
+        // Mensaje genérico aunque falle el envío
+        return (true, "Si el correo existe, recibirás un código de recuperación.");
+    }
+
+    // ─── VERIFY PASSWORD RESET CODE ───────────────────────────────────────────
+    public async Task<(bool Success, string Message)> VerifyPasswordResetCodeAsync(
+        VerifyPasswordResetDto dto, string ipOrigen)
+    {
+        var usuario = await _usuarioRepo.GetByEmailAsync(dto.Email);
+        if (usuario is null)
+            return (false, "Código inválido o expirado.");
+
+        var codigoValido = await _usuarioRepo.GetPasswordResetCodeValidoAsync(usuario.Id);
+        if (codigoValido is null)
+            return (false, "Código inválido o expirado.");
+
+        if (!OtpHelper.VerificarCodigo(dto.Codigo, codigoValido.CodigoHash, usuario.Email))
+        {
+            await _usuarioRepo.RegistrarIntentoFallidoPasswordResetAsync(codigoValido.Id);
+            return (false, "Código incorrecto.");
+        }
+
+        return (true, "Código verificado. Puedes cambiar tu contraseña.");
+    }
+
+    // ─── CONFIRM PASSWORD RESET ───────────────────────────────────────────────
+    public async Task<(bool Success, string Message)> ConfirmPasswordResetAsync(
+        ConfirmPasswordResetDto dto, string ipOrigen)
+    {
+        var usuario = await _usuarioRepo.GetByEmailAsync(dto.Email);
+        if (usuario is null)
+            return (false, "Código inválido o expirado.");
+
+        var codigoValido = await _usuarioRepo.GetPasswordResetCodeValidoAsync(usuario.Id);
+        if (codigoValido is null)
+            return (false, "Código inválido o expirado.");
+
+        if (!OtpHelper.VerificarCodigo(dto.Codigo, codigoValido.CodigoHash, usuario.Email))
+        {
+            await _usuarioRepo.RegistrarIntentoFallidoPasswordResetAsync(codigoValido.Id);
+            return (false, "Código incorrecto.");
+        }
+
+        // Cambiar contraseña
+        usuario.PasswordHash = HashPassword(dto.NuevaPassword);
+        await _usuarioRepo.UpdateAsync(usuario);
+
+        // Marcar código como usado
+        codigoValido.Usado = true;
+        codigoValido.IpVerificacion = ipOrigen;
+        await _usuarioRepo.InvalidarPasswordResetCodigosAsync(usuario.Id);
+
+        // Revocar todos los refresh tokens
+        await _usuarioRepo.RevocarTodosLosTokensAsync(usuario.Id);
+
+        // Registrar en bitácora
+        await _usuarioRepo.RegistrarLogAsync(new LogAcceso
+        {
+            UsuarioId = usuario.Id,
+            Fecha = DateTime.UtcNow,
+            Exitoso = true,
+            IpOrigen = ipOrigen,
+            Descripcion = "Contraseña restablecida"
+        });
+
+        return (true, "Contraseña restablecida correctamente. Inicia sesión con tu nueva contraseña.");
     }
 
     // ─── HELPERS PRIVADOS ─────────────────────────────────────────────────────

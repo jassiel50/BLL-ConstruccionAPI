@@ -9,5 +9,12 @@ public class LoginResponseDto
     public bool Configurado2FA { get; set; }
     public int UsuarioId { get; set; }
     public string NombreUsuario { get; set; } = string.Empty;
+
+    // Nuevos campos para MFA flexible
+    public bool RequiereMfa { get; set; }
+    public bool MfaConfigRequerida { get; set; }
+    public string? MfaMetodoSugerido { get; set; }
+    public string? MfaTicket { get; set; }
+    public string? MaskedEmail { get; set; }
 }
 

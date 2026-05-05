@@ -106,4 +106,104 @@ public class UsuarioRepository : IUsuarioRepository
         => await _context.Usuarios
             .Include(u => u.Rol)
             .FirstOrDefaultAsync(u => u.Id == id);
+
+    // ─── MFA Config ───────────────────────────────────────────────────────────
+    public async Task<UsuarioMfaConfig?> GetMfaConfigAsync(int usuarioId)
+        => await _context.UsuariosMfaConfig.FirstOrDefaultAsync(u => u.UsuarioId == usuarioId);
+
+    public async Task CreateMfaConfigAsync(UsuarioMfaConfig config)
+    {
+        _context.UsuariosMfaConfig.Add(config);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task UpdateMfaConfigAsync(UsuarioMfaConfig config)
+    {
+        _context.UsuariosMfaConfig.Update(config);
+        await _context.SaveChangesAsync();
+    }
+
+    // ─── MFA Email Codes ──────────────────────────────────────────────────────
+    public async Task CreateMfaEmailCodeAsync(MfaEmailCode code)
+    {
+        _context.MfaEmailCodes.Add(code);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task<MfaEmailCode?> GetMfaEmailCodeValidoAsync(int usuarioId)
+    {
+        var ahora = DateTime.UtcNow;
+        return await _context.MfaEmailCodes
+            .Where(c => c.UsuarioId == usuarioId
+                && !c.Usado
+                && c.FechaExpira > ahora
+                && c.IntentosFallidos < c.MaxIntentos)
+            .OrderByDescending(c => c.FechaCreacion)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task InvalidarCodigosAnterioresAsync(int usuarioId, string canal)
+    {
+        var codigosAnteriores = await _context.MfaEmailCodes
+            .Where(c => c.UsuarioId == usuarioId && c.Canal == canal && !c.Usado)
+            .ToListAsync();
+
+        codigosAnteriores.ForEach(c => c.Usado = true);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task RegistrarIntentoFallidoAsync(int codeId)
+    {
+        var codigo = await _context.MfaEmailCodes.FindAsync(codeId);
+        if (codigo != null)
+        {
+            codigo.IntentosFallidos++;
+            await _context.SaveChangesAsync();
+        }
+    }
+
+    public async Task MarcarMfaEmailCodigoUsadoAsync(MfaEmailCode code)
+    {
+        _context.MfaEmailCodes.Update(code);
+        await _context.SaveChangesAsync();
+    }
+
+    // ─── Password Reset Codes ─────────────────────────────────────────────────
+    public async Task CreatePasswordResetCodeAsync(PasswordResetCode code)
+    {
+        _context.PasswordResetCodes.Add(code);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task<PasswordResetCode?> GetPasswordResetCodeValidoAsync(int usuarioId)
+    {
+        var ahora = DateTime.UtcNow;
+        return await _context.PasswordResetCodes
+            .Where(c => c.UsuarioId == usuarioId
+                && !c.Usado
+                && c.FechaExpira > ahora
+                && c.IntentosFallidos < c.MaxIntentos)
+            .OrderByDescending(c => c.FechaCreacion)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task InvalidarPasswordResetCodigosAsync(int usuarioId)
+    {
+        var codigosAnteriores = await _context.PasswordResetCodes
+            .Where(c => c.UsuarioId == usuarioId && !c.Usado)
+            .ToListAsync();
+
+        codigosAnteriores.ForEach(c => c.Usado = true);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task RegistrarIntentoFallidoPasswordResetAsync(int codeId)
+    {
+        var codigo = await _context.PasswordResetCodes.FindAsync(codeId);
+        if (codigo != null)
+        {
+            codigo.IntentosFallidos++;
+            await _context.SaveChangesAsync();
+        }
+    }
 }
