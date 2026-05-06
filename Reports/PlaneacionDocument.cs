@@ -92,21 +92,18 @@ public class PlaneacionDocument : IDocument
                         string fondo = alterno ? ReporteEstilos.ColorFondoTabla : Colors.White;
                         alterno = !alterno;
 
-                        table.Cell().Background(fondo)
-                            .BorderBottom(0.5f).BorderColor(ReporteEstilos.ColorBordeTabla)
-                            .Padding(5).Text(fase.Orden.ToString()).FontSize(8);
+                        void Celda(string texto, bool bold = false)
+                        {
+                            var txt = table.Cell().Background(fondo)
+                                .BorderBottom(0.5f).BorderColor(ReporteEstilos.ColorBordeTabla)
+                                .Padding(5).Text(texto).FontSize(8);
+                            if (bold) txt.Bold();
+                        }
 
-                        table.Cell().Background(fondo)
-                            .BorderBottom(0.5f).BorderColor(ReporteEstilos.ColorBordeTabla)
-                            .Padding(5).Text(fase.Nombre).FontSize(8).Bold();
-
-                        table.Cell().Background(fondo)
-                            .BorderBottom(0.5f).BorderColor(ReporteEstilos.ColorBordeTabla)
-                            .Padding(5).Text(fase.Descripcion).FontSize(8);
-
-                        table.Cell().Background(fondo)
-                            .BorderBottom(0.5f).BorderColor(ReporteEstilos.ColorBordeTabla)
-                            .Padding(5).Text(fase.FechaLimite.ToString("dd/MM/yyyy")).FontSize(8);
+                        Celda(fase.Orden.ToString());
+                        Celda(fase.Nombre, true);
+                        Celda(fase.Descripcion);
+                        Celda(fase.FechaLimite.ToString("dd/MM/yyyy"));
                     }
                 });
 
