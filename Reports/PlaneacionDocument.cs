@@ -73,10 +73,10 @@ public class PlaneacionDocument : IDocument
                 {
                     table.ColumnsDefinition(c =>
                     {
-                        c.ConstantColumn(30);   // #
-                        c.RelativeColumn(2);    // Fase
-                        c.RelativeColumn(3);    // Descripción
-                        c.ConstantColumn(90);   // Fecha Límite
+                        c.ConstantColumn(30);
+                        c.RelativeColumn(2);
+                        c.RelativeColumn(3);
+                        c.ConstantColumn(90);
                     });
 
                     table.Header(h =>
@@ -107,45 +107,42 @@ public class PlaneacionDocument : IDocument
                     }
                 });
 
-                col.Item().PaddingTop(30);
+                col.Item().PaddingTop(36);
 
-                // ─── Sección de firmas ────────────────────────────────────────
+                // ─── Firmas ───────────────────────────────────────────────────
                 col.Item().Text("Firmas de Conformidad").FontSize(11).FontColor(ReporteEstilos.ColorPrimario).Bold();
-                col.Item().PaddingTop(6).Text("Al firmar este documento, los participantes aceptan y se comprometen a cumplir con el plan de ejecución establecido.")
-                    .FontSize(8).FontColor(ReporteEstilos.ColorGris).Italic();
+                col.Item().PaddingTop(4)
+                    .Text("Al firmar este documento, los participantes aceptan y se comprometen a cumplir con el plan de ejecución establecido.")
+                    .FontSize(8).Italic().FontColor(ReporteEstilos.ColorGris);
 
-                col.Item().PaddingTop(30).Row(row =>
+                col.Item().PaddingTop(40).Row(row =>
                 {
-                    // Firma 1
                     row.RelativeItem().Column(c =>
                     {
-                        c.Item().PaddingBottom(30).Text("").FontSize(8);
+                        c.Item().PaddingBottom(28).Text("").FontSize(8);
                         c.Item().LineHorizontal(1).LineColor(ReporteEstilos.ColorPrimario);
                         c.Item().PaddingTop(4).Text("Responsable del Proyecto").FontSize(8).FontColor(ReporteEstilos.ColorGris);
                         c.Item().Text("Nombre: ___________________________").FontSize(8).FontColor(ReporteEstilos.ColorGris);
                     });
-
                     row.ConstantItem(30);
-
-                    // Firma 2
                     row.RelativeItem().Column(c =>
                     {
-                        c.Item().PaddingBottom(30).Text("").FontSize(8);
+                        c.Item().PaddingBottom(28).Text("").FontSize(8);
                         c.Item().LineHorizontal(1).LineColor(ReporteEstilos.ColorPrimario);
                         c.Item().PaddingTop(4).Text("Supervisor / Administración").FontSize(8).FontColor(ReporteEstilos.ColorGris);
                         c.Item().Text("Nombre: ___________________________").FontSize(8).FontColor(ReporteEstilos.ColorGris);
                     });
                 });
 
-                col.Item().PaddingTop(30).Row(row =>
+                col.Item().PaddingTop(36).Row(row =>
                 {
-                    row.RelativeItem().Column(c =>
+                    row.RelativeItem(1).Column(c =>
                     {
-                        c.Item().PaddingBottom(30).Text("").FontSize(8);
+                        c.Item().PaddingBottom(28).Text("").FontSize(8);
                         c.Item().LineHorizontal(1).LineColor(ReporteEstilos.ColorPrimario);
                         c.Item().PaddingTop(4).Text("Fecha de Aceptación").FontSize(8).FontColor(ReporteEstilos.ColorGris);
                     });
-                    row.RelativeItem();
+                    row.RelativeItem(2);
                 });
             });
         });
