@@ -111,4 +111,13 @@ public class ProyectoController : ControllerBase
         if (!success) return BadRequest(new { message });
         return Ok(new { count, message });
     }
+
+    // GET api/proyectos/{id}/planeacion/pdf
+    [HttpGet("{id:int}/planeacion/pdf")]
+    public async Task<IActionResult> DescargarPlaneacion(int id)
+    {
+        var (success, message, pdf) = await _service.GenerarPlaneacionAsync(id);
+        if (!success) return BadRequest(new { message });
+        return File(pdf!, "application/pdf", $"Planeacion_Proyecto_{id}_{DateTime.Now:yyyyMMdd}.pdf");
+    }
 }
