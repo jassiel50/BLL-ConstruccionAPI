@@ -225,6 +225,46 @@ public class ProyectosService : IProyectosService
         return (true, $"{count} herramienta(s) devuelta(s) correctamente.", count);
     }
 
+    public async Task<(bool Success, string Message, byte[]? Pdf)> GenerarPlaneacionAsync(int proyectoId)
+    {
+        var proyecto = await _proyectosRepo.GetByIdAsync(proyectoId);
+        if (proyecto is null || !proyecto.Activo)
+            return (false, "Proyecto no encontrado.", null);
+
+        var fases = await _context.FaseProyectos
+            .Where(f => f.ProyectoId == proyectoId)
+            .OrderBy(f => f.Orden)
+            .ToListAsync();
+
+        if (!fases.Any())
+            return (false, "El proyecto no tiene fases registradas. Agrega las fases antes de generar la planeación.", null);
+
+        var pdfBytes = Document.Create(container =>
+            new PlaneacionDocument(proyecto, fases).Compose(container)).GeneratePdf();
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var notificables = await _usuarioRepo.GetUsuariosNotificablesAsync();
+                var fasesData = fases.Select(f => (f.Nombre, f.Descripcion, f.FechaLimite)).ToList();
+                foreach (var u in notificables)
+                {
+                    await _emailService.SendProyectoIniciadoAdminAsync(
+                        u.Email, u.Nombre,
+                        proyecto.Nombre, proyecto.Cliente?.Nombre ?? "-",
+                        proyecto.Ubicacion, proyecto.FechaInicio, proyecto.FechaFin,
+                        proyecto.MontoContrato, proyecto.PresupuestoEstimado,
+                        proyecto.NumeroCotizacion, proyecto.OrdenCompra,
+                        fasesData);
+                }
+            }
+            catch { /* silencioso */ }
+        });
+
+        return (true, "Planeación generada correctamente.", pdfBytes);
+    }
+
     private (int UsuarioId, string NombreUsuario) GetUsuarioInfo()
     {
         var user = _httpContextAccessor.HttpContext?.User;
