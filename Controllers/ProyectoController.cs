@@ -118,6 +118,6 @@ public class ProyectoController : ControllerBase
     {
         var (success, message, pdf) = await _service.GenerarPlaneacionAsync(id);
         if (!success) return BadRequest(new { message });
-        return File(pdf!, "application/pdf", $"Planeacion_Proyecto_{id}_{DateTime.Now:yyyyMMdd}.pdf");
+        return File(pdf!, "application/pdf", $"Planeacion_Proyecto_{id}_{DateTime.UtcNow:yyyyMMdd}.pdf");
     }
 }
