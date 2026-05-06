@@ -1,17 +1,35 @@
+using System.Security.Claims;
 using BLL_ConstruccionAPI.DTOs.ProveedoresClientes;
 using BLL_ConstruccionAPI.Models.Inventario;
 using BLL_ConstruccionAPI.Repositories.Interfaces;
 using BLL_ConstruccionAPI.Services.Interfaces;
+using Microsoft.AspNetCore.Http;
 
 namespace BLL_ConstruccionAPI.Services;
 
 public class ProveedoresClientesService : IProveedoresClientesService
 {
     private readonly IProveedoresClientesRepository _repo;
+    private readonly IBitacoraService _bitacora;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public ProveedoresClientesService(IProveedoresClientesRepository repo)
+    public ProveedoresClientesService(
+        IProveedoresClientesRepository repo,
+        IBitacoraService bitacora,
+        IHttpContextAccessor httpContextAccessor)
     {
         _repo = repo;
+        _bitacora = bitacora;
+        _httpContextAccessor = httpContextAccessor;
+    }
+
+    private (int Id, string Nombre, string Ip) GetUsuarioInfo()
+    {
+        var user = _httpContextAccessor.HttpContext?.User;
+        var id = int.TryParse(user?.FindFirstValue(ClaimTypes.NameIdentifier), out var parsed) ? parsed : 0;
+        var nombre = user?.FindFirstValue("nombreUsuario") ?? "Sistema";
+        var ip = _httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString() ?? "";
+        return (id, nombre, ip);
     }
 
     // ─── Proveedores ──────────────────────────────────────────────────────────
@@ -45,6 +63,11 @@ public class ProveedoresClientesService : IProveedoresClientesService
         };
 
         await _repo.CreateProveedorAsync(proveedor);
+
+        var (uid, uname, ip) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Creó proveedor", "Proveedor",
+            $"Proveedor '{proveedor.Nombre}' (RFC: {proveedor.RFC}) registrado.", ip);
+
         return (true, "Proveedor registrado correctamente.", ProveedorResponseDto.FromEntity(proveedor));
     }
 
@@ -64,6 +87,11 @@ public class ProveedoresClientesService : IProveedoresClientesService
         proveedor.Direccion = dto.Direccion;
 
         await _repo.UpdateProveedorAsync(proveedor);
+
+        var (uid, uname, ip) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Actualizó proveedor", "Proveedor",
+            $"Proveedor '{proveedor.Nombre}' (RFC: {proveedor.RFC}) actualizado.", ip);
+
         return (true, "Proveedor actualizado correctamente.");
     }
 
@@ -73,6 +101,11 @@ public class ProveedoresClientesService : IProveedoresClientesService
         if (proveedor is null) return (false, "Proveedor no encontrado.");
 
         await _repo.DeleteProveedorAsync(proveedor);
+
+        var (uid, uname, ip) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Desactivó proveedor", "Proveedor",
+            $"Proveedor '{proveedor.Nombre}' (RFC: {proveedor.RFC}) desactivado.", ip);
+
         return (true, "Proveedor desactivado correctamente.");
     }
 
@@ -107,6 +140,11 @@ public class ProveedoresClientesService : IProveedoresClientesService
         };
 
         await _repo.CreateClienteAsync(cliente);
+
+        var (uid, uname, ip) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Creó cliente", "Cliente",
+            $"Cliente '{cliente.Nombre}' (RFC: {cliente.RFC}) registrado.", ip);
+
         return (true, "Cliente registrado correctamente.", ClienteResponseDto.FromEntity(cliente));
     }
 
@@ -126,6 +164,11 @@ public class ProveedoresClientesService : IProveedoresClientesService
         cliente.Direccion = dto.Direccion;
 
         await _repo.UpdateClienteAsync(cliente);
+
+        var (uid, uname, ip) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Actualizó cliente", "Cliente",
+            $"Cliente '{cliente.Nombre}' (RFC: {cliente.RFC}) actualizado.", ip);
+
         return (true, "Cliente actualizado correctamente.");
     }
 
@@ -135,6 +178,11 @@ public class ProveedoresClientesService : IProveedoresClientesService
         if (cliente is null) return (false, "Cliente no encontrado.");
 
         await _repo.DeleteClienteAsync(cliente);
+
+        var (uid, uname, ip) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Desactivó cliente", "Cliente",
+            $"Cliente '{cliente.Nombre}' (RFC: {cliente.RFC}) desactivado.", ip);
+
         return (true, "Cliente desactivado correctamente.");
     }
 }

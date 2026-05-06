@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using BLL_ConstruccionAPI.Data;
 using BLL_ConstruccionAPI.DTOs.GastosExtras;
 using BLL_ConstruccionAPI.Models.Inventario.Proyectos;
@@ -9,10 +10,26 @@ namespace BLL_ConstruccionAPI.Services;
 public class GastoExtraService : IGastoExtraService
 {
     private readonly AppDbContext _context;
+    private readonly IBitacoraService _bitacora;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public GastoExtraService(AppDbContext context)
+    public GastoExtraService(
+        AppDbContext context,
+        IBitacoraService bitacora,
+        IHttpContextAccessor httpContextAccessor)
     {
         _context = context;
+        _bitacora = bitacora;
+        _httpContextAccessor = httpContextAccessor;
+    }
+
+    private (int Id, string Nombre, string Ip) GetUsuarioInfo()
+    {
+        var user = _httpContextAccessor.HttpContext?.User;
+        var id = int.TryParse(user?.FindFirstValue(ClaimTypes.NameIdentifier), out var parsed) ? parsed : 0;
+        var nombre = user?.FindFirstValue("nombreUsuario") ?? "Sistema";
+        var ip = _httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString() ?? "";
+        return (id, nombre, ip);
     }
 
     public async Task<List<GastoExtraDto>> GetByFaseAsync(int faseId)
@@ -50,6 +67,10 @@ public class GastoExtraService : IGastoExtraService
         _context.GastosExtras.Add(entity);
         await _context.SaveChangesAsync();
 
+        var (uid, uname, ip) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Agregó gasto extra", "GastoExtra",
+            $"Gasto extra '{entity.Concepto}' (${entity.Monto:N2}) registrado en fase ID {faseId}.", ip);
+
         return (true, new GastoExtraDto
         {
             Id = entity.Id,
@@ -68,6 +89,11 @@ public class GastoExtraService : IGastoExtraService
 
         _context.GastosExtras.Remove(entity);
         await _context.SaveChangesAsync();
+
+        var (uid, uname, ip) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Eliminó gasto extra", "GastoExtra",
+            $"Gasto extra '{entity.Concepto}' (ID {entity.Id}) eliminado de fase ID {entity.FaseId}.", ip);
+
         return true;
     }
 }

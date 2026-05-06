@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using BLL_ConstruccionAPI.Data;
 using BLL_ConstruccionAPI.DTOs.Fases;
 using BLL_ConstruccionAPI.DTOs.GastosExtras;
@@ -14,12 +15,30 @@ public class FasesService : IFasesService
     private readonly IFasesRepository _fasesRepo;
     private readonly IProyectosRepository _proyectosRepo;
     private readonly AppDbContext _context;
+    private readonly IBitacoraService _bitacora;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public FasesService(IFasesRepository fasesRepo, IProyectosRepository proyectosRepo, AppDbContext context)
+    public FasesService(
+        IFasesRepository fasesRepo,
+        IProyectosRepository proyectosRepo,
+        AppDbContext context,
+        IBitacoraService bitacora,
+        IHttpContextAccessor httpContextAccessor)
     {
         _fasesRepo = fasesRepo;
         _proyectosRepo = proyectosRepo;
         _context = context;
+        _bitacora = bitacora;
+        _httpContextAccessor = httpContextAccessor;
+    }
+
+    private (int Id, string Nombre, string Ip) GetUsuarioInfo()
+    {
+        var user = _httpContextAccessor.HttpContext?.User;
+        var id = int.TryParse(user?.FindFirstValue(ClaimTypes.NameIdentifier), out var parsed) ? parsed : 0;
+        var nombre = user?.FindFirstValue("nombreUsuario") ?? "Sistema";
+        var ip = _httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString() ?? "";
+        return (id, nombre, ip);
     }
 
     public async Task<List<FaseResponseDto>> GetByProyectoAsync(int proyectoId)
@@ -67,6 +86,11 @@ public class FasesService : IFasesService
         };
 
         await _fasesRepo.CreateAsync(fase);
+
+        var (uid, uname, ip) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Creó fase", "FaseProyecto",
+            $"Fase '{fase.Nombre}' creada en proyecto ID {proyectoId}.", ip);
+
         return (true, "Fase creada correctamente.", FaseResponseDto.FromEntity(fase));
     }
 
@@ -81,6 +105,11 @@ public class FasesService : IFasesService
         fase.FechaLimite = dto.FechaLimite;
 
         await _fasesRepo.UpdateAsync(fase);
+
+        var (uid, uname, ip) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Actualizó fase", "FaseProyecto",
+            $"Fase '{fase.Nombre}' (ID {fase.Id}) actualizada.", ip);
+
         return (true, "Fase actualizada correctamente.");
     }
 
@@ -96,6 +125,11 @@ public class FasesService : IFasesService
         fase.FechaCompletada = DateTime.UtcNow;
 
         await _fasesRepo.UpdateAsync(fase);
+
+        var (uid, uname, ip) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Completó fase", "FaseProyecto",
+            $"Fase '{fase.Nombre}' (ID {fase.Id}) marcada como completada.", ip);
+
         return (true, "Fase marcada como completada.");
     }
 
@@ -108,6 +142,11 @@ public class FasesService : IFasesService
             return (false, "No se puede eliminar una fase ya completada.");
 
         await _fasesRepo.DeleteAsync(fase);
+
+        var (uid, uname, ip) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Eliminó fase", "FaseProyecto",
+            $"Fase '{fase.Nombre}' (ID {fase.Id}) eliminada.", ip);
+
         return (true, "Fase eliminada correctamente.");
     }
 
