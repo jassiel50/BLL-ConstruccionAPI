@@ -16,4 +16,5 @@ public interface IProyectosService
     Task<IEnumerable<AlmacenProyectoResponseDto>> GetMaterialesAsync(int proyectoId);
     Task<IEnumerable<AsignacionHerramientaResponseDto>> GetHerramientasAsync(int proyectoId);
     Task<(bool Success, string Message, int Count)> DevolverTodasHerramientasAsync(int proyectoId);
+    Task<(bool Success, string Message, byte[]? Pdf)> GenerarPlaneacionAsync(int proyectoId);
 }
