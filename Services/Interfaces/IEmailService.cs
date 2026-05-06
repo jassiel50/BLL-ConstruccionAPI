@@ -4,4 +4,17 @@ public interface IEmailService
 {
     Task<bool> SendMfaCodeAsync(string toEmail, string userName, string code, int expirationMinutes);
     Task<bool> SendPasswordResetCodeAsync(string toEmail, string userName, string code, int expirationMinutes);
+    Task<bool> SendProyectoIniciadoAdminAsync(
+        string toEmail,
+        string adminName,
+        string proyectoNombre,
+        string clienteNombre,
+        string ubicacion,
+        DateTime fechaInicio,
+        DateTime? fechaFin,
+        decimal montoContrato,
+        decimal presupuestoEstimado,
+        string numeroCotizacion,
+        string ordenCompra,
+        List<(string Nombre, string Descripcion, DateTime FechaLimite)> fases);
 }
