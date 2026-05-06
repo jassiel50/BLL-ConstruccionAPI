@@ -79,7 +79,12 @@ public class UsuariosService : IUsuariosService
 
         await _usuarioRepo.CreateAsync(usuario);
 
-        var rolNombre = dto.RolId == 1 ? "Admin" : "Operador";
+        var rolNombre = dto.RolId switch
+        {
+            1 => "Admin",
+            3 => "Sistemas",
+            _ => "Operador"
+        };
         var (uid, uname) = GetUsuarioInfo();
         await _bitacora.RegistrarAsync(uid, uname, "Creó", "Usuario", $"Usuario '{dto.NombreUsuario}' creado con rol {rolNombre}");
 

@@ -206,4 +206,11 @@ public class UsuarioRepository : IUsuarioRepository
             await _context.SaveChangesAsync();
         }
     }
+
+    // ─── Notificaciones ───────────────────────────────────────────────────────
+    public async Task<List<Usuario>> GetUsuariosNotificablesAsync()
+        => await _context.Usuarios
+            .Include(u => u.Rol)
+            .Where(u => u.Activo && (u.RolId == 1 || u.RolId == 3))
+            .ToListAsync();
 }

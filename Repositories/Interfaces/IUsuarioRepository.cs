@@ -45,4 +45,7 @@ public interface IUsuarioRepository
 
     // Log
     Task RegistrarLogAsync(LogAcceso log);
+
+    // Notificaciones
+    Task<List<Usuario>> GetUsuariosNotificablesAsync();
 }

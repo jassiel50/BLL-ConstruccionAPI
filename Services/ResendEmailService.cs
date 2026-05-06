@@ -106,6 +106,111 @@ public class ResendEmailService : IEmailService
         return await SendEmailAsync(toEmail, subject, htmlBody);
     }
 
+    public async Task<bool> SendProyectoIniciadoAdminAsync(
+        string toEmail,
+        string adminName,
+        string proyectoNombre,
+        string clienteNombre,
+        string ubicacion,
+        DateTime fechaInicio,
+        DateTime? fechaFin,
+        decimal montoContrato,
+        decimal presupuestoEstimado,
+        string numeroCotizacion,
+        string ordenCompra,
+        List<(string Nombre, string Descripcion, DateTime FechaLimite)> fases)
+    {
+        var subject = $"Nuevo proyecto iniciado: {proyectoNombre} - BLL Construcción";
+
+        var fasesHtml = new System.Text.StringBuilder();
+        foreach (var fase in fases)
+        {
+            fasesHtml.Append($@"
+                <tr>
+                    <td style=""padding: 8px; border: 1px solid #ddd;"">{fase.Nombre}</td>
+                    <td style=""padding: 8px; border: 1px solid #ddd;"">{fase.Descripcion}</td>
+                    <td style=""padding: 8px; border: 1px solid #ddd;"">{fase.FechaLimite:dd/MM/yyyy}</td>
+                </tr>");
+        }
+
+        var fechaFinTexto = fechaFin.HasValue ? fechaFin.Value.ToString("dd/MM/yyyy") : "Por definir";
+
+        var htmlBody = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset=""utf-8"">
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 700px; margin: 0 auto; padding: 20px; }}
+        .header {{ background-color: #1a3a5c; color: white; padding: 20px; text-align: center; }}
+        .content {{ background-color: #f9f9f9; padding: 30px; margin: 20px 0; }}
+        .info-table {{ width: 100%; border-collapse: collapse; margin: 15px 0; }}
+        .info-table td {{ padding: 8px 12px; border-bottom: 1px solid #e0e0e0; }}
+        .info-table td:first-child {{ font-weight: bold; width: 40%; color: #1a3a5c; }}
+        .fases-table {{ width: 100%; border-collapse: collapse; margin: 15px 0; }}
+        .fases-table th {{ background-color: #1a3a5c; color: white; padding: 10px; text-align: left; border: 1px solid #ddd; }}
+        .fases-table td {{ padding: 8px; border: 1px solid #ddd; }}
+        .fases-table tr:nth-child(even) {{ background-color: #f2f2f2; }}
+        .monto-box {{ background-color: #e8f0fe; border-left: 4px solid #1a3a5c; padding: 15px; margin: 15px 0; }}
+        .footer {{ text-align: center; color: #666; font-size: 12px; margin-top: 20px; }}
+        h3 {{ color: #1a3a5c; border-bottom: 2px solid #1a3a5c; padding-bottom: 5px; }}
+    </style>
+</head>
+<body>
+    <div class=""container"">
+        <div class=""header"">
+            <h1>BLL Construcción</h1>
+            <h2>Nuevo Proyecto Iniciado</h2>
+        </div>
+        <div class=""content"">
+            <p>Hola <strong>{adminName}</strong>,</p>
+            <p>Se ha registrado el inicio de un nuevo proyecto. A continuación los detalles:</p>
+
+            <h3>Información General</h3>
+            <table class=""info-table"">
+                <tr><td>Proyecto:</td><td>{proyectoNombre}</td></tr>
+                <tr><td>Cliente:</td><td>{clienteNombre}</td></tr>
+                <tr><td>Ubicación:</td><td>{ubicacion}</td></tr>
+                <tr><td>Fecha de inicio:</td><td>{fechaInicio:dd/MM/yyyy}</td></tr>
+                <tr><td>Fecha de fin:</td><td>{fechaFinTexto}</td></tr>
+                <tr><td>N° Cotización:</td><td>{numeroCotizacion}</td></tr>
+                <tr><td>Orden de compra:</td><td>{ordenCompra}</td></tr>
+            </table>
+
+            <h3>Información Financiera</h3>
+            <div class=""monto-box"">
+                <table class=""info-table"">
+                    <tr><td>Monto contrato:</td><td>{montoContrato:C2}</td></tr>
+                    <tr><td>Presupuesto estimado:</td><td>{presupuestoEstimado:C2}</td></tr>
+                </table>
+            </div>
+
+            <h3>Fases del Proyecto</h3>
+            <table class=""fases-table"">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Descripción</th>
+                        <th>Fecha Límite</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {fasesHtml}
+                </tbody>
+            </table>
+        </div>
+        <div class=""footer"">
+            <p>© 2026 BLL Construcción. Todos los derechos reservados.</p>
+            <p>Este es un correo automático, por favor no respondas a este mensaje.</p>
+        </div>
+    </div>
+</body>
+</html>";
+
+        return await SendEmailAsync(toEmail, subject, htmlBody);
+    }
+
     private async Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody)
     {
         try
