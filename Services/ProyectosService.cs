@@ -5,8 +5,10 @@ using BLL_ConstruccionAPI.DTOs.Proyectos;
 using BLL_ConstruccionAPI.Models.Enums;
 using BLL_ConstruccionAPI.Models.Inventario.Proyectos;
 using BLL_ConstruccionAPI.Repositories.Interfaces;
+using BLL_ConstruccionAPI.Reports;
 using BLL_ConstruccionAPI.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using QuestPDF.Fluent;
 using System.Security.Claims;
 
 namespace BLL_ConstruccionAPI.Services;
@@ -19,6 +21,8 @@ public class ProyectosService : IProyectosService
     private readonly IBitacoraService _bitacora;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly AppDbContext _context;
+    private readonly IEmailService _emailService;
+    private readonly IUsuarioRepository _usuarioRepo;
 
     private static readonly EstadoProyecto[] EstadosValidos =
         [EstadoProyecto.Activo, EstadoProyecto.Pausado, EstadoProyecto.Terminado];
@@ -29,7 +33,9 @@ public class ProyectosService : IProyectosService
         ISalidasRepository salidasRepo,
         IBitacoraService bitacora,
         IHttpContextAccessor httpContextAccessor,
-        AppDbContext context)
+        AppDbContext context,
+        IEmailService emailService,
+        IUsuarioRepository usuarioRepo)
     {
         _proyectosRepo = proyectosRepo;
         _provClientesRepo = provClientesRepo;
@@ -37,6 +43,8 @@ public class ProyectosService : IProyectosService
         _bitacora = bitacora;
         _httpContextAccessor = httpContextAccessor;
         _context = context;
+        _emailService = emailService;
+        _usuarioRepo = usuarioRepo;
     }
 
     public async Task<IEnumerable<ProyectoResponseDto>> GetAllAsync()
@@ -215,6 +223,46 @@ public class ProyectosService : IProyectosService
             $"{count} herramienta(s) devueltas del proyecto '{proyecto.Nombre}'");
 
         return (true, $"{count} herramienta(s) devuelta(s) correctamente.", count);
+    }
+
+    public async Task<(bool Success, string Message, byte[]? Pdf)> GenerarPlaneacionAsync(int proyectoId)
+    {
+        var proyecto = await _proyectosRepo.GetByIdAsync(proyectoId);
+        if (proyecto is null || !proyecto.Activo)
+            return (false, "Proyecto no encontrado.", null);
+
+        var fases = await _context.FaseProyectos
+            .Where(f => f.ProyectoId == proyectoId)
+            .OrderBy(f => f.Orden)
+            .ToListAsync();
+
+        if (!fases.Any())
+            return (false, "El proyecto no tiene fases registradas. Agrega las fases antes de generar la planeación.", null);
+
+        var pdfBytes = Document.Create(container =>
+            new PlaneacionDocument(proyecto, fases).Compose(container)).GeneratePdf();
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var notificables = await _usuarioRepo.GetUsuariosNotificablesAsync();
+                var fasesData = fases.Select(f => (f.Nombre, f.Descripcion, f.FechaLimite)).ToList();
+                foreach (var u in notificables)
+                {
+                    await _emailService.SendProyectoIniciadoAdminAsync(
+                        u.Email, u.Nombre,
+                        proyecto.Nombre, proyecto.Cliente?.Nombre ?? "-",
+                        proyecto.Ubicacion, proyecto.FechaInicio, proyecto.FechaFin,
+                        proyecto.MontoContrato, proyecto.PresupuestoEstimado,
+                        proyecto.NumeroCotizacion, proyecto.OrdenCompra,
+                        fasesData);
+                }
+            }
+            catch { /* silencioso */ }
+        });
+
+        return (true, "Planeación generada correctamente.", pdfBytes);
     }
 
     private (int UsuarioId, string NombreUsuario) GetUsuarioInfo()
