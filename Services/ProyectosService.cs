@@ -21,8 +21,6 @@ public class ProyectosService : IProyectosService
     private readonly IBitacoraService _bitacora;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly AppDbContext _context;
-    private readonly IEmailService _emailService;
-    private readonly IUsuarioRepository _usuarioRepo;
 
     private static readonly EstadoProyecto[] EstadosValidos =
         [EstadoProyecto.Activo, EstadoProyecto.Pausado, EstadoProyecto.Terminado];
@@ -33,9 +31,7 @@ public class ProyectosService : IProyectosService
         ISalidasRepository salidasRepo,
         IBitacoraService bitacora,
         IHttpContextAccessor httpContextAccessor,
-        AppDbContext context,
-        IEmailService emailService,
-        IUsuarioRepository usuarioRepo)
+        AppDbContext context)
     {
         _proyectosRepo = proyectosRepo;
         _provClientesRepo = provClientesRepo;
@@ -43,8 +39,6 @@ public class ProyectosService : IProyectosService
         _bitacora = bitacora;
         _httpContextAccessor = httpContextAccessor;
         _context = context;
-        _emailService = emailService;
-        _usuarioRepo = usuarioRepo;
     }
 
     public async Task<IEnumerable<ProyectoResponseDto>> GetAllAsync()
@@ -242,26 +236,6 @@ public class ProyectosService : IProyectosService
         var pdfBytes = Document.Create(container =>
             new PlaneacionDocument(proyecto, fases).Compose(container)).GeneratePdf();
 
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                var notificables = await _usuarioRepo.GetUsuariosNotificablesAsync();
-                var fasesData = fases.Select(f => (f.Nombre, f.Descripcion, f.FechaLimite)).ToList();
-                foreach (var u in notificables)
-                {
-                    await _emailService.SendProyectoIniciadoAdminAsync(
-                        u.Email, u.Nombre,
-                        proyecto.Nombre, proyecto.Cliente?.Nombre ?? "-",
-                        proyecto.Ubicacion, proyecto.FechaInicio, proyecto.FechaFin,
-                        proyecto.MontoContrato, proyecto.PresupuestoEstimado,
-                        proyecto.NumeroCotizacion, proyecto.OrdenCompra,
-                        fasesData);
-                }
-            }
-            catch { /* silencioso */ }
-        });
-
         return (true, "Planeación generada correctamente.", pdfBytes);
     }
 
@@ -273,4 +247,3 @@ public class ProyectosService : IProyectosService
         return (id, nombre);
     }
 }
-

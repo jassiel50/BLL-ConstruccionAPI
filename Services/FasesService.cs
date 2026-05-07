@@ -14,6 +14,8 @@ public class FasesService : IFasesService
 {
     private readonly IFasesRepository _fasesRepo;
     private readonly IProyectosRepository _proyectosRepo;
+    private readonly IEmailService _emailService;
+    private readonly IUsuarioRepository _usuarioRepo;
     private readonly AppDbContext _context;
     private readonly IBitacoraService _bitacora;
     private readonly IHttpContextAccessor _httpContextAccessor;
@@ -21,12 +23,16 @@ public class FasesService : IFasesService
     public FasesService(
         IFasesRepository fasesRepo,
         IProyectosRepository proyectosRepo,
+        IEmailService emailService,
+        IUsuarioRepository usuarioRepo,
         AppDbContext context,
         IBitacoraService bitacora,
         IHttpContextAccessor httpContextAccessor)
     {
         _fasesRepo = fasesRepo;
         _proyectosRepo = proyectosRepo;
+        _emailService = emailService;
+        _usuarioRepo = usuarioRepo;
         _context = context;
         _bitacora = bitacora;
         _httpContextAccessor = httpContextAccessor;
@@ -86,6 +92,46 @@ public class FasesService : IFasesService
         };
 
         await _fasesRepo.CreateAsync(fase);
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var proyectoConCliente = await _context.Proyectos
+                    .Include(p => p.Cliente)
+                    .FirstOrDefaultAsync(p => p.Id == proyectoId);
+
+                if (proyectoConCliente is null)
+                    return;
+
+                var todasFases = await _context.FaseProyectos
+                    .Where(f => f.ProyectoId == proyectoId)
+                    .OrderBy(f => f.Orden)
+                    .ToListAsync();
+
+                var notificables = await _usuarioRepo.GetUsuariosNotificablesAsync();
+                var fasesData = todasFases
+                    .Select(f => (f.Nombre, f.Descripcion ?? string.Empty, f.FechaLimite))
+                    .ToList();
+
+                foreach (var u in notificables)
+                {
+                    await _emailService.SendProyectoIniciadoAdminAsync(
+                        u.Email, u.Nombre,
+                        proyectoConCliente.Nombre,
+                        proyectoConCliente.Cliente?.Nombre ?? "-",
+                        proyectoConCliente.Ubicacion,
+                        proyectoConCliente.FechaInicio,
+                        proyectoConCliente.FechaFin,
+                        proyectoConCliente.MontoContrato,
+                        proyectoConCliente.PresupuestoEstimado,
+                        proyectoConCliente.NumeroCotizacion,
+                        proyectoConCliente.OrdenCompra,
+                        fasesData);
+                }
+            }
+            catch { /* silencioso */ }
+        });
 
         var (uid, uname, ip) = GetUsuarioInfo();
         await _bitacora.RegistrarAsync(uid, uname, "Creó fase", "FaseProyecto",
