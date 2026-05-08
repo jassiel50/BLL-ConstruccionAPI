@@ -21,7 +21,8 @@ public class BitacoraController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        if (User.FindFirstValue("rolId") != "1") return Forbid();
+        var rolId = User.FindFirstValue("rolId");
+        if (rolId != "1" && rolId != "3") return Forbid();
         var result = await _bitacoraService.GetAllAsync();
         return Ok(result);
     }
@@ -30,7 +31,8 @@ public class BitacoraController : ControllerBase
     [HttpGet("usuario/{usuarioId:int}")]
     public async Task<IActionResult> GetByUsuario(int usuarioId)
     {
-        if (User.FindFirstValue("rolId") != "1") return Forbid();
+        var rolId = User.FindFirstValue("rolId");
+        if (rolId != "1" && rolId != "3") return Forbid();
         var result = await _bitacoraService.GetByUsuarioAsync(usuarioId);
         return Ok(result);
     }

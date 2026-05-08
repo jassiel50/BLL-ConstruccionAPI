@@ -22,7 +22,8 @@ public class UsuariosController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        if (User.FindFirstValue("rolId") != "1") return Forbid();
+        var rolId = User.FindFirstValue("rolId");
+        if (rolId != "1" && rolId != "3") return Forbid();
         var result = await _usuariosService.GetAllAsync();
         return Ok(result);
     }
@@ -31,7 +32,8 @@ public class UsuariosController : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {
-        if (User.FindFirstValue("rolId") != "1") return Forbid();
+        var rolId = User.FindFirstValue("rolId");
+        if (rolId != "1" && rolId != "3") return Forbid();
         var usuario = await _usuariosService.GetByIdAsync(id);
         if (usuario is null) return NotFound(new { message = "Usuario no encontrado." });
         return Ok(usuario);
@@ -41,7 +43,8 @@ public class UsuariosController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Crear([FromBody] RegisterRequestDto dto)
     {
-        if (User.FindFirstValue("rolId") != "1") return Forbid();
+        var rolId = User.FindFirstValue("rolId");
+        if (rolId != "1" && rolId != "3") return Forbid();
         var (success, message) = await _usuariosService.CrearAsync(dto);
         if (!success) return BadRequest(new { message });
         return Ok(new { message });
@@ -51,7 +54,8 @@ public class UsuariosController : ControllerBase
     [HttpPut("{id:int}/toggle-activo")]
     public async Task<IActionResult> ToggleActivo(int id)
     {
-        if (User.FindFirstValue("rolId") != "1") return Forbid();
+        var rolId = User.FindFirstValue("rolId");
+        if (rolId != "1" && rolId != "3") return Forbid();
         var (success, message) = await _usuariosService.ToggleActivoAsync(id);
         if (!success) return BadRequest(new { message });
         return Ok(new { message });
