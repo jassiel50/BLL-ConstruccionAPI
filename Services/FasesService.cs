@@ -19,6 +19,7 @@ public class FasesService : IFasesService
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IEmailService _emailService;
     private readonly IUsuarioRepository _usuarioRepo;
+    private readonly ILogger<FasesService> _logger;
 
     public FasesService(
         IFasesRepository fasesRepo,
@@ -27,7 +28,8 @@ public class FasesService : IFasesService
         IBitacoraService bitacora,
         IHttpContextAccessor httpContextAccessor,
         IEmailService emailService,
-        IUsuarioRepository usuarioRepo)
+        IUsuarioRepository usuarioRepo,
+        ILogger<FasesService> logger)
     {
         _fasesRepo = fasesRepo;
         _proyectosRepo = proyectosRepo;
@@ -36,6 +38,7 @@ public class FasesService : IFasesService
         _httpContextAccessor = httpContextAccessor;
         _emailService = emailService;
         _usuarioRepo = usuarioRepo;
+        _logger = logger;
     }
 
     private (int Id, string Nombre, string Ip) GetUsuarioInfo()
@@ -200,16 +203,16 @@ public class FasesService : IFasesService
         await _bitacora.RegistrarAsync(uid, uname, "Inició planeación", "FaseProyecto",
             $"{fasesCreadas.Count} fase(s) creadas en proyecto '{proyecto.Nombre}' (ID {proyectoId}).", ip);
 
+        var notificables = await _usuarioRepo.GetUsuariosNotificablesAsync();
+        var fasesData = fasesCreadas
+            .OrderBy(f => f.Orden)
+            .Select(f => (f.Nombre, f.Descripcion ?? string.Empty, f.FechaLimite))
+            .ToList();
+
         _ = Task.Run(async () =>
         {
             try
             {
-                var notificables = await _usuarioRepo.GetUsuariosNotificablesAsync();
-                var fasesData = fasesCreadas
-                    .OrderBy(f => f.Orden)
-                    .Select(f => (f.Nombre, f.Descripcion ?? string.Empty, f.FechaLimite))
-                    .ToList();
-
                 foreach (var u in notificables)
                 {
                     await _emailService.SendProyectoIniciadoAdminAsync(
@@ -226,7 +229,10 @@ public class FasesService : IFasesService
                         fasesData);
                 }
             }
-            catch { /* silencioso */ }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al enviar correos de planeación iniciada para proyecto {ProyectoId}", proyectoId);
+            }
         });
 
         return (true, "Planeación iniciada correctamente.", fasesCreadas.Select(FaseResponseDto.FromEntity).ToList());
