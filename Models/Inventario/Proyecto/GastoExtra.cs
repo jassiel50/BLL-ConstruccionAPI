@@ -13,6 +13,7 @@ public class GastoExtra
     public int? ProveedorId { get; set; }
     public DateTime Fecha { get; set; } = DateTime.UtcNow;
     public string Observaciones { get; set; } = string.Empty;
+    public string Categoria { get; set; } = "Otro";
     public DateTime FechaRegistro { get; set; } = DateTime.UtcNow;
 
     public FaseProyecto? Fase { get; set; }

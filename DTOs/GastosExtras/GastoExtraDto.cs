@@ -12,6 +12,7 @@ public class GastoExtraDto
     public string? NombreProveedor { get; set; }
     public DateTime Fecha { get; set; }
     public string Observaciones { get; set; } = string.Empty;
+    public string Categoria { get; set; } = "Otro";
 }
 
 public class GastoExtraRequestDto
@@ -23,4 +24,5 @@ public class GastoExtraRequestDto
     public int? ProveedorId { get; set; }
     public DateTime Fecha { get; set; } = DateTime.UtcNow;
     public string Observaciones { get; set; } = string.Empty;
+    public string Categoria { get; set; } = "Otro";
 }

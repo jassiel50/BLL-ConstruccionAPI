@@ -37,7 +37,8 @@ public class AppDbContext : DbContext
     public DbSet<Proyecto> Proyectos { get; set; }
     public DbSet<FaseProyecto> FaseProyectos { get; set; }
     public DbSet<GastoExtra> GastosExtras { get; set; }
-public DbSet<ArchivoProyecto> ArchivosProyecto { get; set; }
+    public DbSet<GastoSemanal> GastosSemanales { get; set; }
+    public DbSet<ArchivoProyecto> ArchivosProyecto { get; set; }
     public DbSet<PagoCliente> PagosCliente { get; set; }
 
     // ─── MATERIALES ───────────────────────────────────────────────────────────
@@ -173,7 +174,18 @@ public DbSet<ArchivoProyecto> ArchivosProyecto { get; set; }
             .HasForeignKey(g => g.ProveedorId)
             .OnDelete(DeleteBehavior.SetNull);
 
-// ─── ArchivoProyecto ──────────────────────────────────────────────────
+        // ─── GastoSemanal ────────────────────────────────────────────────────────
+        modelBuilder.Entity<GastoSemanal>()
+            .HasOne(g => g.Proyecto)
+            .WithMany()
+            .HasForeignKey(g => g.ProyectoId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<GastoSemanal>()
+            .Property(g => g.Monto)
+            .HasColumnType("decimal(18,2)");
+
+        // ─── ArchivoProyecto ──────────────────────────────────────────────────
         modelBuilder.Entity<ArchivoProyecto>()
             .HasOne(a => a.Proyecto)
             .WithMany()

@@ -43,7 +43,8 @@ public class GastoExtraService : IGastoExtraService
         ProveedorId = g.ProveedorId,
         NombreProveedor = g.Proveedor?.Nombre,
         Fecha = g.Fecha,
-        Observaciones = g.Observaciones
+        Observaciones = g.Observaciones,
+        Categoria = g.Categoria
     };
 
     public async Task<List<GastoExtraDto>> GetByFaseAsync(int faseId)
@@ -62,7 +63,8 @@ public class GastoExtraService : IGastoExtraService
                 ProveedorId = g.ProveedorId,
                 NombreProveedor = g.Proveedor != null ? g.Proveedor.Nombre : null,
                 Fecha = g.Fecha,
-                Observaciones = g.Observaciones
+                Observaciones = g.Observaciones,
+                Categoria = g.Categoria
             })
             .ToListAsync();
     }
@@ -84,6 +86,7 @@ public class GastoExtraService : IGastoExtraService
             ProveedorId = dto.ProveedorId,
             Fecha = dto.Fecha,
             Observaciones = dto.Observaciones,
+            Categoria = dto.Categoria,
             FechaRegistro = DateTime.UtcNow
         };
 
@@ -137,6 +140,7 @@ public class GastoExtraService : IGastoExtraService
         entity.ProveedorId = dto.ProveedorId;
         entity.Fecha = dto.Fecha;
         entity.Observaciones = dto.Observaciones;
+        entity.Categoria = dto.Categoria;
 
         await _context.SaveChangesAsync();
         await _context.Entry(entity).Reference(e => e.Proveedor).LoadAsync();
