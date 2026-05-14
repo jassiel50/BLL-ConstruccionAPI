@@ -151,6 +151,12 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 }
 
+// Swagger siempre disponible (desarrollo y producción)
+app.UseSwagger();
+app.UseSwaggerUI();
+
+app.UseCors("FrontendPolicy");
+
 app.UseExceptionHandler(err => err.Run(async ctx =>
 {
     ctx.Response.StatusCode = StatusCodes.Status500InternalServerError;
@@ -160,12 +166,6 @@ app.UseExceptionHandler(err => err.Run(async ctx =>
         message = "Ocurrió un error interno. Por favor, intenta de nuevo más tarde."
     });
 }));
-
-// Swagger siempre disponible (desarrollo y producción)
-app.UseSwagger();
-app.UseSwaggerUI();
-
-app.UseCors("FrontendPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
