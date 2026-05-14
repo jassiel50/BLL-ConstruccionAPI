@@ -211,6 +211,119 @@ public class ResendEmailService : IEmailService
         return await SendEmailAsync(toEmail, subject, htmlBody);
     }
 
+    public async Task<bool> SendAlertasInventarioAsync(
+        string toEmail,
+        string adminName,
+        List<(string Material, decimal Stock, decimal StockMinimo, string Severidad)> alertas)
+    {
+        var subject = "⚠️ Alertas de Inventario - BLL Construcción";
+
+        var filasHtml = new System.Text.StringBuilder();
+        foreach (var a in alertas)
+        {
+            var color = a.Severidad == "Crítico" ? "#dc3545" : "#fd7e14";
+            filasHtml.Append($@"
+                <tr>
+                    <td style=""padding:8px;border:1px solid #ddd;"">{a.Material}</td>
+                    <td style=""padding:8px;border:1px solid #ddd;text-align:center;
+                        color:{color};font-weight:bold;"">{a.Stock}</td>
+                    <td style=""padding:8px;border:1px solid #ddd;text-align:center;"">{a.StockMinimo}</td>
+                    <td style=""padding:8px;border:1px solid #ddd;text-align:center;
+                        color:{color};font-weight:bold;"">{a.Severidad}</td>
+                </tr>");
+        }
+
+        var htmlBody = $@"
+<!DOCTYPE html><html><head><meta charset=""utf-8"">
+<style>body{{font-family:Arial,sans-serif;color:#333;}}
+.container{{max-width:650px;margin:0 auto;padding:20px;}}
+.header{{background:#dc3545;color:white;padding:20px;text-align:center;}}
+.content{{background:#f9f9f9;padding:20px;margin:16px 0;}}
+table{{width:100%;border-collapse:collapse;}}
+th{{background:#002046;color:white;padding:8px;text-align:left;border:1px solid #ddd;}}
+.footer{{text-align:center;color:#666;font-size:12px;margin-top:16px;}}
+</style></head><body>
+<div class=""container"">
+<div class=""header""><h2>Alerta de Inventario</h2></div>
+<div class=""content"">
+<p>Hola <strong>{adminName}</strong>,</p>
+<p>Los siguientes materiales están por debajo del stock mínimo configurado:</p>
+<table>
+  <thead><tr>
+    <th>Material</th><th>Stock Actual</th><th>Stock Mínimo</th><th>Severidad</th>
+  </tr></thead>
+  <tbody>{filasHtml}</tbody>
+</table>
+<p style=""margin-top:16px;"">Por favor revisa el sistema para reabastecer el inventario.</p>
+</div>
+<div class=""footer""><p>© 2026 BLL Construcción. Correo automático.</p></div>
+</div></body></html>";
+
+        return await SendEmailAsync(toEmail, subject, htmlBody);
+    }
+
+    public async Task<bool> SendReporteProgramadoAsync(
+        string toEmail,
+        string adminName,
+        string tipoReporte,
+        byte[] pdfBytes,
+        string nombreArchivo)
+    {
+        var subject = $"Reporte automático: {tipoReporte} - BLL Construcción";
+        var htmlBody = $@"
+<!DOCTYPE html><html><head><meta charset=""utf-8"">
+<style>body{{font-family:Arial,sans-serif;color:#333;}}
+.container{{max-width:600px;margin:0 auto;padding:20px;}}
+.header{{background:#002046;color:white;padding:20px;text-align:center;}}
+.content{{background:#f9f9f9;padding:20px;margin:16px 0;}}
+.footer{{text-align:center;color:#666;font-size:12px;margin-top:16px;}}
+</style></head><body>
+<div class=""container"">
+<div class=""header""><h2>Reporte Programado</h2></div>
+<div class=""content"">
+<p>Hola <strong>{adminName}</strong>,</p>
+<p>Se adjunta el reporte automático de <strong>{tipoReporte}</strong> generado el {DateTime.Now:dd/MM/yyyy HH:mm}.</p>
+<p>Archivo: <strong>{nombreArchivo}</strong></p>
+</div>
+<div class=""footer""><p>© 2026 BLL Construcción. Correo automático.</p></div>
+</div></body></html>";
+
+        try
+        {
+            var apiKey = _config["Resend:ApiKey"];
+            var fromEmail = _config["Resend:FromEmail"];
+            var fromName = _config["Resend:FromName"];
+            if (string.IsNullOrWhiteSpace(apiKey)) return false;
+
+            var client = _httpClientFactory.CreateClient();
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+
+            var payload = new
+            {
+                from = $"{fromName} <{fromEmail}>",
+                to = new[] { toEmail },
+                subject,
+                html = htmlBody,
+                attachments = new[]
+                {
+                    new { filename = nombreArchivo, content = Convert.ToBase64String(pdfBytes) }
+                }
+            };
+
+            var content = new System.Net.Http.StringContent(
+                System.Text.Json.JsonSerializer.Serialize(payload),
+                System.Text.Encoding.UTF8, "application/json");
+
+            var response = await client.PostAsync("https://api.resend.com/emails", content);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al enviar reporte programado a {Email}", toEmail);
+            return false;
+        }
+    }
+
     private async Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody)
     {
         try

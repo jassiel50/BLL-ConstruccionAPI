@@ -7,4 +7,5 @@ public interface IReportesService
     Task<byte[]> GenerarHerramientasAsync();
     Task<byte[]> GenerarProyectosAsync();
     Task<byte[]> GenerarPerdidasAsync(DateTime desde, DateTime hasta);
+    Task<byte[]> GenerarPagosPorProyectoAsync(int proyectoId);
 }

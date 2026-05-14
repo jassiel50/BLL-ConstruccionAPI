@@ -35,6 +35,16 @@ public class GastosExtrasController : ControllerBase
         return CreatedAtAction(nameof(GetByFase), new { faseId }, data);
     }
 
+    // PUT api/gastos-extras/{id}
+    [HttpPut("api/gastos-extras/{id:int}")]
+    public async Task<IActionResult> Update(int id, [FromBody] GastoExtraRequestDto dto)
+    {
+        var (success, data) = await _service.UpdateAsync(id, dto);
+        if (!success)
+            return NotFound(new { message = "Gasto extra no encontrado." });
+        return Ok(data);
+    }
+
     // DELETE api/gastos-extras/{id}
     [HttpDelete("api/gastos-extras/{id:int}")]
     public async Task<IActionResult> Delete(int id)

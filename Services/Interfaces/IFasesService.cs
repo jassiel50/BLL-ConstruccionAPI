@@ -8,6 +8,7 @@ public interface IFasesService
     Task<(bool Success, string Message, FaseResponseDto? Data)> CreateAsync(int proyectoId, FaseRequestDto dto);
     Task<(bool Success, string Message)> UpdateAsync(int id, FaseRequestDto dto);
     Task<(bool Success, string Message)> CompletarAsync(int id);
+    Task<(bool Success, string Message)> DescompletarAsync(int id);
     Task<(bool Success, string Message)> DeleteAsync(int id);
     Task<List<FaseResponseDto>> GetAtrasadasAsync();
     Task<List<FaseResponseDto>> GetPorVencerAsync();

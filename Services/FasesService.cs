@@ -133,13 +133,30 @@ public class FasesService : IFasesService
         return (true, "Fase marcada como completada.");
     }
 
-    public async Task<(bool Success, string Message)> DeleteAsync(int id)
+    public async Task<(bool Success, string Message)> DescompletarAsync(int id)
     {
         var fase = await _fasesRepo.GetByIdAsync(id);
         if (fase is null) return (false, "Fase no encontrada.");
 
-        if (fase.Estado == EstadoFase.Completada)
-            return (false, "No se puede eliminar una fase ya completada.");
+        if (fase.Estado != EstadoFase.Completada)
+            return (false, "La fase no está completada.");
+
+        fase.Estado = EstadoFase.Pendiente;
+        fase.FechaCompletada = null;
+
+        await _fasesRepo.UpdateAsync(fase);
+
+        var (uid, uname, ip) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Descompletar fase", "FaseProyecto",
+            $"Fase '{fase.Nombre}' (ID {fase.Id}) regresada a Pendiente.", ip);
+
+        return (true, "Fase regresada a Pendiente correctamente.");
+    }
+
+    public async Task<(bool Success, string Message)> DeleteAsync(int id)
+    {
+        var fase = await _fasesRepo.GetByIdAsync(id);
+        if (fase is null) return (false, "Fase no encontrada.");
 
         await _fasesRepo.DeleteAsync(fase);
 

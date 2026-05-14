@@ -29,6 +29,8 @@ builder.Services.AddScoped<IEmailService, ResendEmailService>();
 
 // Background services
 builder.Services.AddHostedService<ExpiredCodesCleanupService>();
+builder.Services.AddHostedService<AlertasInventarioEmailService>();
+builder.Services.AddHostedService<ReportesAutomaticosService>();
 
 // Catálogos
 builder.Services.AddScoped<ICatalogosRepository, CatalogosRepository>();
@@ -46,6 +48,11 @@ builder.Services.AddScoped<IProyectosService, ProyectosService>();
 builder.Services.AddScoped<IFasesRepository, FasesRepository>();
 builder.Services.AddScoped<IFasesService, FasesService>();
 builder.Services.AddScoped<IGastoExtraService, GastoExtraService>();
+
+// Checklist, Archivos y Pagos
+builder.Services.AddScoped<IChecklistService, ChecklistService>();
+builder.Services.AddScoped<IArchivosProyectoService, ArchivosProyectoService>();
+builder.Services.AddScoped<IPagosClienteService, PagosClienteService>();
 
 // Materiales
 builder.Services.AddScoped<IMaterialesRepository, MaterialesRepository>();

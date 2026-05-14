@@ -119,4 +119,38 @@ public class ReportesService : IReportesService
             new ReportePerdidasDocument(perdidas, desde, hasta).Compose(container))
             .GeneratePdf();
     }
+
+    public async Task<byte[]> GenerarPagosPorProyectoAsync(int proyectoId)
+    {
+        var proyecto = await _context.Proyectos.FindAsync(proyectoId);
+        if (proyecto is null) return [];
+
+        var pagos = await _context.PagosCliente
+            .AsNoTracking()
+            .Where(p => p.ProyectoId == proyectoId)
+            .OrderBy(p => p.FechaPago)
+            .ToListAsync();
+
+        var totalPagado = pagos.Sum(p => p.Monto);
+        var resumen = new DTOs.Pagos.ResumenPagosDto
+        {
+            ProyectoId = proyectoId,
+            NombreProyecto = proyecto.Nombre,
+            MontoContrato = proyecto.MontoContrato,
+            TotalPagado = totalPagado,
+            SaldoPendiente = proyecto.MontoContrato - totalPagado,
+            NumeroPagos = pagos.Count,
+            Pagos = pagos.Select(p => new DTOs.Pagos.PagoClienteDto
+            {
+                Id = p.Id, ProyectoId = p.ProyectoId, NombreProyecto = proyecto.Nombre,
+                Concepto = p.Concepto, Monto = p.Monto, FechaPago = p.FechaPago,
+                MetodoPago = p.MetodoPago, Referencia = p.Referencia,
+                Notas = p.Notas, FechaRegistro = p.FechaRegistro
+            }).ToList()
+        };
+
+        return Document.Create(container =>
+            new PagosDocument(resumen).Compose(container))
+            .GeneratePdf();
+    }
 }

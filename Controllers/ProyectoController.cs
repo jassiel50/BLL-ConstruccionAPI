@@ -69,12 +69,17 @@ public class ProyectoController : ControllerBase
         return Ok(new { message });
     }
 
-    // DELETE api/proyectos/{id}
+    // DELETE api/proyectos/{id}?liberarInventario=false
     [HttpDelete("{id:int}")]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete(int id, [FromQuery] bool liberarInventario = false)
     {
-        var (success, message) = await _service.DeleteAsync(id);
-        if (!success) return NotFound(new { message });
+        var (success, message, inventario) = await _service.DeleteAsync(id, liberarInventario);
+        if (!success)
+        {
+            if (inventario is not null)
+                return Conflict(new { message, inventario });
+            return NotFound(new { message });
+        }
         return Ok(new { message });
     }
 

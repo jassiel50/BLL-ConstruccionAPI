@@ -32,9 +32,24 @@ public class GastoExtraService : IGastoExtraService
         return (id, nombre, ip);
     }
 
+    private static GastoExtraDto MapToDto(GastoExtra g) => new()
+    {
+        Id = g.Id,
+        FaseId = g.FaseId,
+        Concepto = g.Concepto,
+        Monto = g.Monto,
+        MontoProveedor = g.MontoProveedor,
+        CobradoCliente = g.CobradoCliente,
+        ProveedorId = g.ProveedorId,
+        NombreProveedor = g.Proveedor?.Nombre,
+        Fecha = g.Fecha,
+        Observaciones = g.Observaciones
+    };
+
     public async Task<List<GastoExtraDto>> GetByFaseAsync(int faseId)
     {
         return await _context.GastosExtras
+            .Include(g => g.Proveedor)
             .Where(g => g.FaseId == faseId)
             .Select(g => new GastoExtraDto
             {
@@ -42,6 +57,10 @@ public class GastoExtraService : IGastoExtraService
                 FaseId = g.FaseId,
                 Concepto = g.Concepto,
                 Monto = g.Monto,
+                MontoProveedor = g.MontoProveedor,
+                CobradoCliente = g.CobradoCliente,
+                ProveedorId = g.ProveedorId,
+                NombreProveedor = g.Proveedor != null ? g.Proveedor.Nombre : null,
                 Fecha = g.Fecha,
                 Observaciones = g.Observaciones
             })
@@ -50,15 +69,19 @@ public class GastoExtraService : IGastoExtraService
 
     public async Task<(bool Success, GastoExtraDto? Data)> CreateAsync(int faseId, GastoExtraRequestDto dto)
     {
-        var faseExists = await _context.FaseProyectos.AnyAsync(f => f.Id == faseId);
-        if (!faseExists)
-            return (false, null);
+        var fase = await _context.FaseProyectos
+            .Include(f => f.Proyecto)
+            .FirstOrDefaultAsync(f => f.Id == faseId);
+        if (fase is null) return (false, null);
 
         var entity = new GastoExtra
         {
             FaseId = faseId,
             Concepto = dto.Concepto,
             Monto = dto.Monto,
+            MontoProveedor = dto.MontoProveedor,
+            CobradoCliente = dto.CobradoCliente,
+            ProveedorId = dto.ProveedorId,
             Fecha = dto.Fecha,
             Observaciones = dto.Observaciones,
             FechaRegistro = DateTime.UtcNow
@@ -67,19 +90,62 @@ public class GastoExtraService : IGastoExtraService
         _context.GastosExtras.Add(entity);
         await _context.SaveChangesAsync();
 
+        // Alerta si el gasto total se acerca a la utilidad del presupuesto
+        if (fase.Proyecto is not null && fase.Proyecto.PresupuestoEstimado > 0)
+        {
+            var proyectoId = fase.ProyectoId;
+            var faseIds = await _context.FaseProyectos
+                .Where(f => f.ProyectoId == proyectoId)
+                .Select(f => f.Id)
+                .ToListAsync();
+            var totalGastosExtras = await _context.GastosExtras
+                .Where(g => faseIds.Contains(g.FaseId))
+                .SumAsync(g => g.Monto);
+            var gastoMateriales = (await _context.Salidas
+                .Include(s => s.Detalles)
+                .Where(s => s.ProyectoId == proyectoId)
+                .ToListAsync())
+                .SelectMany(s => s.Detalles)
+                .Sum(d => d.Cantidad * d.PrecioUnitario);
+            var gastoTotal = totalGastosExtras + gastoMateriales;
+            var porcentaje = gastoTotal / fase.Proyecto.PresupuestoEstimado;
+            if (porcentaje >= 0.85m)
+                entity.Observaciones = string.IsNullOrEmpty(entity.Observaciones)
+                    ? $"[ALERTA] El gasto acumulado ({porcentaje:P0}) supera el 85% del presupuesto."
+                    : entity.Observaciones;
+        }
+
         var (uid, uname, ip) = GetUsuarioInfo();
         await _bitacora.RegistrarAsync(uid, uname, "Agregó gasto extra", "GastoExtra",
             $"Gasto extra '{entity.Concepto}' (${entity.Monto:N2}) registrado en fase ID {faseId}.", ip);
 
-        return (true, new GastoExtraDto
-        {
-            Id = entity.Id,
-            FaseId = entity.FaseId,
-            Concepto = entity.Concepto,
-            Monto = entity.Monto,
-            Fecha = entity.Fecha,
-            Observaciones = entity.Observaciones
-        });
+        await _context.Entry(entity).Reference(e => e.Proveedor).LoadAsync();
+        return (true, MapToDto(entity));
+    }
+
+    public async Task<(bool Success, GastoExtraDto? Data)> UpdateAsync(int id, GastoExtraRequestDto dto)
+    {
+        var entity = await _context.GastosExtras
+            .Include(g => g.Proveedor)
+            .FirstOrDefaultAsync(g => g.Id == id);
+        if (entity is null) return (false, null);
+
+        entity.Concepto = dto.Concepto;
+        entity.Monto = dto.Monto;
+        entity.MontoProveedor = dto.MontoProveedor;
+        entity.CobradoCliente = dto.CobradoCliente;
+        entity.ProveedorId = dto.ProveedorId;
+        entity.Fecha = dto.Fecha;
+        entity.Observaciones = dto.Observaciones;
+
+        await _context.SaveChangesAsync();
+        await _context.Entry(entity).Reference(e => e.Proveedor).LoadAsync();
+
+        var (uid, uname, ip) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Actualizó gasto extra", "GastoExtra",
+            $"Gasto extra '{entity.Concepto}' (ID {entity.Id}) actualizado.", ip);
+
+        return (true, MapToDto(entity));
     }
 
     public async Task<bool> DeleteAsync(int id)

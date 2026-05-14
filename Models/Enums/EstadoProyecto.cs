@@ -4,5 +4,6 @@ public enum EstadoProyecto
 {
     Activo,
     Pausado,
-    Terminado
+    Terminado,
+    Archivado
 }

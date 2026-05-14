@@ -63,4 +63,12 @@ public class ReportesController : ControllerBase
         var pdf = await _service.GenerarPerdidasAsync(fechaDesde, fechaHasta);
         return File(pdf, "application/pdf", "reporte-perdidas.pdf");
     }
+
+    // GET api/reportes/pagos/{proyectoId}
+    [HttpGet("pagos/{proyectoId:int}")]
+    public async Task<IActionResult> GetPagos(int proyectoId)
+    {
+        var pdf = await _service.GenerarPagosPorProyectoAsync(proyectoId);
+        return File(pdf, "application/pdf", $"reporte-pagos-proyecto-{proyectoId}.pdf");
+    }
 }

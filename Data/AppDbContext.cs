@@ -37,6 +37,9 @@ public class AppDbContext : DbContext
     public DbSet<Proyecto> Proyectos { get; set; }
     public DbSet<FaseProyecto> FaseProyectos { get; set; }
     public DbSet<GastoExtra> GastosExtras { get; set; }
+    public DbSet<ChecklistItem> ChecklistItems { get; set; }
+    public DbSet<ArchivoProyecto> ArchivosProyecto { get; set; }
+    public DbSet<PagoCliente> PagosCliente { get; set; }
 
     // ─── MATERIALES ───────────────────────────────────────────────────────────
     public DbSet<Material> Materiales { get; set; }
@@ -152,10 +155,59 @@ public class AppDbContext : DbContext
             .HasColumnType("decimal(18,2)");
 
         modelBuilder.Entity<GastoExtra>()
+            .Property(g => g.MontoProveedor)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<GastoExtra>()
+            .Property(g => g.CobradoCliente)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<GastoExtra>()
             .HasOne(g => g.Fase)
             .WithMany()
             .HasForeignKey(g => g.FaseId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<GastoExtra>()
+            .HasOne(g => g.Proveedor)
+            .WithMany()
+            .HasForeignKey(g => g.ProveedorId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // ─── ChecklistItem ────────────────────────────────────────────────────
+        modelBuilder.Entity<ChecklistItem>()
+            .HasOne(c => c.Proyecto)
+            .WithMany()
+            .HasForeignKey(c => c.ProyectoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ChecklistItem>()
+            .HasOne(c => c.Fase)
+            .WithMany()
+            .HasForeignKey(c => c.FaseId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // ─── ArchivoProyecto ──────────────────────────────────────────────────
+        modelBuilder.Entity<ArchivoProyecto>()
+            .HasOne(a => a.Proyecto)
+            .WithMany()
+            .HasForeignKey(a => a.ProyectoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ArchivoProyecto>()
+            .Property(a => a.TipoDocumento)
+            .HasConversion<string>();
+
+        // ─── PagoCliente ──────────────────────────────────────────────────────
+        modelBuilder.Entity<PagoCliente>()
+            .HasOne(p => p.Proyecto)
+            .WithMany()
+            .HasForeignKey(p => p.ProyectoId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<PagoCliente>()
+            .Property(p => p.Monto)
+            .HasColumnType("decimal(18,2)");
 
         modelBuilder.Entity<Herramienta>()
             .Property(h => h.ValorAdquisicion)

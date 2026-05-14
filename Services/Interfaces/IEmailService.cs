@@ -17,4 +17,16 @@ public interface IEmailService
         string numeroCotizacion,
         string ordenCompra,
         List<(string Nombre, string Descripcion, DateTime FechaLimite)> fases);
+
+    Task<bool> SendAlertasInventarioAsync(
+        string toEmail,
+        string adminName,
+        List<(string Material, decimal Stock, decimal StockMinimo, string Severidad)> alertas);
+
+    Task<bool> SendReporteProgramadoAsync(
+        string toEmail,
+        string adminName,
+        string tipoReporte,
+        byte[] pdfBytes,
+        string nombreArchivo);
 }

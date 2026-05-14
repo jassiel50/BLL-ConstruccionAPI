@@ -42,6 +42,15 @@ public class FaseController : ControllerBase
         return Ok(new { message });
     }
 
+    // PUT api/fases/{id}/descompletar
+    [HttpPut("api/fases/{id:int}/descompletar")]
+    public async Task<IActionResult> Descompletar(int id)
+    {
+        var (success, message) = await _service.DescompletarAsync(id);
+        if (!success) return BadRequest(new { message });
+        return Ok(new { message });
+    }
+
     // PUT api/fases/{id}/completar
     [HttpPut("api/fases/{id:int}/completar")]
     public async Task<IActionResult> Completar(int id)

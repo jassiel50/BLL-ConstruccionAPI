@@ -25,7 +25,7 @@ public class ProyectosService : IProyectosService
     private readonly IUsuarioRepository _usuarioRepo;
 
     private static readonly EstadoProyecto[] EstadosValidos =
-        [EstadoProyecto.Activo, EstadoProyecto.Pausado, EstadoProyecto.Terminado];
+        [EstadoProyecto.Activo, EstadoProyecto.Pausado, EstadoProyecto.Terminado, EstadoProyecto.Archivado];
 
     public ProyectosService(
         IProyectosRepository proyectosRepo,
@@ -174,15 +174,63 @@ public class ProyectosService : IProyectosService
         return (true, "Proyecto actualizado correctamente.");
     }
 
-    public async Task<(bool Success, string Message)> DeleteAsync(int id)
+    public async Task<(bool Success, string Message, object? InventarioAfectado)> DeleteAsync(int id, bool liberarInventario = false)
     {
         var proyecto = await _proyectosRepo.GetByIdAsync(id);
-        if (proyecto is null) return (false, "Proyecto no encontrado.");
+        if (proyecto is null) return (false, "Proyecto no encontrado.", null);
+
+        var materialesConStock = await _context.AlmacenProyecto
+            .Include(ap => ap.Material)
+            .Where(ap => ap.ProyectoId == id && ap.Stock > 0)
+            .ToListAsync();
+
+        var herramientasActivas = await _context.AsignacionesHerramienta
+            .Include(a => a.Herramienta)
+            .Where(a => a.ProyectoId == id && a.Estado == EstadoAsignacion.Asignada)
+            .ToListAsync();
+
+        if ((materialesConStock.Any() || herramientasActivas.Any()) && !liberarInventario)
+        {
+            var inventario = new
+            {
+                materiales = materialesConStock.Select(m => new { m.Material!.Nombre, m.Stock }),
+                herramientas = herramientasActivas.Select(h => new { h.Herramienta!.Nombre, h.Herramienta.Codigo })
+            };
+            return (false, "El proyecto tiene inventario asignado. Usa liberarInventario=true para devolverlo automáticamente al almacén.", inventario);
+        }
+
+        if (liberarInventario)
+        {
+            foreach (var ap in materialesConStock)
+            {
+                var central = await _context.AlmacenCentral
+                    .FirstOrDefaultAsync(c => c.MaterialId == ap.MaterialId);
+                if (central is not null)
+                    central.Stock += ap.Stock;
+                ap.Stock = 0;
+            }
+
+            foreach (var asig in herramientasActivas)
+            {
+                asig.Estado = EstadoAsignacion.Devuelta;
+                asig.FechaDevolucion = DateTime.UtcNow;
+                asig.ObservacionesDevolucion = "Devuelto automáticamente al eliminar proyecto.";
+                var tieneOtrasAsignaciones = await _context.AsignacionesHerramienta
+                    .AnyAsync(a => a.HerramientaId == asig.HerramientaId
+                                && a.Id != asig.Id
+                                && a.Estado == EstadoAsignacion.Asignada);
+                if (!tieneOtrasAsignaciones && asig.Herramienta is not null)
+                    asig.Herramienta.Estado = EstadoHerramienta.Disponible;
+            }
+
+            await _context.SaveChangesAsync();
+        }
 
         await _proyectosRepo.DeleteAsync(proyecto);
         var (uid, uname) = GetUsuarioInfo();
-        await _bitacora.RegistrarAsync(uid, uname, "Eliminó", "Proyecto", $"Proyecto '{proyecto.Nombre}' eliminado");
-        return (true, "Proyecto eliminado correctamente.");
+        await _bitacora.RegistrarAsync(uid, uname, "Eliminó", "Proyecto",
+            $"Proyecto '{proyecto.Nombre}' eliminado{(liberarInventario ? " con devolución de inventario" : "")}");
+        return (true, "Proyecto eliminado correctamente.", null);
     }
 
     public async Task<(bool Success, string Message)> TerminarAsync(int id)
