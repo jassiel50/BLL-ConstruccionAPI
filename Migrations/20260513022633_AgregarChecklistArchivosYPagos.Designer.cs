@@ -1018,46 +1018,7 @@ namespace BLL_ConstruccionAPI.Migrations
                     b.ToTable("ArchivosProyecto");
                 });
 
-            modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Proyectos.ChecklistItem", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<bool>("Completado")
-                        .HasColumnType("bit");
-
-                    b.Property<int?>("CompletadoPorId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("FaseId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("FechaCompletado")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("FechaRegistro")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("ProyectoId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Titulo")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("FaseId");
-
-                    b.HasIndex("ProyectoId");
-
-                    b.ToTable("ChecklistItems");
-                });
-
-            modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Proyectos.FaseProyecto", b =>
+modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Proyectos.FaseProyecto", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -1487,25 +1448,7 @@ namespace BLL_ConstruccionAPI.Migrations
                     b.Navigation("Proyecto");
                 });
 
-            modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Proyectos.ChecklistItem", b =>
-                {
-                    b.HasOne("BLL_ConstruccionAPI.Models.Inventario.Proyectos.FaseProyecto", "Fase")
-                        .WithMany()
-                        .HasForeignKey("FaseId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("BLL_ConstruccionAPI.Models.Inventario.Proyectos.Proyecto", "Proyecto")
-                        .WithMany()
-                        .HasForeignKey("ProyectoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Fase");
-
-                    b.Navigation("Proyecto");
-                });
-
-            modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Proyectos.FaseProyecto", b =>
+modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Proyectos.FaseProyecto", b =>
                 {
                     b.HasOne("BLL_ConstruccionAPI.Models.Inventario.Proyectos.Proyecto", "Proyecto")
                         .WithMany()

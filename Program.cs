@@ -49,8 +49,7 @@ builder.Services.AddScoped<IFasesRepository, FasesRepository>();
 builder.Services.AddScoped<IFasesService, FasesService>();
 builder.Services.AddScoped<IGastoExtraService, GastoExtraService>();
 
-// Checklist, Archivos y Pagos
-builder.Services.AddScoped<IChecklistService, ChecklistService>();
+// Archivos y Pagos
 builder.Services.AddScoped<IArchivosProyectoService, ArchivosProyectoService>();
 builder.Services.AddScoped<IPagosClienteService, PagosClienteService>();
 

@@ -57,38 +57,7 @@ namespace BLL_ConstruccionAPI.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.CreateTable(
-                name: "ChecklistItems",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ProyectoId = table.Column<int>(type: "int", nullable: false),
-                    FaseId = table.Column<int>(type: "int", nullable: true),
-                    Titulo = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Completado = table.Column<bool>(type: "bit", nullable: false),
-                    FechaCompletado = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    CompletadoPorId = table.Column<int>(type: "int", nullable: true),
-                    FechaRegistro = table.Column<DateTime>(type: "datetime2", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ChecklistItems", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_ChecklistItems_FaseProyectos_FaseId",
-                        column: x => x.FaseId,
-                        principalTable: "FaseProyectos",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
-                    table.ForeignKey(
-                        name: "FK_ChecklistItems_Proyectos_ProyectoId",
-                        column: x => x.ProyectoId,
-                        principalTable: "Proyectos",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
+migrationBuilder.CreateTable(
                 name: "PagosCliente",
                 columns: table => new
                 {
@@ -125,17 +94,7 @@ namespace BLL_ConstruccionAPI.Migrations
                 table: "ArchivosProyecto",
                 column: "ProyectoId");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_ChecklistItems_FaseId",
-                table: "ChecklistItems",
-                column: "FaseId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ChecklistItems_ProyectoId",
-                table: "ChecklistItems",
-                column: "ProyectoId");
-
-            migrationBuilder.CreateIndex(
+migrationBuilder.CreateIndex(
                 name: "IX_PagosCliente_ProyectoId",
                 table: "PagosCliente",
                 column: "ProyectoId");
@@ -159,10 +118,7 @@ namespace BLL_ConstruccionAPI.Migrations
             migrationBuilder.DropTable(
                 name: "ArchivosProyecto");
 
-            migrationBuilder.DropTable(
-                name: "ChecklistItems");
-
-            migrationBuilder.DropTable(
+migrationBuilder.DropTable(
                 name: "PagosCliente");
 
             migrationBuilder.DropIndex(
