@@ -39,6 +39,7 @@ public class GastoSemanalService : IGastoSemanalService
         FechaFin = g.FechaFin,
         Tipo = g.Tipo,
         Observaciones = g.Observaciones,
+        NumPersonas = g.NumPersonas,
         FechaRegistro = g.FechaRegistro,
         DiasDesdeUltimo = diasDesdeUltimo
     };
@@ -68,6 +69,7 @@ public class GastoSemanalService : IGastoSemanalService
             FechaFin = dto.FechaFin,
             Tipo = dto.Tipo,
             Observaciones = dto.Observaciones,
+            NumPersonas = dto.NumPersonas,
             FechaRegistro = DateTime.UtcNow
         };
 

@@ -10,6 +10,7 @@ public class GastoSemanalDto
     public DateTime FechaFin { get; set; }
     public string Tipo { get; set; } = string.Empty;
     public string? Observaciones { get; set; }
+    public int NumPersonas { get; set; }
     public DateTime FechaRegistro { get; set; }
     public int DiasDesdeUltimo { get; set; }
 }
@@ -22,4 +23,5 @@ public class GastoSemanalRequestDto
     public DateTime FechaFin { get; set; }
     public string Tipo { get; set; } = "Semanal";
     public string? Observaciones { get; set; }
+    public int NumPersonas { get; set; } = 0;
 }

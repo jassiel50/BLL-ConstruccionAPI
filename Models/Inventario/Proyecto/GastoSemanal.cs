@@ -10,6 +10,7 @@ public class GastoSemanal
     public DateTime FechaFin { get; set; }
     public string Tipo { get; set; } = "Semanal";
     public string? Observaciones { get; set; }
+    public int NumPersonas { get; set; } = 0;
     public DateTime FechaRegistro { get; set; } = DateTime.UtcNow;
 
     public Proyecto? Proyecto { get; set; }
