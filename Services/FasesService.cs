@@ -17,19 +17,28 @@ public class FasesService : IFasesService
     private readonly AppDbContext _context;
     private readonly IBitacoraService _bitacora;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IEmailService _emailService;
+    private readonly IUsuarioRepository _usuarioRepo;
+    private readonly ILogger<FasesService> _logger;
 
     public FasesService(
         IFasesRepository fasesRepo,
         IProyectosRepository proyectosRepo,
         AppDbContext context,
         IBitacoraService bitacora,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor,
+        IEmailService emailService,
+        IUsuarioRepository usuarioRepo,
+        ILogger<FasesService> logger)
     {
         _fasesRepo = fasesRepo;
         _proyectosRepo = proyectosRepo;
         _context = context;
         _bitacora = bitacora;
         _httpContextAccessor = httpContextAccessor;
+        _emailService = emailService;
+        _usuarioRepo = usuarioRepo;
+        _logger = logger;
     }
 
     private (int Id, string Nombre, string Ip) GetUsuarioInfo()
@@ -177,5 +186,72 @@ public class FasesService : IFasesService
     {
         var fases = await _fasesRepo.GetPorVencerAsync();
         return fases.Select(FaseResponseDto.FromEntity).ToList();
+    }
+
+    public async Task<(bool Success, string Message, List<FaseResponseDto> Data)> CrearPlaneacionInicialAsync(int proyectoId, PlaneacionInicialRequestDto dto)
+    {
+        if (dto.Fases is null || !dto.Fases.Any())
+            return (false, "Debes proporcionar al menos una fase.", []);
+
+        var proyecto = await _context.Proyectos
+            .Include(p => p.Cliente)
+            .FirstOrDefaultAsync(p => p.Id == proyectoId);
+        if (proyecto is null || !proyecto.Activo)
+            return (false, "El proyecto especificado no existe o está inactivo.", []);
+
+        var fasesCreadas = new List<FaseProyecto>();
+        foreach (var faseDto in dto.Fases)
+        {
+            var fase = new FaseProyecto
+            {
+                ProyectoId   = proyectoId,
+                Nombre       = faseDto.Nombre,
+                Descripcion  = faseDto.Descripcion,
+                Orden        = faseDto.Orden,
+                FechaLimite  = faseDto.FechaLimite,
+                Estado       = EstadoFase.Pendiente,
+                FechaRegistro = DateTime.UtcNow
+            };
+            await _fasesRepo.CreateAsync(fase);
+            fasesCreadas.Add(fase);
+        }
+
+        var (uid, uname, ip) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Inició planeación", "FaseProyecto",
+            $"{fasesCreadas.Count} fase(s) creadas en proyecto '{proyecto.Nombre}' (ID {proyectoId}).", ip);
+
+        var notificables = await _usuarioRepo.GetUsuariosNotificablesAsync();
+        var fasesData = fasesCreadas
+            .OrderBy(f => f.Orden)
+            .Select(f => (f.Nombre, f.Descripcion ?? string.Empty, f.FechaLimite))
+            .ToList();
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                foreach (var u in notificables)
+                {
+                    await _emailService.SendProyectoIniciadoAdminAsync(
+                        u.Email, u.Nombre,
+                        proyecto.Nombre,
+                        proyecto.Cliente?.Nombre ?? "-",
+                        proyecto.Ubicacion,
+                        proyecto.FechaInicio,
+                        proyecto.FechaFin,
+                        proyecto.MontoContrato,
+                        proyecto.PresupuestoEstimado,
+                        proyecto.NumeroCotizacion,
+                        proyecto.OrdenCompra,
+                        fasesData);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al enviar correos de planeación iniciada para proyecto {ProyectoId}", proyectoId);
+            }
+        });
+
+        return (true, "Planeación iniciada correctamente.", fasesCreadas.Select(FaseResponseDto.FromEntity).ToList());
     }
 }

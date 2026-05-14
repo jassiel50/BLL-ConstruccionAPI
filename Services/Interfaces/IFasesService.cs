@@ -12,4 +12,5 @@ public interface IFasesService
     Task<(bool Success, string Message)> DeleteAsync(int id);
     Task<List<FaseResponseDto>> GetAtrasadasAsync();
     Task<List<FaseResponseDto>> GetPorVencerAsync();
+    Task<(bool Success, string Message, List<FaseResponseDto> Data)> CrearPlaneacionInicialAsync(int proyectoId, PlaneacionInicialRequestDto dto);
 }

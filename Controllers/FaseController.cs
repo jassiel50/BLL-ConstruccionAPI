@@ -69,6 +69,15 @@ public class FaseController : ControllerBase
         return Ok(new { message });
     }
 
+    // POST api/proyectos/{proyectoId}/fases/planeacion-inicial
+    [HttpPost("api/proyectos/{proyectoId:int}/fases/planeacion-inicial")]
+    public async Task<IActionResult> CrearPlaneacionInicial(int proyectoId, [FromBody] PlaneacionInicialRequestDto dto)
+    {
+        var (success, message, data) = await _service.CrearPlaneacionInicialAsync(proyectoId, dto);
+        if (!success) return BadRequest(new { message });
+        return Ok(new { message, data });
+    }
+
     // GET api/fases/atrasadas
     [HttpGet("api/fases/atrasadas")]
     public async Task<IActionResult> GetAtrasadas()
