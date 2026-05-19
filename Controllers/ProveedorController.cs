@@ -60,4 +60,31 @@ public class ProveedorController : ControllerBase
         if (!success) return NotFound(new { message });
         return Ok(new { message });
     }
+
+    // POST api/proveedores/{id}/contactos
+    [HttpPost("{id:int}/contactos")]
+    public async Task<IActionResult> AddContacto(int id, [FromBody] ContactoRequestDto dto)
+    {
+        var (success, message, data) = await _service.AddContactoProveedorAsync(id, dto);
+        if (!success) return BadRequest(new { message });
+        return Ok(new { message, data });
+    }
+
+    // PUT api/proveedores/{proveedorId}/contactos/{contactoId}
+    [HttpPut("{proveedorId:int}/contactos/{contactoId:int}")]
+    public async Task<IActionResult> UpdateContacto(int proveedorId, int contactoId, [FromBody] ContactoRequestDto dto)
+    {
+        var (success, message) = await _service.UpdateContactoProveedorAsync(proveedorId, contactoId, dto);
+        if (!success) return BadRequest(new { message });
+        return Ok(new { message });
+    }
+
+    // DELETE api/proveedores/{proveedorId}/contactos/{contactoId}
+    [HttpDelete("{proveedorId:int}/contactos/{contactoId:int}")]
+    public async Task<IActionResult> DeleteContacto(int proveedorId, int contactoId)
+    {
+        var (success, message) = await _service.DeleteContactoProveedorAsync(proveedorId, contactoId);
+        if (!success) return NotFound(new { message });
+        return Ok(new { message });
+    }
 }

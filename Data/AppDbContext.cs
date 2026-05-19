@@ -32,6 +32,8 @@ public class AppDbContext : DbContext
     // ─── PROVEEDORES Y CLIENTES ───────────────────────────────────────────────
     public DbSet<Proveedor> Proveedores { get; set; }
     public DbSet<Cliente> Clientes { get; set; }
+    public DbSet<ContactoProveedor> ContactosProveedor { get; set; }
+    public DbSet<ContactoCliente> ContactosCliente { get; set; }
 
     // ─── PROYECTOS ────────────────────────────────────────────────────────────
     public DbSet<Proyecto> Proyectos { get; set; }
@@ -66,6 +68,19 @@ public class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // Contactos de clientes y proveedores
+        modelBuilder.Entity<ContactoCliente>()
+            .HasOne(c => c.Cliente)
+            .WithMany(cl => cl.Contactos)
+            .HasForeignKey(c => c.ClienteId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ContactoProveedor>()
+            .HasOne(c => c.Proveedor)
+            .WithMany(p => p.Contactos)
+            .HasForeignKey(c => c.ProveedorId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // Evitar ciclos de relaciones en Proyecto
         modelBuilder.Entity<Proyecto>()

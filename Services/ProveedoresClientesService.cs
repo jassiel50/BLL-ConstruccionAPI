@@ -32,6 +32,26 @@ public class ProveedoresClientesService : IProveedoresClientesService
         return (id, nombre, ip);
     }
 
+    private static ContactoResponseDto MapContacto(ContactoCliente c) => new()
+    {
+        Id = c.Id,
+        Nombre = c.Nombre,
+        Telefono = c.Telefono,
+        Email = c.Email,
+        Cargo = c.Cargo,
+        EsPrincipal = c.EsPrincipal
+    };
+
+    private static ContactoResponseDto MapContacto(ContactoProveedor c) => new()
+    {
+        Id = c.Id,
+        Nombre = c.Nombre,
+        Telefono = c.Telefono,
+        Email = c.Email,
+        Cargo = c.Cargo,
+        EsPrincipal = c.EsPrincipal
+    };
+
     // ─── Proveedores ──────────────────────────────────────────────────────────
     public async Task<IEnumerable<ProveedorResponseDto>> GetAllProveedoresAsync()
     {
@@ -54,10 +74,8 @@ public class ProveedoresClientesService : IProveedoresClientesService
         {
             Nombre = dto.Nombre,
             RFC = dto.RFC,
-            Contacto = dto.Contacto,
-            Telefono = dto.Telefono,
-            Email = dto.Email,
             Direccion = dto.Direccion,
+            Estado = dto.Estado,
             Activo = true,
             FechaRegistro = DateTime.UtcNow
         };
@@ -68,7 +86,8 @@ public class ProveedoresClientesService : IProveedoresClientesService
         await _bitacora.RegistrarAsync(uid, uname, "Creó proveedor", "Proveedor",
             $"Proveedor '{proveedor.Nombre}' (RFC: {proveedor.RFC}) registrado.", ip);
 
-        return (true, "Proveedor registrado correctamente.", ProveedorResponseDto.FromEntity(proveedor));
+        var created = await _repo.GetProveedorByIdAsync(proveedor.Id);
+        return (true, "Proveedor registrado correctamente.", ProveedorResponseDto.FromEntity(created!));
     }
 
     public async Task<(bool Success, string Message)> UpdateProveedorAsync(int id, ProveedorRequestDto dto)
@@ -81,10 +100,8 @@ public class ProveedoresClientesService : IProveedoresClientesService
 
         proveedor.Nombre = dto.Nombre;
         proveedor.RFC = dto.RFC;
-        proveedor.Contacto = dto.Contacto;
-        proveedor.Telefono = dto.Telefono;
-        proveedor.Email = dto.Email;
         proveedor.Direccion = dto.Direccion;
+        proveedor.Estado = dto.Estado;
 
         await _repo.UpdateProveedorAsync(proveedor);
 
@@ -109,6 +126,57 @@ public class ProveedoresClientesService : IProveedoresClientesService
         return (true, "Proveedor desactivado correctamente.");
     }
 
+    // ─── Contactos Proveedor ──────────────────────────────────────────────────
+    public async Task<(bool Success, string Message, ContactoResponseDto? Data)> AddContactoProveedorAsync(int proveedorId, ContactoRequestDto dto)
+    {
+        var proveedor = await _repo.GetProveedorByIdAsync(proveedorId);
+        if (proveedor is null) return (false, "Proveedor no encontrado.", null);
+
+        var contacto = new ContactoProveedor
+        {
+            ProveedorId = proveedorId,
+            Nombre = dto.Nombre,
+            Telefono = dto.Telefono,
+            Email = dto.Email,
+            Cargo = dto.Cargo,
+            EsPrincipal = dto.EsPrincipal
+        };
+
+        await _repo.AddContactoProveedorAsync(contacto);
+
+        var (uid, uname, ip) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Agregó contacto a proveedor", "Proveedor",
+            $"Contacto '{contacto.Nombre}' agregado al proveedor '{proveedor.Nombre}'.", ip);
+
+        return (true, "Contacto agregado correctamente.", MapContacto(contacto));
+    }
+
+    public async Task<(bool Success, string Message)> UpdateContactoProveedorAsync(int proveedorId, int contactoId, ContactoRequestDto dto)
+    {
+        var contacto = await _repo.GetContactoProveedorAsync(contactoId);
+        if (contacto is null || contacto.ProveedorId != proveedorId)
+            return (false, "Contacto no encontrado.");
+
+        contacto.Nombre = dto.Nombre;
+        contacto.Telefono = dto.Telefono;
+        contacto.Email = dto.Email;
+        contacto.Cargo = dto.Cargo;
+        contacto.EsPrincipal = dto.EsPrincipal;
+
+        await _repo.UpdateContactoProveedorAsync(contacto);
+        return (true, "Contacto actualizado correctamente.");
+    }
+
+    public async Task<(bool Success, string Message)> DeleteContactoProveedorAsync(int proveedorId, int contactoId)
+    {
+        var contacto = await _repo.GetContactoProveedorAsync(contactoId);
+        if (contacto is null || contacto.ProveedorId != proveedorId)
+            return (false, "Contacto no encontrado.");
+
+        await _repo.DeleteContactoProveedorAsync(contacto);
+        return (true, "Contacto eliminado correctamente.");
+    }
+
     // ─── Clientes ─────────────────────────────────────────────────────────────
     public async Task<IEnumerable<ClienteResponseDto>> GetAllClientesAsync()
     {
@@ -131,10 +199,8 @@ public class ProveedoresClientesService : IProveedoresClientesService
         {
             Nombre = dto.Nombre,
             RFC = dto.RFC,
-            Contacto = dto.Contacto,
-            Telefono = dto.Telefono,
-            Email = dto.Email,
             Direccion = dto.Direccion,
+            Estado = dto.Estado,
             Activo = true,
             FechaRegistro = DateTime.UtcNow
         };
@@ -145,7 +211,8 @@ public class ProveedoresClientesService : IProveedoresClientesService
         await _bitacora.RegistrarAsync(uid, uname, "Creó cliente", "Cliente",
             $"Cliente '{cliente.Nombre}' (RFC: {cliente.RFC}) registrado.", ip);
 
-        return (true, "Cliente registrado correctamente.", ClienteResponseDto.FromEntity(cliente));
+        var created = await _repo.GetClienteByIdAsync(cliente.Id);
+        return (true, "Cliente registrado correctamente.", ClienteResponseDto.FromEntity(created!));
     }
 
     public async Task<(bool Success, string Message)> UpdateClienteAsync(int id, ClienteRequestDto dto)
@@ -158,10 +225,8 @@ public class ProveedoresClientesService : IProveedoresClientesService
 
         cliente.Nombre = dto.Nombre;
         cliente.RFC = dto.RFC;
-        cliente.Contacto = dto.Contacto;
-        cliente.Telefono = dto.Telefono;
-        cliente.Email = dto.Email;
         cliente.Direccion = dto.Direccion;
+        cliente.Estado = dto.Estado;
 
         await _repo.UpdateClienteAsync(cliente);
 
@@ -184,5 +249,56 @@ public class ProveedoresClientesService : IProveedoresClientesService
             $"Cliente '{cliente.Nombre}' (RFC: {cliente.RFC}) desactivado.", ip);
 
         return (true, "Cliente desactivado correctamente.");
+    }
+
+    // ─── Contactos Cliente ────────────────────────────────────────────────────
+    public async Task<(bool Success, string Message, ContactoResponseDto? Data)> AddContactoClienteAsync(int clienteId, ContactoRequestDto dto)
+    {
+        var cliente = await _repo.GetClienteByIdAsync(clienteId);
+        if (cliente is null) return (false, "Cliente no encontrado.", null);
+
+        var contacto = new ContactoCliente
+        {
+            ClienteId = clienteId,
+            Nombre = dto.Nombre,
+            Telefono = dto.Telefono,
+            Email = dto.Email,
+            Cargo = dto.Cargo,
+            EsPrincipal = dto.EsPrincipal
+        };
+
+        await _repo.AddContactoClienteAsync(contacto);
+
+        var (uid, uname, ip) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Agregó contacto a cliente", "Cliente",
+            $"Contacto '{contacto.Nombre}' agregado al cliente '{cliente.Nombre}'.", ip);
+
+        return (true, "Contacto agregado correctamente.", MapContacto(contacto));
+    }
+
+    public async Task<(bool Success, string Message)> UpdateContactoClienteAsync(int clienteId, int contactoId, ContactoRequestDto dto)
+    {
+        var contacto = await _repo.GetContactoClienteAsync(contactoId);
+        if (contacto is null || contacto.ClienteId != clienteId)
+            return (false, "Contacto no encontrado.");
+
+        contacto.Nombre = dto.Nombre;
+        contacto.Telefono = dto.Telefono;
+        contacto.Email = dto.Email;
+        contacto.Cargo = dto.Cargo;
+        contacto.EsPrincipal = dto.EsPrincipal;
+
+        await _repo.UpdateContactoClienteAsync(contacto);
+        return (true, "Contacto actualizado correctamente.");
+    }
+
+    public async Task<(bool Success, string Message)> DeleteContactoClienteAsync(int clienteId, int contactoId)
+    {
+        var contacto = await _repo.GetContactoClienteAsync(contactoId);
+        if (contacto is null || contacto.ClienteId != clienteId)
+            return (false, "Contacto no encontrado.");
+
+        await _repo.DeleteContactoClienteAsync(contacto);
+        return (true, "Contacto eliminado correctamente.");
     }
 }

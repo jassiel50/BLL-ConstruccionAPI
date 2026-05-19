@@ -7,19 +7,25 @@ public class ProveedorResponseDto
     public int Id { get; set; }
     public string Nombre { get; set; } = string.Empty;
     public string RFC { get; set; } = string.Empty;
-    public string Contacto { get; set; } = string.Empty;
-    public string Telefono { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
     public string Direccion { get; set; } = string.Empty;
+    public string Estado { get; set; } = string.Empty;
+    public List<ContactoResponseDto> Contactos { get; set; } = new();
 
     public static ProveedorResponseDto FromEntity(Proveedor e) => new()
     {
         Id = e.Id,
         Nombre = e.Nombre,
         RFC = e.RFC,
-        Contacto = e.Contacto,
-        Telefono = e.Telefono,
-        Email = e.Email,
-        Direccion = e.Direccion
+        Direccion = e.Direccion,
+        Estado = e.Estado,
+        Contactos = e.Contactos?.Select(c => new ContactoResponseDto
+        {
+            Id = c.Id,
+            Nombre = c.Nombre,
+            Telefono = c.Telefono,
+            Email = c.Email,
+            Cargo = c.Cargo,
+            EsPrincipal = c.EsPrincipal
+        }).ToList() ?? new()
     };
 }

@@ -60,4 +60,31 @@ public class ClienteController : ControllerBase
         if (!success) return NotFound(new { message });
         return Ok(new { message });
     }
+
+    // POST api/clientes/{id}/contactos
+    [HttpPost("{id:int}/contactos")]
+    public async Task<IActionResult> AddContacto(int id, [FromBody] ContactoRequestDto dto)
+    {
+        var (success, message, data) = await _service.AddContactoClienteAsync(id, dto);
+        if (!success) return BadRequest(new { message });
+        return Ok(new { message, data });
+    }
+
+    // PUT api/clientes/{clienteId}/contactos/{contactoId}
+    [HttpPut("{clienteId:int}/contactos/{contactoId:int}")]
+    public async Task<IActionResult> UpdateContacto(int clienteId, int contactoId, [FromBody] ContactoRequestDto dto)
+    {
+        var (success, message) = await _service.UpdateContactoClienteAsync(clienteId, contactoId, dto);
+        if (!success) return BadRequest(new { message });
+        return Ok(new { message });
+    }
+
+    // DELETE api/clientes/{clienteId}/contactos/{contactoId}
+    [HttpDelete("{clienteId:int}/contactos/{contactoId:int}")]
+    public async Task<IActionResult> DeleteContacto(int clienteId, int contactoId)
+    {
+        var (success, message) = await _service.DeleteContactoClienteAsync(clienteId, contactoId);
+        if (!success) return NotFound(new { message });
+        return Ok(new { message });
+    }
 }

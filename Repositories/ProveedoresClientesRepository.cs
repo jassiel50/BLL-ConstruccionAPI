@@ -16,10 +16,16 @@ public class ProveedoresClientesRepository : IProveedoresClientesRepository
 
     // ─── Proveedores ──────────────────────────────────────────────────────────
     public async Task<IEnumerable<Proveedor>> GetAllProveedoresAsync()
-        => await _context.Proveedores.AsNoTracking().Where(p => p.Activo).ToListAsync();
+        => await _context.Proveedores
+            .Include(p => p.Contactos)
+            .AsNoTracking()
+            .Where(p => p.Activo)
+            .ToListAsync();
 
     public async Task<Proveedor?> GetProveedorByIdAsync(int id)
-        => await _context.Proveedores.FindAsync(id);
+        => await _context.Proveedores
+            .Include(p => p.Contactos)
+            .FirstOrDefaultAsync(p => p.Id == id);
 
     public async Task<bool> ExisteProveedorRFCAsync(string rfc)
         => await _context.Proveedores.AnyAsync(p => p.RFC == rfc && p.Activo);
@@ -44,12 +50,40 @@ public class ProveedoresClientesRepository : IProveedoresClientesRepository
         await _context.SaveChangesAsync();
     }
 
+    // ─── Contactos Proveedor ──────────────────────────────────────────────────
+    public async Task<ContactoProveedor?> GetContactoProveedorAsync(int id)
+        => await _context.ContactosProveedor.FindAsync(id);
+
+    public async Task AddContactoProveedorAsync(ContactoProveedor contacto)
+    {
+        _context.ContactosProveedor.Add(contacto);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task UpdateContactoProveedorAsync(ContactoProveedor contacto)
+    {
+        _context.ContactosProveedor.Update(contacto);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task DeleteContactoProveedorAsync(ContactoProveedor contacto)
+    {
+        _context.ContactosProveedor.Remove(contacto);
+        await _context.SaveChangesAsync();
+    }
+
     // ─── Clientes ─────────────────────────────────────────────────────────────
     public async Task<IEnumerable<Cliente>> GetAllClientesAsync()
-        => await _context.Clientes.AsNoTracking().Where(c => c.Activo).ToListAsync();
+        => await _context.Clientes
+            .Include(c => c.Contactos)
+            .AsNoTracking()
+            .Where(c => c.Activo)
+            .ToListAsync();
 
     public async Task<Cliente?> GetClienteByIdAsync(int id)
-        => await _context.Clientes.FindAsync(id);
+        => await _context.Clientes
+            .Include(c => c.Contactos)
+            .FirstOrDefaultAsync(c => c.Id == id);
 
     public async Task<bool> ExisteClienteRFCAsync(string rfc)
         => await _context.Clientes.AnyAsync(c => c.RFC == rfc && c.Activo);
@@ -71,6 +105,28 @@ public class ProveedoresClientesRepository : IProveedoresClientesRepository
     {
         cliente.Activo = false;
         _context.Clientes.Update(cliente);
+        await _context.SaveChangesAsync();
+    }
+
+    // ─── Contactos Cliente ────────────────────────────────────────────────────
+    public async Task<ContactoCliente?> GetContactoClienteAsync(int id)
+        => await _context.ContactosCliente.FindAsync(id);
+
+    public async Task AddContactoClienteAsync(ContactoCliente contacto)
+    {
+        _context.ContactosCliente.Add(contacto);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task UpdateContactoClienteAsync(ContactoCliente contacto)
+    {
+        _context.ContactosCliente.Update(contacto);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task DeleteContactoClienteAsync(ContactoCliente contacto)
+    {
+        _context.ContactosCliente.Remove(contacto);
         await _context.SaveChangesAsync();
     }
 }
