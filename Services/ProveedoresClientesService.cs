@@ -76,6 +76,8 @@ public class ProveedoresClientesService : IProveedoresClientesService
             RFC = dto.RFC,
             Direccion = dto.Direccion,
             Estado = dto.Estado,
+            Descripcion = dto.Descripcion,
+            CategoriaId = dto.CategoriaId,
             Activo = true,
             FechaRegistro = DateTime.UtcNow
         };
@@ -102,6 +104,8 @@ public class ProveedoresClientesService : IProveedoresClientesService
         proveedor.RFC = dto.RFC;
         proveedor.Direccion = dto.Direccion;
         proveedor.Estado = dto.Estado;
+        proveedor.Descripcion = dto.Descripcion;
+        proveedor.CategoriaId = dto.CategoriaId;
 
         await _repo.UpdateProveedorAsync(proveedor);
 
@@ -201,6 +205,8 @@ public class ProveedoresClientesService : IProveedoresClientesService
             RFC = dto.RFC,
             Direccion = dto.Direccion,
             Estado = dto.Estado,
+            Descripcion = dto.Descripcion,
+            CategoriaId = dto.CategoriaId,
             Activo = true,
             FechaRegistro = DateTime.UtcNow
         };
@@ -227,6 +233,8 @@ public class ProveedoresClientesService : IProveedoresClientesService
         cliente.RFC = dto.RFC;
         cliente.Direccion = dto.Direccion;
         cliente.Estado = dto.Estado;
+        cliente.Descripcion = dto.Descripcion;
+        cliente.CategoriaId = dto.CategoriaId;
 
         await _repo.UpdateClienteAsync(cliente);
 

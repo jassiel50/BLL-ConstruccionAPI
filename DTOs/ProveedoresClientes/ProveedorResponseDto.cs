@@ -9,6 +9,9 @@ public class ProveedorResponseDto
     public string RFC { get; set; } = string.Empty;
     public string Direccion { get; set; } = string.Empty;
     public string Estado { get; set; } = string.Empty;
+    public string Descripcion { get; set; } = string.Empty;
+    public int? CategoriaId { get; set; }
+    public string? CategoriaNombre { get; set; }
     public List<ContactoResponseDto> Contactos { get; set; } = new();
 
     public static ProveedorResponseDto FromEntity(Proveedor e) => new()
@@ -18,6 +21,9 @@ public class ProveedorResponseDto
         RFC = e.RFC,
         Direccion = e.Direccion,
         Estado = e.Estado,
+        Descripcion = e.Descripcion,
+        CategoriaId = e.CategoriaId,
+        CategoriaNombre = e.Categoria?.Nombre,
         Contactos = e.Contactos?.Select(c => new ContactoResponseDto
         {
             Id = c.Id,

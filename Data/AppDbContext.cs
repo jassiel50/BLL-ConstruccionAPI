@@ -6,6 +6,7 @@ using BLL_ConstruccionAPI.Models.Inventario.Herramientas;
 using BLL_ConstruccionAPI.Models.Inventario.Materiales;
 using BLL_ConstruccionAPI.Models.Inventario.Perdidas;
 using BLL_ConstruccionAPI.Models.Inventario.Proyectos;
+// Referencia implícita — los namespaces de Cátalogos y de Inventario coexisten
 using Microsoft.EntityFrameworkCore;
 
 namespace BLL_ConstruccionAPI.Data;
@@ -28,6 +29,8 @@ public class AppDbContext : DbContext
     public DbSet<CategoriaMaterial> Categorias { get; set; }
     public DbSet<UnidadMedida> UnidadesMedida { get; set; }
     public DbSet<CategoriaHerramienta> CategoriasHerramienta { get; set; }
+    public DbSet<CategoriaProveedor> CategoriasProveedor { get; set; }
+    public DbSet<CategoriaCliente> CategoriasCliente { get; set; }
 
     // ─── PROVEEDORES Y CLIENTES ───────────────────────────────────────────────
     public DbSet<Proveedor> Proveedores { get; set; }
@@ -68,6 +71,19 @@ public class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // Categorías de clientes y proveedores
+        modelBuilder.Entity<Cliente>()
+            .HasOne(c => c.Categoria)
+            .WithMany()
+            .HasForeignKey(c => c.CategoriaId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Proveedor>()
+            .HasOne(p => p.Categoria)
+            .WithMany()
+            .HasForeignKey(p => p.CategoriaId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         // Contactos de clientes y proveedores
         modelBuilder.Entity<ContactoCliente>()

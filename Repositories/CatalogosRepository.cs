@@ -14,6 +14,66 @@ public class CatalogosRepository : ICatalogosRepository
         _context = context;
     }
 
+    // ─── CategoriaProveedor ───────────────────────────────────────────────────
+    public async Task<IEnumerable<CategoriaProveedor>> GetAllCategoriasProveedorAsync()
+        => await _context.CategoriasProveedor.AsNoTracking().Where(c => c.Activo).ToListAsync();
+
+    public async Task<CategoriaProveedor?> GetCategoriaProveedorByIdAsync(int id)
+        => await _context.CategoriasProveedor.FindAsync(id);
+
+    public async Task<bool> ExisteCategoriaProveedorAsync(string nombre)
+        => await _context.CategoriasProveedor.AnyAsync(c => c.Nombre == nombre && c.Activo);
+
+    public async Task<int> CreateCategoriaProveedorAsync(CategoriaProveedor categoria)
+    {
+        _context.CategoriasProveedor.Add(categoria);
+        await _context.SaveChangesAsync();
+        return categoria.Id;
+    }
+
+    public async Task UpdateCategoriaProveedorAsync(CategoriaProveedor categoria)
+    {
+        _context.CategoriasProveedor.Update(categoria);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task DeleteCategoriaProveedorAsync(CategoriaProveedor categoria)
+    {
+        categoria.Activo = false;
+        _context.CategoriasProveedor.Update(categoria);
+        await _context.SaveChangesAsync();
+    }
+
+    // ─── CategoriaCliente ─────────────────────────────────────────────────────
+    public async Task<IEnumerable<CategoriaCliente>> GetAllCategoriasClienteAsync()
+        => await _context.CategoriasCliente.AsNoTracking().Where(c => c.Activo).ToListAsync();
+
+    public async Task<CategoriaCliente?> GetCategoriaClienteByIdAsync(int id)
+        => await _context.CategoriasCliente.FindAsync(id);
+
+    public async Task<bool> ExisteCategoriaClienteAsync(string nombre)
+        => await _context.CategoriasCliente.AnyAsync(c => c.Nombre == nombre && c.Activo);
+
+    public async Task<int> CreateCategoriaClienteAsync(CategoriaCliente categoria)
+    {
+        _context.CategoriasCliente.Add(categoria);
+        await _context.SaveChangesAsync();
+        return categoria.Id;
+    }
+
+    public async Task UpdateCategoriaClienteAsync(CategoriaCliente categoria)
+    {
+        _context.CategoriasCliente.Update(categoria);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task DeleteCategoriaClienteAsync(CategoriaCliente categoria)
+    {
+        categoria.Activo = false;
+        _context.CategoriasCliente.Update(categoria);
+        await _context.SaveChangesAsync();
+    }
+
     // ─── CategoriaMaterial ────────────────────────────────────────────────────
     public async Task<IEnumerable<CategoriaMaterial>> GetAllCategoriasAsync()
         => await _context.Categorias.AsNoTracking().Where(c => c.Activo).ToListAsync();

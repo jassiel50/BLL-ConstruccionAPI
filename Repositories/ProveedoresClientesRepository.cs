@@ -18,6 +18,7 @@ public class ProveedoresClientesRepository : IProveedoresClientesRepository
     public async Task<IEnumerable<Proveedor>> GetAllProveedoresAsync()
         => await _context.Proveedores
             .Include(p => p.Contactos)
+            .Include(p => p.Categoria)
             .AsNoTracking()
             .Where(p => p.Activo)
             .ToListAsync();
@@ -25,6 +26,7 @@ public class ProveedoresClientesRepository : IProveedoresClientesRepository
     public async Task<Proveedor?> GetProveedorByIdAsync(int id)
         => await _context.Proveedores
             .Include(p => p.Contactos)
+            .Include(p => p.Categoria)
             .FirstOrDefaultAsync(p => p.Id == id);
 
     public async Task<bool> ExisteProveedorRFCAsync(string rfc)
@@ -76,6 +78,7 @@ public class ProveedoresClientesRepository : IProveedoresClientesRepository
     public async Task<IEnumerable<Cliente>> GetAllClientesAsync()
         => await _context.Clientes
             .Include(c => c.Contactos)
+            .Include(c => c.Categoria)
             .AsNoTracking()
             .Where(c => c.Activo)
             .ToListAsync();
@@ -83,6 +86,7 @@ public class ProveedoresClientesRepository : IProveedoresClientesRepository
     public async Task<Cliente?> GetClienteByIdAsync(int id)
         => await _context.Clientes
             .Include(c => c.Contactos)
+            .Include(c => c.Categoria)
             .FirstOrDefaultAsync(c => c.Id == id);
 
     public async Task<bool> ExisteClienteRFCAsync(string rfc)

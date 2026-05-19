@@ -17,4 +17,9 @@ public class ClienteRequestDto
 
     [StringLength(100, ErrorMessage = "El estado no puede superar los 100 caracteres.")]
     public string Estado { get; set; } = string.Empty;
+
+    [StringLength(500, ErrorMessage = "La descripción no puede superar los 500 caracteres.")]
+    public string Descripcion { get; set; } = string.Empty;
+
+    public int? CategoriaId { get; set; }
 }

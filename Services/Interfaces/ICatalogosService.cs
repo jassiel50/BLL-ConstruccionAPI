@@ -4,6 +4,21 @@ namespace BLL_ConstruccionAPI.Services.Interfaces;
 
 public interface ICatalogosService
 {
+    // CategoriaProveedor
+    Task<IEnumerable<CategoriaProveedorResponseDto>> GetAllCategoriasProveedorAsync();
+    Task<CategoriaProveedorResponseDto?> GetCategoriaProveedorByIdAsync(int id);
+    Task<(bool Success, string Message, CategoriaProveedorResponseDto? Data)> CreateCategoriaProveedorAsync(CategoriaProveedorRequestDto dto);
+    Task<(bool Success, string Message)> UpdateCategoriaProveedorAsync(int id, CategoriaProveedorRequestDto dto);
+    Task<(bool Success, string Message)> DeleteCategoriaProveedorAsync(int id);
+
+    // CategoriaCliente
+    Task<IEnumerable<CategoriaClienteResponseDto>> GetAllCategoriasClienteAsync();
+    Task<CategoriaClienteResponseDto?> GetCategoriaClienteByIdAsync(int id);
+    Task<(bool Success, string Message, CategoriaClienteResponseDto? Data)> CreateCategoriaClienteAsync(CategoriaClienteRequestDto dto);
+    Task<(bool Success, string Message)> UpdateCategoriaClienteAsync(int id, CategoriaClienteRequestDto dto);
+    Task<(bool Success, string Message)> DeleteCategoriaClienteAsync(int id);
+
+
     // CategoriaMaterial
     Task<IEnumerable<CategoriaMaterialResponseDto>> GetAllCategoriasAsync();
     Task<CategoriaMaterialResponseDto?> GetCategoriaByIdAsync(int id);

@@ -4,6 +4,23 @@ namespace BLL_ConstruccionAPI.Repositories.Interfaces;
 
 public interface ICatalogosRepository
 {
+    // ─── CategoriaProveedor ───────────────────────────────────────────────────
+    Task<IEnumerable<CategoriaProveedor>> GetAllCategoriasProveedorAsync();
+    Task<CategoriaProveedor?> GetCategoriaProveedorByIdAsync(int id);
+    Task<bool> ExisteCategoriaProveedorAsync(string nombre);
+    Task<int> CreateCategoriaProveedorAsync(CategoriaProveedor categoria);
+    Task UpdateCategoriaProveedorAsync(CategoriaProveedor categoria);
+    Task DeleteCategoriaProveedorAsync(CategoriaProveedor categoria);
+
+    // ─── CategoriaCliente ─────────────────────────────────────────────────────
+    Task<IEnumerable<CategoriaCliente>> GetAllCategoriasClienteAsync();
+    Task<CategoriaCliente?> GetCategoriaClienteByIdAsync(int id);
+    Task<bool> ExisteCategoriaClienteAsync(string nombre);
+    Task<int> CreateCategoriaClienteAsync(CategoriaCliente categoria);
+    Task UpdateCategoriaClienteAsync(CategoriaCliente categoria);
+    Task DeleteCategoriaClienteAsync(CategoriaCliente categoria);
+
+
     // ─── CategoriaMaterial ────────────────────────────────────────────────────
     Task<IEnumerable<CategoriaMaterial>> GetAllCategoriasAsync();
     Task<CategoriaMaterial?> GetCategoriaByIdAsync(int id);

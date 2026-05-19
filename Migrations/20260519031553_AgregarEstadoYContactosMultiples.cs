@@ -10,46 +10,7 @@ namespace BLL_ConstruccionAPI.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "Contacto",
-                table: "Proveedores");
-
-            migrationBuilder.DropColumn(
-                name: "Email",
-                table: "Proveedores");
-
-            migrationBuilder.DropColumn(
-                name: "Contacto",
-                table: "Clientes");
-
-            migrationBuilder.DropColumn(
-                name: "Email",
-                table: "Clientes");
-
-            migrationBuilder.DropColumn(
-                name: "Telefono",
-                table: "Proveedores");
-
-            migrationBuilder.DropColumn(
-                name: "Telefono",
-                table: "Clientes");
-
-            migrationBuilder.AddColumn<string>(
-                name: "Estado",
-                table: "Proveedores",
-                type: "nvarchar(100)",
-                maxLength: 100,
-                nullable: false,
-                defaultValue: "");
-
-            migrationBuilder.AddColumn<string>(
-                name: "Estado",
-                table: "Clientes",
-                type: "nvarchar(100)",
-                maxLength: 100,
-                nullable: false,
-                defaultValue: "");
-
+            // 1. Crear nuevas tablas primero
             migrationBuilder.CreateTable(
                 name: "ContactosCliente",
                 columns: table => new
@@ -107,6 +68,56 @@ namespace BLL_ConstruccionAPI.Migrations
                 name: "IX_ContactosProveedor_ProveedorId",
                 table: "ContactosProveedor",
                 column: "ProveedorId");
+
+            // 2. Migrar datos existentes de contacto único a las nuevas tablas
+            migrationBuilder.Sql(@"
+                INSERT INTO ContactosCliente (ClienteId, Nombre, Telefono, Email, Cargo, EsPrincipal)
+                SELECT Id,
+                       CASE WHEN Contacto != '' THEN Contacto ELSE 'Sin nombre' END,
+                       ISNULL(Telefono, ''),
+                       ISNULL(Email, ''),
+                       '',
+                       1
+                FROM Clientes
+                WHERE Contacto != '' OR Telefono != '' OR Email != ''
+            ");
+
+            migrationBuilder.Sql(@"
+                INSERT INTO ContactosProveedor (ProveedorId, Nombre, Telefono, Email, Cargo, EsPrincipal)
+                SELECT Id,
+                       CASE WHEN Contacto != '' THEN Contacto ELSE 'Sin nombre' END,
+                       ISNULL(Telefono, ''),
+                       ISNULL(Email, ''),
+                       '',
+                       1
+                FROM Proveedores
+                WHERE Contacto != '' OR Telefono != '' OR Email != ''
+            ");
+
+            // 3. Agregar columna Estado
+            migrationBuilder.AddColumn<string>(
+                name: "Estado",
+                table: "Proveedores",
+                type: "nvarchar(100)",
+                maxLength: 100,
+                nullable: false,
+                defaultValue: "");
+
+            migrationBuilder.AddColumn<string>(
+                name: "Estado",
+                table: "Clientes",
+                type: "nvarchar(100)",
+                maxLength: 100,
+                nullable: false,
+                defaultValue: "");
+
+            // 4. Borrar columnas viejas (datos ya migrados)
+            migrationBuilder.DropColumn(name: "Contacto", table: "Proveedores");
+            migrationBuilder.DropColumn(name: "Email",    table: "Proveedores");
+            migrationBuilder.DropColumn(name: "Telefono", table: "Proveedores");
+            migrationBuilder.DropColumn(name: "Contacto", table: "Clientes");
+            migrationBuilder.DropColumn(name: "Email",    table: "Clientes");
+            migrationBuilder.DropColumn(name: "Telefono", table: "Clientes");
         }
 
         /// <inheritdoc />

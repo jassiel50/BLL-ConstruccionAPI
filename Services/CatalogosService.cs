@@ -3,6 +3,7 @@ using BLL_ConstruccionAPI.Models.Inventario.Cátalogos;
 using BLL_ConstruccionAPI.Repositories.Interfaces;
 using BLL_ConstruccionAPI.Services.Interfaces;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 
 namespace BLL_ConstruccionAPI.Services;
 
@@ -20,6 +21,110 @@ public class CatalogosService : ICatalogosService
         _catalogosRepo = catalogosRepo;
         _bitacora = bitacora;
         _httpContextAccessor = httpContextAccessor;
+    }
+
+    // ─── CategoriaProveedor ───────────────────────────────────────────────────
+    public async Task<IEnumerable<CategoriaProveedorResponseDto>> GetAllCategoriasProveedorAsync()
+    {
+        var categorias = await _catalogosRepo.GetAllCategoriasProveedorAsync();
+        return categorias.Select(CategoriaProveedorResponseDto.FromEntity);
+    }
+
+    public async Task<CategoriaProveedorResponseDto?> GetCategoriaProveedorByIdAsync(int id)
+    {
+        var categoria = await _catalogosRepo.GetCategoriaProveedorByIdAsync(id);
+        return categoria is null ? null : CategoriaProveedorResponseDto.FromEntity(categoria);
+    }
+
+    public async Task<(bool Success, string Message, CategoriaProveedorResponseDto? Data)> CreateCategoriaProveedorAsync(CategoriaProveedorRequestDto dto)
+    {
+        if (await _catalogosRepo.ExisteCategoriaProveedorAsync(dto.Nombre))
+            return (false, "Ya existe una categoría de proveedor con ese nombre.", null);
+
+        var categoria = new CategoriaProveedor { Nombre = dto.Nombre, Descripcion = dto.Descripcion, Activo = true };
+        await _catalogosRepo.CreateCategoriaProveedorAsync(categoria);
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Creó", "CategoríaProveedor", $"Categoría de proveedor '{categoria.Nombre}' creada");
+        return (true, "Categoría de proveedor creada correctamente.", CategoriaProveedorResponseDto.FromEntity(categoria));
+    }
+
+    public async Task<(bool Success, string Message)> UpdateCategoriaProveedorAsync(int id, CategoriaProveedorRequestDto dto)
+    {
+        var categoria = await _catalogosRepo.GetCategoriaProveedorByIdAsync(id);
+        if (categoria is null) return (false, "Categoría de proveedor no encontrada.");
+
+        if (categoria.Nombre != dto.Nombre && await _catalogosRepo.ExisteCategoriaProveedorAsync(dto.Nombre))
+            return (false, "Ya existe una categoría de proveedor con ese nombre.");
+
+        categoria.Nombre = dto.Nombre;
+        categoria.Descripcion = dto.Descripcion;
+        await _catalogosRepo.UpdateCategoriaProveedorAsync(categoria);
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Actualizó", "CategoríaProveedor", $"Categoría de proveedor '{categoria.Nombre}' actualizada");
+        return (true, "Categoría de proveedor actualizada correctamente.");
+    }
+
+    public async Task<(bool Success, string Message)> DeleteCategoriaProveedorAsync(int id)
+    {
+        var categoria = await _catalogosRepo.GetCategoriaProveedorByIdAsync(id);
+        if (categoria is null) return (false, "Categoría de proveedor no encontrada.");
+
+        await _catalogosRepo.DeleteCategoriaProveedorAsync(categoria);
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Eliminó", "CategoríaProveedor", $"Categoría de proveedor '{categoria.Nombre}' desactivada");
+        return (true, "Categoría de proveedor desactivada correctamente.");
+    }
+
+    // ─── CategoriaCliente ─────────────────────────────────────────────────────
+    public async Task<IEnumerable<CategoriaClienteResponseDto>> GetAllCategoriasClienteAsync()
+    {
+        var categorias = await _catalogosRepo.GetAllCategoriasClienteAsync();
+        return categorias.Select(CategoriaClienteResponseDto.FromEntity);
+    }
+
+    public async Task<CategoriaClienteResponseDto?> GetCategoriaClienteByIdAsync(int id)
+    {
+        var categoria = await _catalogosRepo.GetCategoriaClienteByIdAsync(id);
+        return categoria is null ? null : CategoriaClienteResponseDto.FromEntity(categoria);
+    }
+
+    public async Task<(bool Success, string Message, CategoriaClienteResponseDto? Data)> CreateCategoriaClienteAsync(CategoriaClienteRequestDto dto)
+    {
+        if (await _catalogosRepo.ExisteCategoriaClienteAsync(dto.Nombre))
+            return (false, "Ya existe una categoría de cliente con ese nombre.", null);
+
+        var categoria = new CategoriaCliente { Nombre = dto.Nombre, Descripcion = dto.Descripcion, Activo = true };
+        await _catalogosRepo.CreateCategoriaClienteAsync(categoria);
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Creó", "CategoríaCliente", $"Categoría de cliente '{categoria.Nombre}' creada");
+        return (true, "Categoría de cliente creada correctamente.", CategoriaClienteResponseDto.FromEntity(categoria));
+    }
+
+    public async Task<(bool Success, string Message)> UpdateCategoriaClienteAsync(int id, CategoriaClienteRequestDto dto)
+    {
+        var categoria = await _catalogosRepo.GetCategoriaClienteByIdAsync(id);
+        if (categoria is null) return (false, "Categoría de cliente no encontrada.");
+
+        if (categoria.Nombre != dto.Nombre && await _catalogosRepo.ExisteCategoriaClienteAsync(dto.Nombre))
+            return (false, "Ya existe una categoría de cliente con ese nombre.");
+
+        categoria.Nombre = dto.Nombre;
+        categoria.Descripcion = dto.Descripcion;
+        await _catalogosRepo.UpdateCategoriaClienteAsync(categoria);
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Actualizó", "CategoríaCliente", $"Categoría de cliente '{categoria.Nombre}' actualizada");
+        return (true, "Categoría de cliente actualizada correctamente.");
+    }
+
+    public async Task<(bool Success, string Message)> DeleteCategoriaClienteAsync(int id)
+    {
+        var categoria = await _catalogosRepo.GetCategoriaClienteByIdAsync(id);
+        if (categoria is null) return (false, "Categoría de cliente no encontrada.");
+
+        await _catalogosRepo.DeleteCategoriaClienteAsync(categoria);
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Eliminó", "CategoríaCliente", $"Categoría de cliente '{categoria.Nombre}' desactivada");
+        return (true, "Categoría de cliente desactivada correctamente.");
     }
 
     // ─── CategoriaMaterial ────────────────────────────────────────────────────
