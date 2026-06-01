@@ -1,4 +1,5 @@
 using BLL_ConstruccionAPI.Data;
+using BLL_ConstruccionAPI.Models.Auth;
 using BLL_ConstruccionAPI.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,8 +14,6 @@ public class ResumenAccesosSemanalService : BackgroundService
     private static readonly int[] RolesDestinatarios = [1, 3];
 
     private static readonly TimeZoneInfo ZonaMexico = ObtenerZonaMexico();
-
-    private DateOnly _ultimoEnvio = DateOnly.MinValue;
 
     public ResumenAccesosSemanalService(
         IServiceScopeFactory scopeFactory,
@@ -32,37 +31,71 @@ public class ResumenAccesosSemanalService : BackgroundService
         {
             try
             {
-                var ahora = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, ZonaMexico);
-
-                if (ahora.DayOfWeek == DayOfWeek.Monday && ahora.Hour == 13)
-                {
-                    var hoy = DateOnly.FromDateTime(ahora);
-                    if (_ultimoEnvio != hoy)
-                    {
-                        await EnviarResumenAsync(ahora);
-                        _ultimoEnvio = hoy;
-                    }
-                }
+                await VerificarYEnviarAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al enviar resumen semanal de accesos.");
+                _logger.LogError(ex, "Error al procesar resumen semanal de accesos.");
             }
 
             await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
         }
     }
 
-    private async Task EnviarResumenAsync(DateTime ahoraLocal)
+    private async Task VerificarYEnviarAsync()
     {
+        var ahora = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, ZonaMexico);
+        var lunesRef = ObtenerLunesDeReferencia(ahora);
+
+        // Si aún no llegó la hora del primer envío posible, no hacer nada
+        if (lunesRef == null) return;
+
         using var scope = _scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
 
-        // Semana anterior: lunes pasado 00:00 → domingo 23:59:59 (hora local)
-        var lunesActual = ahoraLocal.Date; // hoy ES lunes
-        var inicioLocal = lunesActual.AddDays(-7);
-        var finLocal = lunesActual.AddDays(-1).Add(new TimeSpan(23, 59, 59));
+        var yaEnviado = await context.RegistrosCorreoSemanal
+            .AnyAsync(r => r.FechaLunes.Date == lunesRef.Value.Date);
+
+        if (yaEnviado) return;
+
+        _logger.LogInformation(
+            "Correo semanal pendiente para la semana del {Lunes:dd/MM/yyyy}. Enviando ahora...",
+            lunesRef.Value);
+
+        await EnviarResumenAsync(context, lunesRef.Value,
+            scope.ServiceProvider.GetRequiredService<IEmailService>());
+
+        context.RegistrosCorreoSemanal.Add(new RegistroCorreoSemanal
+        {
+            FechaLunes = lunesRef.Value,
+            FechaEnvio = DateTime.UtcNow
+        });
+        await context.SaveChangesAsync();
+    }
+
+    // Devuelve el lunes más reciente para el que ya debería haberse enviado el correo
+    // (lunes pasado o este lunes si ya son >= 13:00). Null si aún no corresponde.
+    private static DateTime? ObtenerLunesDeReferencia(DateTime ahoraLocal)
+    {
+        // Días desde el lunes (0 = lunes, 6 = domingo)
+        var diasDesdeElLunes = ((int)ahoraLocal.DayOfWeek + 6) % 7;
+        var lunesActual = ahoraLocal.Date.AddDays(-diasDesdeElLunes);
+
+        // Es lunes pero antes de la 1pm → el envío de hoy aún no toca; referencia es la semana pasada
+        if (diasDesdeElLunes == 0 && ahoraLocal.Hour < 13)
+        {
+            var lunesPasado = lunesActual.AddDays(-7);
+            // Si es la primera semana de vida del sistema, no hay semana previa que enviar
+            return lunesPasado;
+        }
+
+        return lunesActual;
+    }
+
+    private async Task EnviarResumenAsync(AppDbContext context, DateTime lunesRef, IEmailService emailService)
+    {
+        var inicioLocal = lunesRef.Date.AddDays(-7); // lunes de la semana anterior
+        var finLocal = lunesRef.Date.AddDays(-1).Add(new TimeSpan(23, 59, 59)); // domingo anterior
 
         var inicioUtc = TimeZoneInfo.ConvertTimeToUtc(inicioLocal, ZonaMexico);
         var finUtc = TimeZoneInfo.ConvertTimeToUtc(finLocal, ZonaMexico);
@@ -95,7 +128,10 @@ public class ResumenAccesosSemanalService : BackgroundService
         }
 
         var listaAccesos = accesos
-            .Select(a => (a.Nombre, a.NombreUsuario, a.TotalAccesos,
+            .Select(a => (
+                a.Nombre,
+                a.NombreUsuario,
+                a.TotalAccesos,
                 TimeZoneInfo.ConvertTimeFromUtc(a.UltimoAcceso, ZonaMexico)))
             .ToList();
 

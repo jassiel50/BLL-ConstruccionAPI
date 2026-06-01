@@ -24,6 +24,7 @@ public class AppDbContext : DbContext
     public DbSet<UsuarioMfaConfig> UsuariosMfaConfig { get; set; }
     public DbSet<MfaEmailCode> MfaEmailCodes { get; set; }
     public DbSet<PasswordResetCode> PasswordResetCodes { get; set; }
+    public DbSet<RegistroCorreoSemanal> RegistrosCorreoSemanal { get; set; }
 
     // ─── CATÁLOGOS ────────────────────────────────────────────────────────────
     public DbSet<CategoriaMaterial> Categorias { get; set; }
