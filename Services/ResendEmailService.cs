@@ -324,6 +324,94 @@ th{{background:#002046;color:white;padding:8px;text-align:left;border:1px solid 
         }
     }
 
+    public async Task<bool> SendResumenAccesosSemanalAsync(
+        string toEmail,
+        string adminName,
+        DateTime semanaInicio,
+        DateTime semanaFin,
+        List<(string Nombre, string NombreUsuario, int TotalAccesos, DateTime UltimoAcceso)> accesos)
+    {
+        var subject = $"Resumen semanal de accesos - BLL Construcción";
+
+        var filasHtml = new System.Text.StringBuilder();
+        if (accesos.Count == 0)
+        {
+            filasHtml.Append(@"<tr><td colspan=""4"" style=""padding:12px;text-align:center;color:#666;"">Sin accesos registrados en este período.</td></tr>");
+        }
+        else
+        {
+            foreach (var a in accesos)
+            {
+                filasHtml.Append($@"
+                <tr>
+                    <td style=""padding:8px 12px;border-bottom:1px solid #e0e0e0;"">{a.Nombre}</td>
+                    <td style=""padding:8px 12px;border-bottom:1px solid #e0e0e0;color:#555;"">{a.NombreUsuario}</td>
+                    <td style=""padding:8px 12px;border-bottom:1px solid #e0e0e0;text-align:center;font-weight:bold;color:#1a3a5c;"">{a.TotalAccesos}</td>
+                    <td style=""padding:8px 12px;border-bottom:1px solid #e0e0e0;text-align:center;"">{a.UltimoAcceso:dd/MM/yyyy HH:mm}</td>
+                </tr>");
+            }
+        }
+
+        var htmlBody = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset=""utf-8"">
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 700px; margin: 0 auto; padding: 20px; }}
+        .header {{ background-color: #1a3a5c; color: white; padding: 20px; text-align: center; }}
+        .header h2 {{ margin: 4px 0 0 0; font-size: 16px; opacity: 0.85; }}
+        .content {{ background-color: #f9f9f9; padding: 30px; margin: 20px 0; }}
+        .badge {{ display: inline-block; background: #e8f0fe; color: #1a3a5c; border-radius: 4px; padding: 2px 10px; font-weight: bold; font-size: 14px; }}
+        table {{ width: 100%; border-collapse: collapse; margin-top: 16px; background: #fff; }}
+        th {{ background-color: #1a3a5c; color: white; padding: 10px 12px; text-align: left; font-size: 13px; }}
+        tr:hover td {{ background-color: #f0f4ff; }}
+        .footer {{ text-align: center; color: #666; font-size: 12px; margin-top: 20px; }}
+    </style>
+</head>
+<body>
+    <div class=""container"">
+        <div class=""header"">
+            <h1>BLL Construcción</h1>
+            <h2>Resumen Semanal de Accesos al Portal</h2>
+        </div>
+        <div class=""content"">
+            <p>Hola <strong>{adminName}</strong>,</p>
+            <p>A continuación el resumen de usuarios que accedieron al portal durante la semana del
+               <span class=""badge"">{semanaInicio:dd/MM/yyyy}</span> al
+               <span class=""badge"">{semanaFin:dd/MM/yyyy}</span>:</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Usuario</th>
+                        <th style=""text-align:center;"">Accesos</th>
+                        <th style=""text-align:center;"">Último acceso</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {filasHtml}
+                </tbody>
+            </table>
+
+            <p style=""margin-top:20px;font-size:13px;color:#555;"">
+                Total de usuarios con acceso: <strong>{accesos.Count}</strong> &nbsp;|&nbsp;
+                Total de sesiones: <strong>{accesos.Sum(a => a.TotalAccesos)}</strong>
+            </p>
+        </div>
+        <div class=""footer"">
+            <p>© 2026 BLL Construcción. Todos los derechos reservados.</p>
+            <p>Este es un correo automático generado cada lunes a la 1:00 pm.</p>
+        </div>
+    </div>
+</body>
+</html>";
+
+        return await SendEmailAsync(toEmail, subject, htmlBody);
+    }
+
     private async Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody)
     {
         try

@@ -36,6 +36,7 @@ builder.Services.AddScoped<IEmailService, ResendEmailService>();
 builder.Services.AddHostedService<ExpiredCodesCleanupService>();
 builder.Services.AddHostedService<AlertasInventarioEmailService>();
 builder.Services.AddHostedService<ReportesAutomaticosService>();
+builder.Services.AddHostedService<ResumenAccesosSemanalService>();
 
 // Catálogos
 builder.Services.AddScoped<ICatalogosRepository, CatalogosRepository>();

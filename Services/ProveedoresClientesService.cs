@@ -37,7 +37,7 @@ public class ProveedoresClientesService : IProveedoresClientesService
         Id = c.Id,
         Nombre = c.Nombre,
         Telefono = c.Telefono,
-        Email = c.Email,
+        Email = c.Email ?? string.Empty,
         Cargo = c.Cargo,
         EsPrincipal = c.EsPrincipal
     };
@@ -47,7 +47,7 @@ public class ProveedoresClientesService : IProveedoresClientesService
         Id = c.Id,
         Nombre = c.Nombre,
         Telefono = c.Telefono,
-        Email = c.Email,
+        Email = c.Email ?? string.Empty,
         Cargo = c.Cargo,
         EsPrincipal = c.EsPrincipal
     };
@@ -141,7 +141,7 @@ public class ProveedoresClientesService : IProveedoresClientesService
             ProveedorId = proveedorId,
             Nombre = dto.Nombre,
             Telefono = dto.Telefono,
-            Email = dto.Email,
+            Email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email,
             Cargo = dto.Cargo,
             EsPrincipal = dto.EsPrincipal
         };
@@ -163,7 +163,7 @@ public class ProveedoresClientesService : IProveedoresClientesService
 
         contacto.Nombre = dto.Nombre;
         contacto.Telefono = dto.Telefono;
-        contacto.Email = dto.Email;
+        contacto.Email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email;
         contacto.Cargo = dto.Cargo;
         contacto.EsPrincipal = dto.EsPrincipal;
 
@@ -270,7 +270,7 @@ public class ProveedoresClientesService : IProveedoresClientesService
             ClienteId = clienteId,
             Nombre = dto.Nombre,
             Telefono = dto.Telefono,
-            Email = dto.Email,
+            Email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email,
             Cargo = dto.Cargo,
             EsPrincipal = dto.EsPrincipal
         };
@@ -292,7 +292,7 @@ public class ProveedoresClientesService : IProveedoresClientesService
 
         contacto.Nombre = dto.Nombre;
         contacto.Telefono = dto.Telefono;
-        contacto.Email = dto.Email;
+        contacto.Email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email;
         contacto.Cargo = dto.Cargo;
         contacto.EsPrincipal = dto.EsPrincipal;
 

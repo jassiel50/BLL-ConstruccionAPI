@@ -29,4 +29,11 @@ public interface IEmailService
         string tipoReporte,
         byte[] pdfBytes,
         string nombreArchivo);
+
+    Task<bool> SendResumenAccesosSemanalAsync(
+        string toEmail,
+        string adminName,
+        DateTime semanaInicio,
+        DateTime semanaFin,
+        List<(string Nombre, string NombreUsuario, int TotalAccesos, DateTime UltimoAcceso)> accesos);
 }

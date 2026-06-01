@@ -29,7 +29,7 @@ public class ProveedorResponseDto
             Id = c.Id,
             Nombre = c.Nombre,
             Telefono = c.Telefono,
-            Email = c.Email,
+            Email = c.Email ?? string.Empty,
             Cargo = c.Cargo,
             EsPrincipal = c.EsPrincipal
         }).ToList() ?? new()
