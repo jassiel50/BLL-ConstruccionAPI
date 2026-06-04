@@ -8,4 +8,5 @@ public interface IGastoExtraService
     Task<(bool Success, GastoExtraDto? Data)> CreateAsync(int faseId, GastoExtraRequestDto dto);
     Task<(bool Success, GastoExtraDto? Data)> UpdateAsync(int id, GastoExtraRequestDto dto);
     Task<bool> DeleteAsync(int id);
+
 }

@@ -6,6 +6,7 @@ using BLL_ConstruccionAPI.Models.Inventario.Herramientas;
 using BLL_ConstruccionAPI.Models.Inventario.Materiales;
 using BLL_ConstruccionAPI.Models.Inventario.Perdidas;
 using BLL_ConstruccionAPI.Models.Inventario.Proyectos;
+using BLL_ConstruccionAPI.Models.Reportes;
 // Referencia implícita — los namespaces de Cátalogos y de Inventario coexisten
 using Microsoft.EntityFrameworkCore;
 
@@ -65,6 +66,9 @@ public class AppDbContext : DbContext
 
     // ─── PÉRDIDAS ─────────────────────────────────────────────────────────────
     public DbSet<RegistroPerdida> RegistrosPerdidas { get; set; }
+
+    // ─── REPORTES PROGRAMADOS ─────────────────────────────────────────────────
+    public DbSet<ConfiguracionReporte> ConfiguracionesReporte { get; set; }
 
     // ─── BITÁCORA ─────────────────────────────────────────────────────────────
     public DbSet<BitacoraActividad> Bitacora { get; set; }
@@ -393,5 +397,20 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<PasswordResetCode>()
             .HasIndex(p => p.FechaExpira);
+
+        // ─── ConfiguracionReporte ─────────────────────────────────────────────
+        modelBuilder.Entity<ConfiguracionReporte>()
+            .HasOne(c => c.Usuario)
+            .WithMany()
+            .HasForeignKey(c => c.UsuarioId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ConfiguracionReporte>()
+            .Property(c => c.Nombre)
+            .HasMaxLength(100);
+
+        modelBuilder.Entity<ConfiguracionReporte>()
+            .Property(c => c.Frecuencia)
+            .HasMaxLength(20);
     }
 }

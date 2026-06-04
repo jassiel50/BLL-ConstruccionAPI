@@ -87,6 +87,10 @@ builder.Services.AddScoped<IDevolucionesMaterialService, DevolucionesMaterialSer
 
 // Reportes
 builder.Services.AddScoped<IReportesService, ReportesService>();
+builder.Services.AddScoped<IConfiguracionReporteRepository, ConfiguracionReporteRepository>();
+builder.Services.AddScoped<ConfiguracionReporteService>();
+builder.Services.AddScoped<IConfiguracionReporteService>(sp => sp.GetRequiredService<ConfiguracionReporteService>());
+builder.Services.AddHostedService<ReportesProgramadosService>();
 
 // JWT
 var jwtKey = builder.Configuration["Jwt:SecretKey"];
