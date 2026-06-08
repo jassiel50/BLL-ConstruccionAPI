@@ -36,4 +36,10 @@ public interface IEmailService
         DateTime semanaInicio,
         DateTime semanaFin,
         List<(string Nombre, string NombreUsuario, int TotalAccesos, DateTime UltimoAcceso)> accesos);
+
+    Task<bool> SendNotificacionFasesVencenAsync(
+        string toEmail,
+        string adminName,
+        bool esHoy,
+        List<(string ProyectoNombre, string FaseNombre, string Descripcion, DateTime FechaLimite)> fases);
 }

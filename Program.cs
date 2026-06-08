@@ -37,6 +37,7 @@ builder.Services.AddHostedService<ExpiredCodesCleanupService>();
 builder.Services.AddHostedService<AlertasInventarioEmailService>();
 builder.Services.AddHostedService<ReportesAutomaticosService>();
 builder.Services.AddHostedService<ResumenAccesosSemanalService>();
+builder.Services.AddHostedService<NotificacionFasesService>();
 
 // Catálogos
 builder.Services.AddScoped<ICatalogosRepository, CatalogosRepository>();

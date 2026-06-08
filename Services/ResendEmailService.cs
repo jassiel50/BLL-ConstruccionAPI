@@ -412,6 +412,98 @@ th{{background:#002046;color:white;padding:8px;text-align:left;border:1px solid 
         return await SendEmailAsync(toEmail, subject, htmlBody);
     }
 
+    public async Task<bool> SendNotificacionFasesVencenAsync(
+        string toEmail,
+        string adminName,
+        bool esHoy,
+        List<(string ProyectoNombre, string FaseNombre, string Descripcion, DateTime FechaLimite)> fases)
+    {
+        string subject, headerColor, headerTitle, headerSubtitle, intro;
+
+        if (esHoy)
+        {
+            subject = "🔴 URGENTE: Fases que vencen HOY - BLL Construcción";
+            headerColor = "#c0392b";
+            headerTitle = "¡ATENCIÓN URGENTE!";
+            headerSubtitle = "Las siguientes fases vencen HOY";
+            intro = "Las siguientes fases de proyecto <strong>vencen el día de hoy</strong>. Es urgente completarlas o escalar de inmediato:";
+        }
+        else
+        {
+            subject = "⚠️ Aviso: Fases que vencen MAÑANA - BLL Construcción";
+            headerColor = "#e67e22";
+            headerTitle = "Aviso de Vencimiento";
+            headerSubtitle = "Las siguientes fases vencen mañana";
+            intro = "Las siguientes fases de proyecto <strong>vencen mañana</strong>. Por favor coordina con el equipo para completarlas a tiempo:";
+        }
+
+        var filasHtml = new System.Text.StringBuilder();
+        foreach (var f in fases)
+        {
+            filasHtml.Append($@"
+                <tr>
+                    <td style=""padding:10px 12px;border-bottom:1px solid #e0e0e0;font-weight:bold;"">{f.ProyectoNombre}</td>
+                    <td style=""padding:10px 12px;border-bottom:1px solid #e0e0e0;"">{f.FaseNombre}</td>
+                    <td style=""padding:10px 12px;border-bottom:1px solid #e0e0e0;color:#666;"">{f.Descripcion}</td>
+                    <td style=""padding:10px 12px;border-bottom:1px solid #e0e0e0;text-align:center;font-weight:bold;color:{headerColor};"">{f.FechaLimite:dd/MM/yyyy}</td>
+                </tr>");
+        }
+
+        var htmlBody = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset=""utf-8"">
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 750px; margin: 0 auto; padding: 20px; }}
+        .header {{ background-color: {headerColor}; color: white; padding: 24px 20px; text-align: center; }}
+        .header h1 {{ margin: 0 0 4px 0; font-size: 22px; }}
+        .header h2 {{ margin: 0; font-size: 15px; opacity: 0.9; font-weight: normal; }}
+        .content {{ background-color: #f9f9f9; padding: 28px; margin: 20px 0; }}
+        table {{ width: 100%; border-collapse: collapse; background: #fff; margin-top: 16px; }}
+        th {{ background-color: {headerColor}; color: white; padding: 10px 12px; text-align: left; font-size: 13px; }}
+        tr:hover td {{ background-color: #fef9f0; }}
+        .footer {{ text-align: center; color: #666; font-size: 12px; margin-top: 20px; }}
+    </style>
+</head>
+<body>
+    <div class=""container"">
+        <div class=""header"">
+            <h1>BLL Construcción — {headerTitle}</h1>
+            <h2>{headerSubtitle}</h2>
+        </div>
+        <div class=""content"">
+            <p>Hola <strong>{adminName}</strong>,</p>
+            <p>{intro}</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Proyecto</th>
+                        <th>Fase</th>
+                        <th>Descripción</th>
+                        <th style=""text-align:center;"">Fecha Límite</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {filasHtml}
+                </tbody>
+            </table>
+            <p style=""margin-top:20px;font-size:13px;color:#555;"">
+                Total de fases: <strong>{fases.Count}</strong>
+            </p>
+        </div>
+        <div class=""footer"">
+            <p>© 2026 BLL Construcción. Todos los derechos reservados.</p>
+            <p>Este es un correo automático. No respondas a este mensaje.</p>
+        </div>
+    </div>
+</body>
+</html>";
+
+        return await SendEmailAsync(toEmail, subject, htmlBody);
+    }
+
     private async Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody)
     {
         try
