@@ -179,6 +179,24 @@ public class AlertasService : IAlertasService
         return alertas;
     }
 
+    public async Task<List<AlertaDto>> GetProyectosConFasesCompletadasAsync()
+    {
+        var proyectos = await _context.Proyectos
+            .AsNoTracking()
+            .Where(p => p.Activo && p.Estado == EstadoProyecto.Activo
+                && _context.FaseProyectos.Any(f => f.ProyectoId == p.Id)
+                && !_context.FaseProyectos.Any(f => f.ProyectoId == p.Id && f.Estado != EstadoFase.Completada))
+            .ToListAsync();
+
+        return proyectos.Select(p => new AlertaDto
+        {
+            Tipo = "ProyectoConFasesCompletadas",
+            Severidad = "Media",
+            Mensaje = p.Nombre,
+            Referencia = $"/proyectos/{p.Id}"
+        }).ToList();
+    }
+
     public async Task<ResumenAlertasDto> GetResumenAsync()
     {
         var stock             = await GetStockBajoAsync();

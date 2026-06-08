@@ -11,4 +11,5 @@ public interface IAlertasService
     Task<List<AlertaDto>> GetProyectosSinFasesAsync();
     Task<List<AlertaDto>> GetHerramientasSinDevolverAsync();
     Task<List<AlertaDto>> GetSinHerramientasDisponiblesAsync();
+    Task<List<AlertaDto>> GetProyectosConFasesCompletadasAsync();
 }

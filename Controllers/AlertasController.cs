@@ -70,4 +70,12 @@ public class AlertasController : ControllerBase
         var alertas = await _service.GetSinHerramientasDisponiblesAsync();
         return Ok(alertas);
     }
+
+    // GET api/alertas/proyectos-con-fases-completadas
+    [HttpGet("api/alertas/proyectos-con-fases-completadas")]
+    public async Task<IActionResult> GetProyectosConFasesCompletadas()
+    {
+        var alertas = await _service.GetProyectosConFasesCompletadasAsync();
+        return Ok(alertas);
+    }
 }
