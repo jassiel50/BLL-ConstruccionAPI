@@ -23,7 +23,7 @@ public class ResendEmailService : IEmailService
 
     public async Task<bool> SendMfaCodeAsync(string toEmail, string userName, string code, int expirationMinutes)
     {
-        var subject = "Código de verificación MFA - BLL Construcción";
+        var subject = "Código de verificación MFA - BLL Servicios y Proyectos Industriales";
         var htmlBody = $@"
 <!DOCTYPE html>
 <html>
@@ -41,7 +41,7 @@ public class ResendEmailService : IEmailService
 <body>
     <div class=""container"">
         <div class=""header"">
-            <h1>BLL Construcción</h1>
+            <h1>BLL Servicios y Proyectos Industriales</h1>
         </div>
         <div class=""content"">
             <h2>Hola {userName},</h2>
@@ -52,7 +52,7 @@ public class ResendEmailService : IEmailService
             <p>Si no solicitaste este código, por favor ignora este correo y contacta al administrador del sistema.</p>
         </div>
         <div class=""footer"">
-            <p>© 2026 BLL Construcción. Todos los derechos reservados.</p>
+            <p>© 2026 BLL Servicios y Proyectos Industriales. Todos los derechos reservados.</p>
             <p>Este es un correo automático, por favor no respondas a este mensaje.</p>
         </div>
     </div>
@@ -64,7 +64,7 @@ public class ResendEmailService : IEmailService
 
     public async Task<bool> SendPasswordResetCodeAsync(string toEmail, string userName, string code, int expirationMinutes)
     {
-        var subject = "Código de recuperación de contraseña - BLL Construcción";
+        var subject = "Código de recuperación de contraseña - BLL Servicios y Proyectos Industriales";
         var htmlBody = $@"
 <!DOCTYPE html>
 <html>
@@ -96,7 +96,7 @@ public class ResendEmailService : IEmailService
             </div>
         </div>
         <div class=""footer"">
-            <p>© 2026 BLL Construcción. Todos los derechos reservados.</p>
+            <p>© 2026 BLL Servicios y Proyectos Industriales. Todos los derechos reservados.</p>
             <p>Este es un correo automático, por favor no respondas a este mensaje.</p>
         </div>
     </div>
@@ -120,7 +120,7 @@ public class ResendEmailService : IEmailService
         string ordenCompra,
         List<(string Nombre, string Descripcion, DateTime FechaLimite)> fases)
     {
-        var subject = $"Nuevo proyecto iniciado: {proyectoNombre} - BLL Construcción";
+        var subject = $"Nuevo proyecto iniciado: {proyectoNombre} - BLL Servicios y Proyectos Industriales";
 
         var fasesHtml = new System.Text.StringBuilder();
         foreach (var fase in fases)
@@ -160,7 +160,7 @@ public class ResendEmailService : IEmailService
 <body>
     <div class=""container"">
         <div class=""header"">
-            <h1>BLL Construcción</h1>
+            <h1>BLL Servicios y Proyectos Industriales</h1>
             <h2>Nuevo Proyecto Iniciado</h2>
         </div>
         <div class=""content"">
@@ -201,7 +201,7 @@ public class ResendEmailService : IEmailService
             </table>
         </div>
         <div class=""footer"">
-            <p>© 2026 BLL Construcción. Todos los derechos reservados.</p>
+            <p>© 2026 BLL Servicios y Proyectos Industriales. Todos los derechos reservados.</p>
             <p>Este es un correo automático, por favor no respondas a este mensaje.</p>
         </div>
     </div>
@@ -216,7 +216,7 @@ public class ResendEmailService : IEmailService
         string adminName,
         List<(string Material, decimal Stock, decimal StockMinimo, string Severidad)> alertas)
     {
-        var subject = "⚠️ Alertas de Inventario - BLL Construcción";
+        var subject = "⚠️ Alertas de Inventario - BLL Servicios y Proyectos Industriales";
 
         var filasHtml = new System.Text.StringBuilder();
         foreach (var a in alertas)
@@ -256,7 +256,7 @@ th{{background:#002046;color:white;padding:8px;text-align:left;border:1px solid 
 </table>
 <p style=""margin-top:16px;"">Por favor revisa el sistema para reabastecer el inventario.</p>
 </div>
-<div class=""footer""><p>© 2026 BLL Construcción. Correo automático.</p></div>
+<div class=""footer""><p>© 2026 BLL Servicios y Proyectos Industriales. Correo automático.</p></div>
 </div></body></html>";
 
         return await SendEmailAsync(toEmail, subject, htmlBody);
@@ -269,7 +269,7 @@ th{{background:#002046;color:white;padding:8px;text-align:left;border:1px solid 
         byte[] pdfBytes,
         string nombreArchivo)
     {
-        var subject = $"Reporte automático: {tipoReporte} - BLL Construcción";
+        var subject = $"Reporte automático: {tipoReporte} - BLL Servicios y Proyectos Industriales";
         var htmlBody = $@"
 <!DOCTYPE html><html><head><meta charset=""utf-8"">
 <style>body{{font-family:Arial,sans-serif;color:#333;}}
@@ -285,7 +285,7 @@ th{{background:#002046;color:white;padding:8px;text-align:left;border:1px solid 
 <p>Se adjunta el reporte automático de <strong>{tipoReporte}</strong> generado el {DateTime.Now:dd/MM/yyyy HH:mm}.</p>
 <p>Archivo: <strong>{nombreArchivo}</strong></p>
 </div>
-<div class=""footer""><p>© 2026 BLL Construcción. Correo automático.</p></div>
+<div class=""footer""><p>© 2026 BLL Servicios y Proyectos Industriales. Correo automático.</p></div>
 </div></body></html>";
 
         try
@@ -331,7 +331,7 @@ th{{background:#002046;color:white;padding:8px;text-align:left;border:1px solid 
         DateTime semanaFin,
         List<(string Nombre, string NombreUsuario, int TotalAccesos, DateTime UltimoAcceso)> accesos)
     {
-        var subject = $"Resumen semanal de accesos - BLL Construcción";
+        var subject = $"Resumen semanal de accesos - BLL Servicios y Proyectos Industriales";
 
         var filasHtml = new System.Text.StringBuilder();
         if (accesos.Count == 0)
@@ -373,7 +373,7 @@ th{{background:#002046;color:white;padding:8px;text-align:left;border:1px solid 
 <body>
     <div class=""container"">
         <div class=""header"">
-            <h1>BLL Construcción</h1>
+            <h1>BLL Servicios y Proyectos Industriales</h1>
             <h2>Resumen Semanal de Accesos al Portal</h2>
         </div>
         <div class=""content"">
@@ -402,7 +402,7 @@ th{{background:#002046;color:white;padding:8px;text-align:left;border:1px solid 
             </p>
         </div>
         <div class=""footer"">
-            <p>© 2026 BLL Construcción. Todos los derechos reservados.</p>
+            <p>© 2026 BLL Servicios y Proyectos Industriales. Todos los derechos reservados.</p>
             <p>Este es un correo automático generado cada lunes a la 1:00 pm.</p>
         </div>
     </div>
@@ -422,7 +422,7 @@ th{{background:#002046;color:white;padding:8px;text-align:left;border:1px solid 
 
         if (esHoy)
         {
-            subject = "🔴 URGENTE: Fases que vencen HOY - BLL Construcción";
+            subject = "🔴 URGENTE: Fases que vencen HOY - BLL Servicios y Proyectos Industriales";
             headerColor = "#c0392b";
             headerTitle = "¡ATENCIÓN URGENTE!";
             headerSubtitle = "Las siguientes fases vencen HOY";
@@ -430,7 +430,7 @@ th{{background:#002046;color:white;padding:8px;text-align:left;border:1px solid 
         }
         else
         {
-            subject = "⚠️ Aviso: Fases que vencen MAÑANA - BLL Construcción";
+            subject = "⚠️ Aviso: Fases que vencen MAÑANA - BLL Servicios y Proyectos Industriales";
             headerColor = "#e67e22";
             headerTitle = "Aviso de Vencimiento";
             headerSubtitle = "Las siguientes fases vencen mañana";
@@ -470,7 +470,7 @@ th{{background:#002046;color:white;padding:8px;text-align:left;border:1px solid 
 <body>
     <div class=""container"">
         <div class=""header"">
-            <h1>BLL Construcción — {headerTitle}</h1>
+            <h1>BLL Servicios y Proyectos Industriales — {headerTitle}</h1>
             <h2>{headerSubtitle}</h2>
         </div>
         <div class=""content"">
@@ -494,7 +494,7 @@ th{{background:#002046;color:white;padding:8px;text-align:left;border:1px solid 
             </p>
         </div>
         <div class=""footer"">
-            <p>© 2026 BLL Construcción. Todos los derechos reservados.</p>
+            <p>© 2026 BLL Servicios y Proyectos Industriales. Todos los derechos reservados.</p>
             <p>Este es un correo automático. No respondas a este mensaje.</p>
         </div>
     </div>
