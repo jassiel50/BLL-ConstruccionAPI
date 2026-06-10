@@ -42,4 +42,9 @@ public interface IEmailService
         string adminName,
         bool esHoy,
         List<(string ProyectoNombre, string FaseNombre, string Descripcion, DateTime FechaLimite)> fases);
+
+    Task<bool> SendNotificacionFasesAtrasadasAsync(
+        string toEmail,
+        string adminName,
+        List<(string ProyectoNombre, string FaseNombre, string Descripcion, DateTime FechaLimite, int DiasAtraso)> fases);
 }

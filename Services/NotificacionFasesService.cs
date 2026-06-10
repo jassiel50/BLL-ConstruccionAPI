@@ -58,6 +58,7 @@ public class NotificacionFasesService : BackgroundService
 
         await ProcesarTipoAsync(context, emailService, hoy, manana, esHoy: false);
         await ProcesarTipoAsync(context, emailService, hoy, manana, esHoy: true);
+        await ProcesarFasesAtrasadasAsync(context, emailService, hoy);
     }
 
     private async Task ProcesarTipoAsync(
@@ -140,6 +141,81 @@ public class NotificacionFasesService : BackgroundService
         _logger.LogInformation(
             "Notificación fases ({Tipo}) enviada: {Fases} fases a {Destinatarios} usuarios.",
             tipo, fases.Count, destinatarios.Count);
+    }
+
+    private async Task ProcesarFasesAtrasadasAsync(
+        AppDbContext context,
+        IEmailService emailService,
+        DateTime hoy)
+    {
+        var yaEnviado = await context.RegistrosNotificacionFase
+            .AnyAsync(r => r.Fecha.Date == hoy.Date && r.Tipo == "atrasadas");
+
+        if (yaEnviado) return;
+
+        var fases = await context.FaseProyectos
+            .Include(f => f.Proyecto)
+            .Where(f =>
+                f.FechaLimite.Date < hoy.Date &&
+                f.Estado != EstadoFase.Completada &&
+                f.Proyecto != null &&
+                f.Proyecto.Activo)
+            .OrderBy(f => f.Proyecto!.Nombre)
+            .ThenBy(f => f.Orden)
+            .Select(f => new
+            {
+                ProyectoNombre = f.Proyecto!.Nombre,
+                FaseNombre = f.Nombre,
+                f.Descripcion,
+                f.FechaLimite
+            })
+            .ToListAsync();
+
+        if (fases.Count == 0)
+        {
+            _logger.LogInformation("Notificación fases atrasadas: sin fases atrasadas al {Fecha:dd/MM/yyyy}.", hoy);
+            return;
+        }
+
+        var destinatarios = await context.Usuarios
+            .Where(u => RolesDestinatarios.Contains(u.RolId) && u.Activo)
+            .ToListAsync();
+
+        if (destinatarios.Count == 0)
+        {
+            _logger.LogWarning("Notificación fases atrasadas: no hay destinatarios activos.");
+            return;
+        }
+
+        var listaFases = fases
+            .Select(f => (f.ProyectoNombre, f.FaseNombre, f.Descripcion, f.FechaLimite,
+                DiasAtraso: (int)(hoy - f.FechaLimite).TotalDays))
+            .ToList();
+
+        foreach (var usuario in destinatarios)
+        {
+            var enviado = await emailService.SendNotificacionFasesAtrasadasAsync(
+                usuario.Email,
+                usuario.Nombre,
+                listaFases);
+
+            if (!enviado)
+                _logger.LogWarning("Notificación fases atrasadas: no se pudo enviar a {Email}.", usuario.Email);
+        }
+
+        context.RegistrosNotificacionFase.Add(new RegistroNotificacionFase
+        {
+            Fecha = hoy,
+            Tipo = "atrasadas",
+            FechaEnvio = DateTime.UtcNow
+        });
+        await context.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Notificación fases atrasadas enviada: {Fases} fases en {Proyectos} proyectos a {Destinatarios} usuarios.",
+            fases.Count,
+            fases.Select(f => f.ProyectoNombre).Distinct().Count(),
+            destinatarios.Count);
     }
 
     private static TimeZoneInfo ObtenerZonaMexico()

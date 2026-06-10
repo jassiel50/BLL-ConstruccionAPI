@@ -504,6 +504,90 @@ th{{background:#002046;color:white;padding:8px;text-align:left;border:1px solid 
         return await SendEmailAsync(toEmail, subject, htmlBody);
     }
 
+    public async Task<bool> SendNotificacionFasesAtrasadasAsync(
+        string toEmail,
+        string adminName,
+        List<(string ProyectoNombre, string FaseNombre, string Descripcion, DateTime FechaLimite, int DiasAtraso)> fases)
+    {
+        var subject = "🚨 Fases con atraso - BLL Servicios y Proyectos Industriales";
+
+        var proyectosHtml = new System.Text.StringBuilder();
+        var porProyecto = fases.GroupBy(f => f.ProyectoNombre).OrderBy(g => g.Key);
+
+        foreach (var grupo in porProyecto)
+        {
+            proyectosHtml.Append($@"
+            <h4 style=""margin:24px 0 6px 0;color:#7b1010;border-left:4px solid #c0392b;padding-left:10px;"">{grupo.Key}</h4>
+            <table style=""width:100%;border-collapse:collapse;background:#fff;margin-bottom:8px;"">
+                <thead>
+                    <tr>
+                        <th style=""background:#c0392b;color:white;padding:8px 10px;text-align:left;font-size:12px;"">Fase</th>
+                        <th style=""background:#c0392b;color:white;padding:8px 10px;text-align:left;font-size:12px;"">Descripción</th>
+                        <th style=""background:#c0392b;color:white;padding:8px 10px;text-align:center;font-size:12px;"">Fecha Límite</th>
+                        <th style=""background:#c0392b;color:white;padding:8px 10px;text-align:center;font-size:12px;"">Días de Atraso</th>
+                    </tr>
+                </thead>
+                <tbody>");
+
+            foreach (var f in grupo)
+            {
+                proyectosHtml.Append($@"
+                    <tr>
+                        <td style=""padding:8px 10px;border-bottom:1px solid #e0e0e0;font-weight:bold;"">{f.FaseNombre}</td>
+                        <td style=""padding:8px 10px;border-bottom:1px solid #e0e0e0;color:#555;"">{f.Descripcion}</td>
+                        <td style=""padding:8px 10px;border-bottom:1px solid #e0e0e0;text-align:center;"">{f.FechaLimite:dd/MM/yyyy}</td>
+                        <td style=""padding:8px 10px;border-bottom:1px solid #e0e0e0;text-align:center;font-weight:bold;color:#c0392b;"">+{f.DiasAtraso} día{(f.DiasAtraso == 1 ? "" : "s")}</td>
+                    </tr>");
+            }
+
+            proyectosHtml.Append("</tbody></table>");
+        }
+
+        var totalFases = fases.Count;
+        var totalProyectos = fases.Select(f => f.ProyectoNombre).Distinct().Count();
+
+        var htmlBody = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset=""utf-8"">
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 750px; margin: 0 auto; padding: 20px; }}
+        .header {{ background-color: #7b1010; color: white; padding: 24px 20px; text-align: center; }}
+        .header h1 {{ margin: 0 0 4px 0; font-size: 20px; }}
+        .header h2 {{ margin: 0; font-size: 14px; opacity: 0.9; font-weight: normal; }}
+        .content {{ background-color: #f9f9f9; padding: 28px; margin: 20px 0; }}
+        .resumen {{ background:#fff3cd;border-left:4px solid #e67e22;padding:12px 16px;margin-bottom:20px;border-radius:2px; }}
+        .footer {{ text-align: center; color: #666; font-size: 12px; margin-top: 20px; }}
+    </style>
+</head>
+<body>
+    <div class=""container"">
+        <div class=""header"">
+            <h1>BLL Servicios y Proyectos Industriales</h1>
+            <h2>Reporte diario de fases con atraso</h2>
+        </div>
+        <div class=""content"">
+            <p>Hola <strong>{adminName}</strong>,</p>
+            <p>Las siguientes fases de proyecto <strong>ya pasaron su fecha límite</strong> sin ser completadas:</p>
+            <div class=""resumen"">
+                <strong>{totalFases} fase{(totalFases == 1 ? "" : "s")} atrasada{(totalFases == 1 ? "" : "s")}</strong> en {totalProyectos} proyecto{(totalProyectos == 1 ? "" : "s")}.
+                Por favor revisa el avance y escala con el equipo responsable.
+            </div>
+            {proyectosHtml}
+        </div>
+        <div class=""footer"">
+            <p>© 2026 BLL Servicios y Proyectos Industriales. Todos los derechos reservados.</p>
+            <p>Este es un correo automático. No respondas a este mensaje.</p>
+        </div>
+    </div>
+</body>
+</html>";
+
+        return await SendEmailAsync(toEmail, subject, htmlBody);
+    }
+
     private async Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody)
     {
         try
