@@ -11,6 +11,7 @@ public class FaseProyecto
     public int Orden { get; set; }
     public DateTime FechaLimite { get; set; }
     public DateTime? FechaCompletada { get; set; }
+    public bool CompletadaConRetraso { get; set; } = false;
     public EstadoFase Estado { get; set; } = EstadoFase.Pendiente;
     public DateTime FechaRegistro { get; set; } = DateTime.UtcNow;
 

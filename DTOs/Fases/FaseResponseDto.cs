@@ -13,6 +13,8 @@ public class FaseResponseDto
     public DateTime FechaLimite { get; set; }
     public DateTime? FechaCompletada { get; set; }
     public string Estado { get; set; } = string.Empty;
+    public bool CompletadaConRetraso { get; set; }
+    public int? DiasRetraso { get; set; }
     public bool Atrasada => Estado != "Completada" && FechaLimite.Date < DateTime.UtcNow.Date.AddDays(-1);
 
     public bool PorVencer => Estado != "Completada"
@@ -31,6 +33,10 @@ public class FaseResponseDto
         Orden = f.Orden,
         FechaLimite = f.FechaLimite,
         FechaCompletada = f.FechaCompletada,
-        Estado = f.Estado.ToString()
+        Estado = f.Estado.ToString(),
+        CompletadaConRetraso = f.CompletadaConRetraso,
+        DiasRetraso = f.CompletadaConRetraso && f.FechaCompletada.HasValue
+            ? (int)(f.FechaCompletada.Value.Date - f.FechaLimite.Date).TotalDays
+            : null
     };
 }

@@ -130,8 +130,9 @@ public class FasesService : IFasesService
         if (fase.Estado == EstadoFase.Completada)
             return (false, "La fase ya está completada.");
 
-        fase.Estado = EstadoFase.Completada;
         fase.FechaCompletada = DateTime.UtcNow;
+        fase.Estado = EstadoFase.Completada;
+        fase.CompletadaConRetraso = fase.FechaCompletada.Value.Date > fase.FechaLimite.Date;
 
         await _fasesRepo.UpdateAsync(fase);
 
@@ -152,6 +153,7 @@ public class FasesService : IFasesService
 
         fase.Estado = EstadoFase.Pendiente;
         fase.FechaCompletada = null;
+        fase.CompletadaConRetraso = false;
 
         await _fasesRepo.UpdateAsync(fase);
 
