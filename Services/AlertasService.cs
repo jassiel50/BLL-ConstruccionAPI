@@ -133,17 +133,48 @@ public class AlertasService : IAlertasService
             .Where(a => a.Estado == EstadoAsignacion.Asignada && a.FechaAsignacion <= limite)
             .ToListAsync();
 
-        return asignaciones.Select(a =>
+        if (asignaciones.Count == 0)
+            return new List<AlertaDto>();
+
+        var proyectoIds = asignaciones.Select(a => a.ProyectoId).Distinct().ToList();
+        var fases = await _context.FaseProyectos
+            .AsNoTracking()
+            .Where(f => proyectoIds.Contains(f.ProyectoId))
+            .ToListAsync();
+
+        var hoy = DateTime.UtcNow.Date;
+
+        // Un proyecto solo genera alerta si ya debió haber terminado: su última
+        // fase (mayor Orden) no está completada y su fecha límite ya venció.
+        var proyectosAtrasados = fases
+            .GroupBy(f => f.ProyectoId)
+            .Where(g =>
+            {
+                var ultima = g.OrderByDescending(f => f.Orden).First();
+                return ultima.Estado != EstadoFase.Completada && ultima.FechaLimite.Date < hoy;
+            })
+            .Select(g => g.Key)
+            .ToHashSet();
+
+        var alertas = new List<AlertaDto>();
+        foreach (var grupo in asignaciones.GroupBy(a => a.ProyectoId))
         {
-            var dias = (int)(DateTime.UtcNow - a.FechaAsignacion).TotalDays;
-            return new AlertaDto
+            if (!proyectosAtrasados.Contains(grupo.Key))
+                continue;
+
+            var nombreProyecto = grupo.First().Proyecto!.Nombre;
+            var cantidad = grupo.Count();
+
+            alertas.Add(new AlertaDto
             {
                 Tipo = "HerramientaSinDevolver",
                 Severidad = "Media",
-                Mensaje = $"'{a.Herramienta!.Nombre}' lleva {dias} días asignada al proyecto '{a.Proyecto!.Nombre}' sin devolver",
-                Referencia = "/herramientas"
-            };
-        }).ToList();
+                Mensaje = $"Proyecto '{nombreProyecto}': {cantidad} herramienta(s) sin devolver",
+                Referencia = $"/proyectos/{grupo.Key}"
+            });
+        }
+
+        return alertas;
     }
 
     public async Task<List<AlertaDto>> GetSinHerramientasDisponiblesAsync()
