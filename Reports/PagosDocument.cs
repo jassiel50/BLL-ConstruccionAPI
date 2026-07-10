@@ -61,18 +61,19 @@ public class PagosDocument : IDocument
                 {
                     table.ColumnsDefinition(cols =>
                     {
-                        cols.ConstantColumn(30);
-                        cols.RelativeColumn(3);
-                        cols.RelativeColumn(2);
-                        cols.RelativeColumn(2);
+                        cols.ConstantColumn(22);
                         cols.RelativeColumn(2);
                         cols.RelativeColumn(3);
+                        cols.RelativeColumn(2);
+                        cols.RelativeColumn(2);
+                        cols.RelativeColumn(2);
+                        cols.RelativeColumn(2);
                     });
 
                     // Encabezado
                     table.Header(header =>
                     {
-                        var headerCells = new[] { "#", "Concepto", "Monto", "Fecha Pago", "Método", "Referencia" };
+                        var headerCells = new[] { "#", "Factura", "Concepto", "Total", "Fecha Pago", "Estado", "Referencia" };
                         foreach (var h in headerCells)
                             header.Cell().Background(ReporteEstilos.ColorPrimario)
                                 .Padding(6).Text(h).FontSize(8).Bold().FontColor("#FFFFFF");
@@ -86,13 +87,15 @@ public class PagosDocument : IDocument
                         table.Cell().Background(bg).Padding(5)
                             .Text(numero.ToString()).FontSize(8).FontColor(ReporteEstilos.ColorGris);
                         table.Cell().Background(bg).Padding(5)
+                            .Text(pago.NumeroFactura).FontSize(8);
+                        table.Cell().Background(bg).Padding(5)
                             .Text(pago.Concepto).FontSize(8);
                         table.Cell().Background(bg).Padding(5)
-                            .Text($"${pago.Monto:N2}").FontSize(8);
+                            .Text($"${pago.Total:N2}").FontSize(8);
                         table.Cell().Background(bg).Padding(5)
                             .Text(pago.FechaPago.ToString("dd/MM/yyyy")).FontSize(8);
                         table.Cell().Background(bg).Padding(5)
-                            .Text(pago.MetodoPago).FontSize(8);
+                            .Text(pago.Estado).FontSize(8);
                         table.Cell().Background(bg).Padding(5)
                             .Text(pago.Referencia).FontSize(8).FontColor(ReporteEstilos.ColorGris);
                         numero++;
@@ -100,7 +103,7 @@ public class PagosDocument : IDocument
 
                     if (!_resumen.Pagos.Any())
                     {
-                        table.Cell().ColumnSpan(6).Padding(12)
+                        table.Cell().ColumnSpan(7).Padding(12)
                             .Text("Sin pagos registrados.").FontSize(9)
                             .FontColor(ReporteEstilos.ColorGris).Italic();
                     }

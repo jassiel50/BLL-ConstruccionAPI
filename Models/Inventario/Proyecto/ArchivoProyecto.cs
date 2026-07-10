@@ -13,6 +13,8 @@ public class ArchivoProyecto
     public byte[] Contenido { get; set; } = [];
     public int SubidoPorId { get; set; }
     public DateTime FechaSubida { get; set; } = DateTime.UtcNow;
+    public int? CarpetaId { get; set; }
 
     public Proyecto? Proyecto { get; set; }
+    public CarpetaProyecto? Carpeta { get; set; }
 }

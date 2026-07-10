@@ -143,9 +143,10 @@ public class ReportesService : IReportesService
             Pagos = pagos.Select(p => new DTOs.Pagos.PagoClienteDto
             {
                 Id = p.Id, ProyectoId = p.ProyectoId, NombreProyecto = proyecto.Nombre,
-                Concepto = p.Concepto, Monto = p.Monto, FechaPago = p.FechaPago,
-                MetodoPago = p.MetodoPago, Referencia = p.Referencia,
-                Notas = p.Notas, FechaRegistro = p.FechaRegistro
+                Concepto = p.Concepto, NumeroFactura = p.NumeroFactura, FechaCotizacion = p.FechaCotizacion,
+                Subtotal = p.Subtotal, Iva = p.Iva, Total = p.Total, Monto = p.Monto, FechaPago = p.FechaPago,
+                MetodoPago = p.MetodoPago, Referencia = p.Referencia, Estado = p.Estado.ToString(),
+                ActividadStatus = p.ActividadStatus, Observaciones = p.Observaciones, FechaRegistro = p.FechaRegistro
             }).ToList()
         };
 

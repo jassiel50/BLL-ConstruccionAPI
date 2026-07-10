@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using BLL_ConstruccionAPI.Data;
 using BLL_ConstruccionAPI.DTOs.Pagos;
+using BLL_ConstruccionAPI.Models.Enums;
 using BLL_ConstruccionAPI.Models.Inventario.Proyectos;
 using BLL_ConstruccionAPI.Reports;
 using BLL_ConstruccionAPI.Services.Interfaces;
@@ -37,11 +38,18 @@ public class PagosClienteService : IPagosClienteService
         ProyectoId = p.ProyectoId,
         NombreProyecto = p.Proyecto?.Nombre ?? nombreProyecto,
         Concepto = p.Concepto,
+        NumeroFactura = p.NumeroFactura,
+        FechaCotizacion = p.FechaCotizacion,
+        Subtotal = p.Subtotal,
+        Iva = p.Iva,
+        Total = p.Total,
         Monto = p.Monto,
         FechaPago = p.FechaPago,
         MetodoPago = p.MetodoPago,
         Referencia = p.Referencia,
-        Notas = p.Notas,
+        Estado = p.Estado.ToString(),
+        ActividadStatus = p.ActividadStatus,
+        Observaciones = p.Observaciones,
         FechaRegistro = p.FechaRegistro
     };
 
@@ -77,9 +85,10 @@ public class PagosClienteService : IPagosClienteService
             .Select(p => new PagoClienteDto
             {
                 Id = p.Id, ProyectoId = p.ProyectoId, NombreProyecto = p.Proyecto!.Nombre,
-                Concepto = p.Concepto, Monto = p.Monto, FechaPago = p.FechaPago,
-                MetodoPago = p.MetodoPago, Referencia = p.Referencia,
-                Notas = p.Notas, FechaRegistro = p.FechaRegistro
+                Concepto = p.Concepto, NumeroFactura = p.NumeroFactura, FechaCotizacion = p.FechaCotizacion,
+                Subtotal = p.Subtotal, Iva = p.Iva, Total = p.Total, Monto = p.Monto, FechaPago = p.FechaPago,
+                MetodoPago = p.MetodoPago, Referencia = p.Referencia, Estado = p.Estado.ToString(),
+                ActividadStatus = p.ActividadStatus, Observaciones = p.Observaciones, FechaRegistro = p.FechaRegistro
             })
             .ToListAsync();
 
@@ -88,16 +97,26 @@ public class PagosClienteService : IPagosClienteService
         var proyecto = await _context.Proyectos.FindAsync(proyectoId);
         if (proyecto is null || !proyecto.Activo) return (false, "Proyecto no encontrado.", null);
 
+        if (!Enum.TryParse<EstadoPago>(dto.Estado, out var estado))
+            return (false, $"Estado inválido. Valores permitidos: {string.Join(", ", Enum.GetNames<EstadoPago>())}.", null);
+
         var (uid, uname, ip) = GetUsuarioInfo();
         var entity = new PagoCliente
         {
             ProyectoId = proyectoId,
             Concepto = dto.Concepto,
+            NumeroFactura = dto.NumeroFactura,
+            FechaCotizacion = dto.FechaCotizacion,
+            Subtotal = dto.Subtotal,
+            Iva = dto.Iva,
+            Total = dto.Total,
             Monto = dto.Monto,
             FechaPago = dto.FechaPago,
             MetodoPago = dto.MetodoPago,
             Referencia = dto.Referencia,
-            Notas = dto.Notas,
+            Estado = estado,
+            ActividadStatus = dto.ActividadStatus,
+            Observaciones = dto.Observaciones,
             RegistradoPorId = uid,
             FechaRegistro = DateTime.UtcNow
         };
@@ -117,12 +136,22 @@ public class PagosClienteService : IPagosClienteService
         var entity = await _context.PagosCliente.FindAsync(id);
         if (entity is null) return (false, "Pago no encontrado.");
 
+        if (!Enum.TryParse<EstadoPago>(dto.Estado, out var estado))
+            return (false, $"Estado inválido. Valores permitidos: {string.Join(", ", Enum.GetNames<EstadoPago>())}.");
+
         entity.Concepto = dto.Concepto;
+        entity.NumeroFactura = dto.NumeroFactura;
+        entity.FechaCotizacion = dto.FechaCotizacion;
+        entity.Subtotal = dto.Subtotal;
+        entity.Iva = dto.Iva;
+        entity.Total = dto.Total;
         entity.Monto = dto.Monto;
         entity.FechaPago = dto.FechaPago;
         entity.MetodoPago = dto.MetodoPago;
         entity.Referencia = dto.Referencia;
-        entity.Notas = dto.Notas;
+        entity.Estado = estado;
+        entity.ActividadStatus = dto.ActividadStatus;
+        entity.Observaciones = dto.Observaciones;
 
         await _context.SaveChangesAsync();
 

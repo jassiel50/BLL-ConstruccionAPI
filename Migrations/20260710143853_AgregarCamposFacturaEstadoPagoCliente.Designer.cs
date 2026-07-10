@@ -4,6 +4,7 @@ using BLL_ConstruccionAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BLL_ConstruccionAPI.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260710143853_AgregarCamposFacturaEstadoPagoCliente")]
+    partial class AgregarCamposFacturaEstadoPagoCliente
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1144,9 +1147,6 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("CarpetaId")
-                        .HasColumnType("int");
-
                     b.Property<byte[]>("Contenido")
                         .IsRequired()
                         .HasColumnType("varbinary(max)");
@@ -1177,40 +1177,9 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CarpetaId");
-
                     b.HasIndex("ProyectoId");
 
                     b.ToTable("ArchivosProyecto");
-                });
-
-            modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Proyectos.CarpetaProyecto", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("CreadoPorId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("FechaCreacion")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Nombre")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("ProyectoId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProyectoId", "Nombre")
-                        .IsUnique();
-
-                    b.ToTable("CarpetasProyecto");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Proyectos.FaseProyecto", b =>
@@ -1381,7 +1350,7 @@ namespace BLL_ConstruccionAPI.Migrations
                     b.Property<DateTime>("FechaRegistro")
                         .HasColumnType("datetime2");
 
-                    b.Property<decimal?>("Iva")
+                    b.Property<decimal>("Iva")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("MetodoPago")
@@ -1795,28 +1764,10 @@ namespace BLL_ConstruccionAPI.Migrations
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Proyectos.ArchivoProyecto", b =>
                 {
-                    b.HasOne("BLL_ConstruccionAPI.Models.Inventario.Proyectos.CarpetaProyecto", "Carpeta")
-                        .WithMany()
-                        .HasForeignKey("CarpetaId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("BLL_ConstruccionAPI.Models.Inventario.Proyectos.Proyecto", "Proyecto")
                         .WithMany()
                         .HasForeignKey("ProyectoId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Carpeta");
-
-                    b.Navigation("Proyecto");
-                });
-
-            modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Proyectos.CarpetaProyecto", b =>
-                {
-                    b.HasOne("BLL_ConstruccionAPI.Models.Inventario.Proyectos.Proyecto", "Proyecto")
-                        .WithMany()
-                        .HasForeignKey("ProyectoId")
-                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Proyecto");

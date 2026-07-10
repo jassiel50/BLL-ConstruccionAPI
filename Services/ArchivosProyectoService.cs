@@ -33,7 +33,7 @@ public class ArchivosProyectoService : IArchivosProyectoService
         return (id, nombre, ip);
     }
 
-    private static ArchivoProyectoDto MapToDto(ArchivoProyecto a) => new()
+    private static ArchivoProyectoDto MapToDto(ArchivoProyecto a, string? carpetaNombre = null) => new()
     {
         Id = a.Id,
         ProyectoId = a.ProyectoId,
@@ -42,22 +42,26 @@ public class ArchivosProyectoService : IArchivosProyectoService
         ContentType = a.ContentType,
         TamanioBytes = a.TamanioBytes,
         SubidoPorId = a.SubidoPorId,
-        FechaSubida = a.FechaSubida
+        FechaSubida = a.FechaSubida,
+        CarpetaId = a.CarpetaId,
+        CarpetaNombre = a.Carpeta?.Nombre ?? carpetaNombre
     };
 
     public async Task<List<ArchivoProyectoDto>> GetByProyectoAsync(int proyectoId) =>
         await _context.ArchivosProyecto
+            .Include(a => a.Carpeta)
             .Where(a => a.ProyectoId == proyectoId)
             .OrderByDescending(a => a.FechaSubida)
             .Select(a => new ArchivoProyectoDto
             {
                 Id = a.Id, ProyectoId = a.ProyectoId, NombreOriginal = a.NombreOriginal,
                 TipoDocumento = a.TipoDocumento.ToString(), ContentType = a.ContentType,
-                TamanioBytes = a.TamanioBytes, SubidoPorId = a.SubidoPorId, FechaSubida = a.FechaSubida
+                TamanioBytes = a.TamanioBytes, SubidoPorId = a.SubidoPorId, FechaSubida = a.FechaSubida,
+                CarpetaId = a.CarpetaId, CarpetaNombre = a.Carpeta != null ? a.Carpeta.Nombre : null
             })
             .ToListAsync();
 
-    public async Task<(bool Success, string Message, ArchivoProyectoDto? Data)> SubirAsync(int proyectoId, IFormFile archivo, string tipoDocumento)
+    public async Task<(bool Success, string Message, ArchivoProyectoDto? Data)> SubirAsync(int proyectoId, IFormFile archivo, string tipoDocumento, int? carpetaId)
     {
         var proyectoExists = await _context.Proyectos.AnyAsync(p => p.Id == proyectoId && p.Activo);
         if (!proyectoExists) return (false, "Proyecto no encontrado.", null);
@@ -67,6 +71,14 @@ public class ArchivosProyectoService : IArchivosProyectoService
 
         if (!Enum.TryParse<TipoDocumentoProyecto>(tipoDocumento, out var tipo))
             return (false, $"TipoDocumento inválido. Valores permitidos: {string.Join(", ", Enum.GetNames<TipoDocumentoProyecto>())}.", null);
+
+        CarpetaProyecto? carpeta = null;
+        if (carpetaId.HasValue)
+        {
+            carpeta = await _context.CarpetasProyecto.FindAsync(carpetaId.Value);
+            if (carpeta is null || carpeta.ProyectoId != proyectoId)
+                return (false, "La carpeta no existe o no pertenece a este proyecto.", null);
+        }
 
         using var ms = new MemoryStream();
         await archivo.CopyToAsync(ms);
@@ -81,16 +93,18 @@ public class ArchivosProyectoService : IArchivosProyectoService
             TamanioBytes = archivo.Length,
             Contenido = ms.ToArray(),
             SubidoPorId = uid,
-            FechaSubida = DateTime.UtcNow
+            FechaSubida = DateTime.UtcNow,
+            CarpetaId = carpeta?.Id
         };
 
         _context.ArchivosProyecto.Add(entity);
         await _context.SaveChangesAsync();
 
         await _bitacora.RegistrarAsync(uid, uname, "Subió archivo", "ArchivoProyecto",
-            $"Archivo '{entity.NombreOriginal}' ({tipo}) subido al proyecto ID {proyectoId}.", ip);
+            $"Archivo '{entity.NombreOriginal}' ({tipo}) subido al proyecto ID {proyectoId}" +
+            (carpeta is not null ? $" en la carpeta '{carpeta.Nombre}'." : "."), ip);
 
-        return (true, "Archivo subido correctamente.", MapToDto(entity));
+        return (true, "Archivo subido correctamente.", MapToDto(entity, carpeta?.Nombre));
     }
 
     public async Task<(bool Found, string NombreOriginal, string ContentType, byte[]? Contenido)> DescargarAsync(int id)
@@ -113,5 +127,86 @@ public class ArchivosProyectoService : IArchivosProyectoService
             $"Archivo '{archivo.NombreOriginal}' (ID {archivo.Id}) eliminado.", ip);
 
         return (true, "Archivo eliminado.");
+    }
+
+    public async Task<List<CarpetaProyectoDto>> GetCarpetasAsync(int proyectoId)
+    {
+        var carpetas = await _context.CarpetasProyecto
+            .Where(c => c.ProyectoId == proyectoId)
+            .OrderBy(c => c.Nombre)
+            .ToListAsync();
+
+        var conteos = await _context.ArchivosProyecto
+            .Where(a => a.ProyectoId == proyectoId && a.CarpetaId != null)
+            .GroupBy(a => a.CarpetaId)
+            .Select(g => new { CarpetaId = g.Key!.Value, Total = g.Count() })
+            .ToDictionaryAsync(g => g.CarpetaId, g => g.Total);
+
+        return carpetas.Select(c => new CarpetaProyectoDto
+        {
+            Id = c.Id,
+            ProyectoId = c.ProyectoId,
+            Nombre = c.Nombre,
+            FechaCreacion = c.FechaCreacion,
+            NumeroArchivos = conteos.TryGetValue(c.Id, out var total) ? total : 0
+        }).ToList();
+    }
+
+    public async Task<(bool Success, string Message, CarpetaProyectoDto? Data)> CrearCarpetaAsync(int proyectoId, CarpetaProyectoRequestDto dto)
+    {
+        var proyectoExists = await _context.Proyectos.AnyAsync(p => p.Id == proyectoId && p.Activo);
+        if (!proyectoExists) return (false, "Proyecto no encontrado.", null);
+
+        var nombre = dto.Nombre?.Trim() ?? "";
+        if (string.IsNullOrWhiteSpace(nombre))
+            return (false, "El nombre de la carpeta es requerido.", null);
+
+        var yaExiste = await _context.CarpetasProyecto
+            .AnyAsync(c => c.ProyectoId == proyectoId && c.Nombre.ToLower() == nombre.ToLower());
+        if (yaExiste)
+            return (false, "Ya existe una carpeta con ese nombre en este proyecto.", null);
+
+        var (uid, uname, ip) = GetUsuarioInfo();
+        var entity = new CarpetaProyecto
+        {
+            ProyectoId = proyectoId,
+            Nombre = nombre,
+            CreadoPorId = uid,
+            FechaCreacion = DateTime.UtcNow
+        };
+
+        _context.CarpetasProyecto.Add(entity);
+        await _context.SaveChangesAsync();
+
+        await _bitacora.RegistrarAsync(uid, uname, "Creó carpeta", "CarpetaProyecto",
+            $"Carpeta '{entity.Nombre}' creada en el proyecto ID {proyectoId}.", ip);
+
+        return (true, "Carpeta creada correctamente.", new CarpetaProyectoDto
+        {
+            Id = entity.Id,
+            ProyectoId = entity.ProyectoId,
+            Nombre = entity.Nombre,
+            FechaCreacion = entity.FechaCreacion,
+            NumeroArchivos = 0
+        });
+    }
+
+    public async Task<(bool Success, string Message)> EliminarCarpetaAsync(int carpetaId)
+    {
+        var carpeta = await _context.CarpetasProyecto.FindAsync(carpetaId);
+        if (carpeta is null) return (false, "Carpeta no encontrada.");
+
+        await _context.ArchivosProyecto
+            .Where(a => a.CarpetaId == carpetaId)
+            .ExecuteUpdateAsync(s => s.SetProperty(a => a.CarpetaId, (int?)null));
+
+        _context.CarpetasProyecto.Remove(carpeta);
+        await _context.SaveChangesAsync();
+
+        var (uid, uname, ip) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Eliminó carpeta", "CarpetaProyecto",
+            $"Carpeta '{carpeta.Nombre}' (ID {carpeta.Id}) eliminada del proyecto ID {carpeta.ProyectoId}. Sus archivos se movieron a la raíz.", ip);
+
+        return (true, "Carpeta eliminada. Los archivos que contenía se movieron a la raíz del proyecto.");
     }
 }

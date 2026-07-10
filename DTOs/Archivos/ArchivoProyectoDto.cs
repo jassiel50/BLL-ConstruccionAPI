@@ -10,4 +10,6 @@ public class ArchivoProyectoDto
     public long TamanioBytes { get; set; }
     public int SubidoPorId { get; set; }
     public DateTime FechaSubida { get; set; }
+    public int? CarpetaId { get; set; }
+    public string? CarpetaNombre { get; set; }
 }

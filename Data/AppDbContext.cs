@@ -47,6 +47,7 @@ public class AppDbContext : DbContext
     public DbSet<GastoExtra> GastosExtras { get; set; }
     public DbSet<GastoSemanal> GastosSemanales { get; set; }
     public DbSet<ArchivoProyecto> ArchivosProyecto { get; set; }
+    public DbSet<CarpetaProyecto> CarpetasProyecto { get; set; }
     public DbSet<PagoCliente> PagosCliente { get; set; }
 
     // ─── MATERIALES ───────────────────────────────────────────────────────────
@@ -233,6 +234,23 @@ public class AppDbContext : DbContext
             .Property(a => a.TipoDocumento)
             .HasConversion<string>();
 
+        modelBuilder.Entity<ArchivoProyecto>()
+            .HasOne(a => a.Carpeta)
+            .WithMany()
+            .HasForeignKey(a => a.CarpetaId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // ─── CarpetaProyecto ─────────────────────────────────────────────────
+        modelBuilder.Entity<CarpetaProyecto>()
+            .HasOne(c => c.Proyecto)
+            .WithMany()
+            .HasForeignKey(c => c.ProyectoId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<CarpetaProyecto>()
+            .HasIndex(c => new { c.ProyectoId, c.Nombre })
+            .IsUnique();
+
         // ─── PagoCliente ──────────────────────────────────────────────────────
         modelBuilder.Entity<PagoCliente>()
             .HasOne(p => p.Proyecto)
@@ -243,6 +261,22 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<PagoCliente>()
             .Property(p => p.Monto)
             .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<PagoCliente>()
+            .Property(p => p.Subtotal)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<PagoCliente>()
+            .Property(p => p.Iva)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<PagoCliente>()
+            .Property(p => p.Total)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<PagoCliente>()
+            .Property(p => p.Estado)
+            .HasConversion<string>();
 
         modelBuilder.Entity<Herramienta>()
             .Property(h => h.ValorAdquisicion)
