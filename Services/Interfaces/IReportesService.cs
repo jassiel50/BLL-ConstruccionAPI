@@ -11,4 +11,7 @@ public interface IReportesService
 
     /// <summary>Reporte de avance para compartir con el cliente: fases + estado de cuenta, sin datos financieros internos.</summary>
     Task<byte[]> GenerarAvanceClienteAsync(int proyectoId);
+
+    /// <summary>Reporte de avance para uso interno: fases + estado de cuenta + resumen financiero completo (presupuesto, gasto real, utilidad).</summary>
+    Task<byte[]> GenerarAvanceInternoAsync(int proyectoId);
 }

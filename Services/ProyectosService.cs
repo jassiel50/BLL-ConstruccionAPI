@@ -126,6 +126,93 @@ public class ProyectosService : IProyectosService
         }
     }
 
+    public async Task<List<HistorialFinancieroItemDto>> GetHistorialFinancieroAsync(int proyectoId)
+    {
+        var items = new List<HistorialFinancieroItemDto>();
+
+        // Ingresos: pagos de cliente
+        var pagos = await _context.PagosCliente
+            .AsNoTracking()
+            .Where(p => p.ProyectoId == proyectoId)
+            .ToListAsync();
+        items.AddRange(pagos.Select(p => new HistorialFinancieroItemDto
+        {
+            Fecha = p.FechaPago,
+            Tipo = "Ingreso",
+            Categoria = "Pago",
+            Concepto = p.Concepto,
+            Monto = p.Monto,
+            Referencia = string.IsNullOrWhiteSpace(p.NumeroFactura) ? null : p.NumeroFactura
+        }));
+
+        // Gastos: salidas de materiales
+        var salidas = await _context.Salidas
+            .AsNoTracking()
+            .Include(s => s.Detalles)
+            .Where(s => s.ProyectoId == proyectoId)
+            .ToListAsync();
+        items.AddRange(salidas
+            .Where(s => s.Detalles.Count > 0)
+            .Select(s => new HistorialFinancieroItemDto
+            {
+                Fecha = s.Fecha,
+                Tipo = "Gasto",
+                Categoria = "Material",
+                Concepto = $"Salida de materiales ({s.Detalles.Count} artículo{(s.Detalles.Count == 1 ? "" : "s")})",
+                Monto = s.Detalles.Sum(d => d.Cantidad * d.PrecioUnitario),
+                Referencia = s.NumeroFolio
+            }));
+
+        // Gastos: herramientas asignadas (costo de adquisición, al momento de asignarse)
+        var asignaciones = await _context.AsignacionesHerramienta
+            .AsNoTracking()
+            .Include(a => a.Herramienta)
+            .Where(a => a.ProyectoId == proyectoId)
+            .ToListAsync();
+        items.AddRange(asignaciones.Select(a => new HistorialFinancieroItemDto
+        {
+            Fecha = a.FechaAsignacion,
+            Tipo = "Gasto",
+            Categoria = "Herramienta",
+            Concepto = $"Asignación: {a.Herramienta?.Nombre ?? "Herramienta"}",
+            Monto = a.Herramienta?.ValorAdquisicion ?? 0,
+            Referencia = a.Herramienta?.Codigo
+        }));
+
+        // Gastos: extras por fase
+        var faseIds = await _context.FaseProyectos
+            .Where(f => f.ProyectoId == proyectoId)
+            .Select(f => f.Id)
+            .ToListAsync();
+        var gastosExtras = faseIds.Count > 0
+            ? await _context.GastosExtras.AsNoTracking().Where(g => faseIds.Contains(g.FaseId)).ToListAsync()
+            : [];
+        items.AddRange(gastosExtras.Select(g => new HistorialFinancieroItemDto
+        {
+            Fecha = g.Fecha,
+            Tipo = "Gasto",
+            Categoria = "Gasto Extra",
+            Concepto = g.Concepto,
+            Monto = g.Monto
+        }));
+
+        // Gastos: semanales
+        var semanales = await _context.GastosSemanales
+            .AsNoTracking()
+            .Where(g => g.ProyectoId == proyectoId)
+            .ToListAsync();
+        items.AddRange(semanales.Select(g => new HistorialFinancieroItemDto
+        {
+            Fecha = g.FechaInicio,
+            Tipo = "Gasto",
+            Categoria = "Gasto Semanal",
+            Concepto = g.Concepto,
+            Monto = g.Monto
+        }));
+
+        return items.OrderBy(i => i.Fecha).ToList();
+    }
+
     public async Task<(bool Success, string Message, ProyectoResponseDto? Data)> CreateAsync(ProyectoRequestDto dto)
     {
         if (!Enum.TryParse<EstadoProyecto>(dto.Estado, out var estadoProyecto))

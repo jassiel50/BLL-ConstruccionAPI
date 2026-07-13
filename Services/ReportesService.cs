@@ -10,10 +10,12 @@ namespace BLL_ConstruccionAPI.Services;
 public class ReportesService : IReportesService
 {
     private readonly AppDbContext _context;
+    private readonly IProyectosService _proyectosService;
 
-    public ReportesService(AppDbContext context)
+    public ReportesService(AppDbContext context, IProyectosService proyectosService)
     {
         _context = context;
+        _proyectosService = proyectosService;
     }
 
     public async Task<byte[]> GenerarInventarioAsync()
@@ -198,6 +200,55 @@ public class ReportesService : IReportesService
 
         return Document.Create(container =>
             new AvanceProyectoClienteDocument(proyecto, fasesDto, resumenPagos).Compose(container))
+            .GeneratePdf();
+    }
+
+    public async Task<byte[]> GenerarAvanceInternoAsync(int proyectoId)
+    {
+        var proyectoEntity = await _context.Proyectos
+            .AsNoTracking()
+            .Include(p => p.Cliente)
+            .FirstOrDefaultAsync(p => p.Id == proyectoId);
+        if (proyectoEntity is null) return [];
+
+        var proyectoDto = await _proyectosService.GetByIdAsync(proyectoId);
+        if (proyectoDto is null) return [];
+
+        var fases = await _context.FaseProyectos
+            .AsNoTracking()
+            .Where(f => f.ProyectoId == proyectoId)
+            .OrderBy(f => f.Orden)
+            .ToListAsync();
+
+        var pagos = await _context.PagosCliente
+            .AsNoTracking()
+            .Where(p => p.ProyectoId == proyectoId)
+            .OrderBy(p => p.FechaPago)
+            .ToListAsync();
+
+        var totalPagado = pagos.Sum(p => p.Monto);
+        var resumenPagos = new DTOs.Pagos.ResumenPagosDto
+        {
+            ProyectoId = proyectoId,
+            NombreProyecto = proyectoEntity.Nombre,
+            MontoContrato = proyectoEntity.MontoContrato,
+            TotalPagado = totalPagado,
+            SaldoPendiente = proyectoEntity.MontoContrato - totalPagado,
+            NumeroPagos = pagos.Count,
+            Pagos = pagos.Select(p => new DTOs.Pagos.PagoClienteDto
+            {
+                Id = p.Id, ProyectoId = p.ProyectoId, NombreProyecto = proyectoEntity.Nombre,
+                Concepto = p.Concepto, NumeroFactura = p.NumeroFactura, FechaCotizacion = p.FechaCotizacion,
+                Subtotal = p.Subtotal, Iva = p.Iva, Total = p.Total, Monto = p.Monto, FechaPago = p.FechaPago,
+                MetodoPago = p.MetodoPago, Referencia = p.Referencia, Estado = p.Estado.ToString(),
+                ActividadStatus = p.ActividadStatus, Observaciones = p.Observaciones, FechaRegistro = p.FechaRegistro
+            }).ToList()
+        };
+
+        var fasesDto = fases.Select(DTOs.Fases.FaseResponseDto.FromEntity).ToList();
+
+        return Document.Create(container =>
+            new ReporteAvanceInternoDocument(proyectoEntity, proyectoDto, fasesDto, resumenPagos).Compose(container))
             .GeneratePdf();
     }
 }

@@ -17,4 +17,7 @@ public interface IProyectosService
     Task<IEnumerable<AsignacionHerramientaResponseDto>> GetHerramientasAsync(int proyectoId);
     Task<(bool Success, string Message, int Count)> DevolverTodasHerramientasAsync(int proyectoId);
     Task<(bool Success, string Message, byte[]? Pdf)> GenerarPlaneacionAsync(int proyectoId);
+
+    /// <summary>Historial unificado (cronológico) de ingresos (pagos de cliente) y gastos (materiales, herramientas, extras, semanales) de un proyecto.</summary>
+    Task<List<HistorialFinancieroItemDto>> GetHistorialFinancieroAsync(int proyectoId);
 }

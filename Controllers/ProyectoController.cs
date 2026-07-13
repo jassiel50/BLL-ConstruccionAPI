@@ -1,4 +1,6 @@
 using BLL_ConstruccionAPI.DTOs.Proyectos;
+using BLL_ConstruccionAPI.Helpers;
+using BLL_ConstruccionAPI.Repositories.Interfaces;
 using BLL_ConstruccionAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,10 +14,20 @@ namespace BLL_ConstruccionAPI.Controllers;
 public class ProyectoController : ControllerBase
 {
     private readonly IProyectosService _service;
+    private readonly IReportesService _reportesService;
+    private readonly IEmailService _emailService;
+    private readonly IUsuarioRepository _usuarioRepo;
 
-    public ProyectoController(IProyectosService service)
+    public ProyectoController(
+        IProyectosService service,
+        IReportesService reportesService,
+        IEmailService emailService,
+        IUsuarioRepository usuarioRepo)
     {
         _service = service;
+        _reportesService = reportesService;
+        _emailService = emailService;
+        _usuarioRepo = usuarioRepo;
     }
 
     // GET api/proyectos
@@ -117,6 +129,15 @@ public class ProyectoController : ControllerBase
         return Ok(new { count, message });
     }
 
+    // GET api/proyectos/{id}/historial-financiero
+    // Historial unificado y cronológico de ingresos (pagos) y gastos (materiales, herramientas, extras, semanales).
+    [HttpGet("{id:int}/historial-financiero")]
+    public async Task<IActionResult> GetHistorialFinanciero(int id)
+    {
+        var historial = await _service.GetHistorialFinancieroAsync(id);
+        return Ok(historial);
+    }
+
     // GET api/proyectos/{id}/planeacion/pdf
     [HttpGet("{id:int}/planeacion/pdf")]
     public async Task<IActionResult> DescargarPlaneacion(int id)
@@ -124,5 +145,75 @@ public class ProyectoController : ControllerBase
         var (success, message, pdf) = await _service.GenerarPlaneacionAsync(id);
         if (!success) return BadRequest(new { message });
         return File(pdf!, "application/pdf", $"Planeacion_Proyecto_{id}_{DateTime.UtcNow:yyyyMMdd}.pdf");
+    }
+
+    // GET api/proyectos/{id}/avance/pdf
+    // Reporte de avance + estado financiero completo (uso interno, no enviar a clientes).
+    [HttpGet("{id:int}/avance/pdf")]
+    public async Task<IActionResult> DescargarAvance(int id)
+    {
+        var pdf = await _reportesService.GenerarAvanceInternoAsync(id);
+        if (pdf.Length == 0) return NotFound(new { message = "Proyecto no encontrado." });
+        return File(pdf, "application/pdf", $"Avance_Proyecto_{id}_{DateTime.UtcNow:yyyyMMdd}.pdf");
+    }
+
+    // POST api/proyectos/{id}/avance/enviarme
+    // Genera el mismo PDF de avance y lo manda al correo (o correos) del usuario autenticado.
+    [HttpPost("{id:int}/avance/enviarme")]
+    public async Task<IActionResult> EnviarmeAvance(int id)
+    {
+        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            return Unauthorized(new { message = "Token inválido." });
+
+        var usuario = await _usuarioRepo.GetByIdAsync(userId);
+        if (usuario is null) return Unauthorized(new { message = "Usuario no encontrado." });
+
+        var pdf = await _reportesService.GenerarAvanceInternoAsync(id);
+        if (pdf.Length == 0) return NotFound(new { message = "Proyecto no encontrado." });
+
+        var proyecto = await _service.GetByIdAsync(id);
+        var nombreArchivo = $"Avance_Proyecto_{id}_{DateTime.UtcNow:yyyyMMdd}.pdf";
+
+        foreach (var correo in usuario.CorreosNotificacion())
+            await _emailService.SendReporteProgramadoAsync(correo, usuario.Nombre,
+                $"Avance de Proyecto — {proyecto?.Nombre ?? $"#{id}"}", pdf, nombreArchivo);
+
+        return Ok(new { message = "Reporte enviado a tu correo." });
+    }
+
+    // GET api/proyectos/{id}/avance-cliente/pdf
+    // Versión SIN datos financieros internos (sin utilidad, presupuesto ni gasto real) —
+    // pensada para compartirse manualmente con el cliente desde el Gantt.
+    [HttpGet("{id:int}/avance-cliente/pdf")]
+    public async Task<IActionResult> DescargarAvanceCliente(int id)
+    {
+        var pdf = await _reportesService.GenerarAvanceClienteAsync(id);
+        if (pdf.Length == 0) return NotFound(new { message = "Proyecto no encontrado." });
+        return File(pdf, "application/pdf", $"Avance_Proyecto_{id}_{DateTime.UtcNow:yyyyMMdd}.pdf");
+    }
+
+    // POST api/proyectos/{id}/avance-cliente/enviarme
+    // Igual que el anterior pero enviado por correo al usuario autenticado (para que él
+    // mismo lo reenvíe al cliente). Nunca incluye utilidad, presupuesto ni gasto real.
+    [HttpPost("{id:int}/avance-cliente/enviarme")]
+    public async Task<IActionResult> EnviarmeAvanceCliente(int id)
+    {
+        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            return Unauthorized(new { message = "Token inválido." });
+
+        var usuario = await _usuarioRepo.GetByIdAsync(userId);
+        if (usuario is null) return Unauthorized(new { message = "Usuario no encontrado." });
+
+        var pdf = await _reportesService.GenerarAvanceClienteAsync(id);
+        if (pdf.Length == 0) return NotFound(new { message = "Proyecto no encontrado." });
+
+        var proyecto = await _service.GetByIdAsync(id);
+        var nombreArchivo = $"Avance_Proyecto_{id}_{DateTime.UtcNow:yyyyMMdd}.pdf";
+
+        foreach (var correo in usuario.CorreosNotificacion())
+            await _emailService.SendReporteProgramadoAsync(correo, usuario.Nombre,
+                $"Avance de Proyecto (para cliente) — {proyecto?.Nombre ?? $"#{id}"}", pdf, nombreArchivo);
+
+        return Ok(new { message = "Reporte enviado a tu correo." });
     }
 }
