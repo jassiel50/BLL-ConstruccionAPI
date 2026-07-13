@@ -44,13 +44,17 @@ public class ProyectosService : IProyectosService
     public async Task<IEnumerable<ProyectoResponseDto>> GetAllAsync()
     {
         var proyectos = await _proyectosRepo.GetAllAsync();
-        return proyectos.Select(ProyectoResponseDto.FromEntity);
+        var dtos = proyectos.Select(ProyectoResponseDto.FromEntity).ToList();
+        await AplicarGastosAsync(dtos);
+        return dtos;
     }
 
     public async Task<IEnumerable<ProyectoResponseDto>> GetByClienteAsync(int clienteId)
     {
         var proyectos = await _proyectosRepo.GetByClienteAsync(clienteId);
-        return proyectos.Select(ProyectoResponseDto.FromEntity);
+        var dtos = proyectos.Select(ProyectoResponseDto.FromEntity).ToList();
+        await AplicarGastosAsync(dtos);
+        return dtos;
     }
 
     public async Task<ProyectoResponseDto?> GetByIdAsync(int id)
@@ -59,46 +63,67 @@ public class ProyectosService : IProyectosService
         if (proyecto is null) return null;
 
         var dto = ProyectoResponseDto.FromEntity(proyecto);
+        await AplicarGastosAsync([dto]);
+        return dto;
+    }
 
-        // GastoMateriales: sum of Cantidad * PrecioUnitario stored at salida time
-        var salidas = await _context.Salidas
-            .Include(s => s.Detalles)
-            .Where(s => s.ProyectoId == id)
+    /// <summary>
+    /// Calcula en bloque GastoMateriales/GastoHerramientas/GastoExtras/GastoReal/Utilidad/Varianza
+    /// y las banderas de sobrepasado para una lista de proyectos, usando agregaciones agrupadas
+    /// (en vez de una consulta por proyecto) para que también sea eficiente en listados.
+    /// </summary>
+    private async Task AplicarGastosAsync(List<ProyectoResponseDto> dtos)
+    {
+        if (dtos.Count == 0) return;
+        var proyectoIds = dtos.Select(d => d.Id).ToList();
+
+        var gastoMaterialesPorProyecto = await _context.Salidas
+            .Where(s => proyectoIds.Contains(s.ProyectoId))
+            .SelectMany(s => s.Detalles.Select(d => new { s.ProyectoId, Monto = d.Cantidad * d.PrecioUnitario }))
+            .GroupBy(x => x.ProyectoId)
+            .Select(g => new { ProyectoId = g.Key, Total = g.Sum(x => x.Monto) })
+            .ToDictionaryAsync(g => g.ProyectoId, g => g.Total);
+
+        var gastoHerramientasPorProyecto = await _context.AsignacionesHerramienta
+            .Where(a => proyectoIds.Contains(a.ProyectoId))
+            .GroupBy(a => a.ProyectoId)
+            .Select(g => new { ProyectoId = g.Key, Total = g.Sum(a => a.Herramienta!.ValorAdquisicion) })
+            .ToDictionaryAsync(g => g.ProyectoId, g => g.Total);
+
+        var fasesPorProyecto = await _context.FaseProyectos
+            .Where(f => proyectoIds.Contains(f.ProyectoId))
+            .Select(f => new { f.Id, f.ProyectoId })
             .ToListAsync();
+        var faseIds = fasesPorProyecto.Select(f => f.Id).ToList();
 
-        var gastoMateriales = salidas
-            .SelectMany(s => s.Detalles)
-            .Sum(d => d.Cantidad * d.PrecioUnitario);
-
-        // GastoHerramientas: sum of ValorAdquisicion for all assigned herramientas
-        var gastoHerramientas = await _context.AsignacionesHerramienta
-            .Include(a => a.Herramienta)
-            .Where(a => a.ProyectoId == id)
-            .SumAsync(a => a.Herramienta!.ValorAdquisicion);
-
-        // GastoExtras: sum of all GastosExtras of all fases of this project
-        var faseIds = await _context.FaseProyectos
-            .Where(f => f.ProyectoId == id)
-            .Select(f => f.Id)
-            .ToListAsync();
-
-        var gastoExtras = faseIds.Any()
+        var gastoExtrasPorFase = faseIds.Count > 0
             ? await _context.GastosExtras
                 .Where(g => faseIds.Contains(g.FaseId))
-                .SumAsync(g => g.Monto)
-            : 0;
+                .GroupBy(g => g.FaseId)
+                .Select(g => new { FaseId = g.Key, Total = g.Sum(x => x.Monto) })
+                .ToDictionaryAsync(g => g.FaseId, g => g.Total)
+            : [];
 
-        var gastoReal = gastoMateriales + gastoHerramientas + gastoExtras;
-        dto.GastoMateriales = gastoMateriales;
-        dto.GastoHerramientas = gastoHerramientas;
-        dto.GastoExtras = gastoExtras;
-        dto.GastoReal = gastoReal;
-        dto.Utilidad = dto.MontoContrato - gastoReal;
-        dto.Varianza = dto.PresupuestoEstimado - gastoReal;
-        dto.SobrepasadoPresupuesto = dto.PresupuestoEstimado > 0 && gastoReal > dto.PresupuestoEstimado;
-        dto.SobrepasadoContrato = dto.MontoContrato > 0 && gastoReal > dto.MontoContrato;
+        var gastoExtrasPorProyecto = fasesPorProyecto
+            .GroupBy(f => f.ProyectoId)
+            .ToDictionary(g => g.Key, g => g.Sum(f => gastoExtrasPorFase.GetValueOrDefault(f.Id)));
 
-        return dto;
+        foreach (var dto in dtos)
+        {
+            var gastoMateriales = gastoMaterialesPorProyecto.GetValueOrDefault(dto.Id);
+            var gastoHerramientas = gastoHerramientasPorProyecto.GetValueOrDefault(dto.Id);
+            var gastoExtras = gastoExtrasPorProyecto.GetValueOrDefault(dto.Id);
+            var gastoReal = gastoMateriales + gastoHerramientas + gastoExtras;
+
+            dto.GastoMateriales = gastoMateriales;
+            dto.GastoHerramientas = gastoHerramientas;
+            dto.GastoExtras = gastoExtras;
+            dto.GastoReal = gastoReal;
+            dto.Utilidad = dto.MontoContrato - gastoReal;
+            dto.Varianza = dto.PresupuestoEstimado - gastoReal;
+            dto.SobrepasadoPresupuesto = dto.PresupuestoEstimado > 0 && gastoReal > dto.PresupuestoEstimado;
+            dto.SobrepasadoContrato = dto.MontoContrato > 0 && gastoReal > dto.MontoContrato;
+        }
     }
 
     public async Task<(bool Success, string Message, ProyectoResponseDto? Data)> CreateAsync(ProyectoRequestDto dto)
