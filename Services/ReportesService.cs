@@ -154,4 +154,50 @@ public class ReportesService : IReportesService
             new PagosDocument(resumen).Compose(container))
             .GeneratePdf();
     }
+
+    public async Task<byte[]> GenerarAvanceClienteAsync(int proyectoId)
+    {
+        var proyecto = await _context.Proyectos
+            .AsNoTracking()
+            .Include(p => p.Cliente)
+            .FirstOrDefaultAsync(p => p.Id == proyectoId);
+        if (proyecto is null) return [];
+
+        var fases = await _context.FaseProyectos
+            .AsNoTracking()
+            .Where(f => f.ProyectoId == proyectoId)
+            .OrderBy(f => f.Orden)
+            .ToListAsync();
+
+        var pagos = await _context.PagosCliente
+            .AsNoTracking()
+            .Where(p => p.ProyectoId == proyectoId)
+            .OrderBy(p => p.FechaPago)
+            .ToListAsync();
+
+        var totalPagado = pagos.Sum(p => p.Monto);
+        var resumenPagos = new DTOs.Pagos.ResumenPagosDto
+        {
+            ProyectoId = proyectoId,
+            NombreProyecto = proyecto.Nombre,
+            MontoContrato = proyecto.MontoContrato,
+            TotalPagado = totalPagado,
+            SaldoPendiente = proyecto.MontoContrato - totalPagado,
+            NumeroPagos = pagos.Count,
+            Pagos = pagos.Select(p => new DTOs.Pagos.PagoClienteDto
+            {
+                Id = p.Id, ProyectoId = p.ProyectoId, NombreProyecto = proyecto.Nombre,
+                Concepto = p.Concepto, NumeroFactura = p.NumeroFactura, FechaCotizacion = p.FechaCotizacion,
+                Subtotal = p.Subtotal, Iva = p.Iva, Total = p.Total, Monto = p.Monto, FechaPago = p.FechaPago,
+                MetodoPago = p.MetodoPago, Referencia = p.Referencia, Estado = p.Estado.ToString(),
+                ActividadStatus = p.ActividadStatus, Observaciones = p.Observaciones, FechaRegistro = p.FechaRegistro
+            }).ToList()
+        };
+
+        var fasesDto = fases.Select(DTOs.Fases.FaseResponseDto.FromEntity).ToList();
+
+        return Document.Create(container =>
+            new AvanceProyectoClienteDocument(proyecto, fasesDto, resumenPagos).Compose(container))
+            .GeneratePdf();
+    }
 }

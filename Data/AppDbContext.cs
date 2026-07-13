@@ -441,6 +441,12 @@ public class AppDbContext : DbContext
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<ConfiguracionReporte>()
+            .HasOne(c => c.Proyecto)
+            .WithMany()
+            .HasForeignKey(c => c.ProyectoId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<ConfiguracionReporte>()
             .Property(c => c.Nombre)
             .HasMaxLength(100);
 

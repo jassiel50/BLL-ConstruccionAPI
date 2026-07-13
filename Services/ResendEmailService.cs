@@ -281,8 +281,8 @@ th{{background:#002046;color:white;padding:8px;text-align:left;border:1px solid 
 <div class=""container"">
 <div class=""header""><h2>Reporte Programado</h2></div>
 <div class=""content"">
-<p>Hola <strong>{adminName}</strong>,</p>
-<p>Se adjunta el reporte automático de <strong>{tipoReporte}</strong> generado el {DateTime.Now:dd/MM/yyyy HH:mm}.</p>
+<p>Hola,</p>
+<p>Se adjunta el reporte automático de <strong>{tipoReporte}</strong>, configurado por <strong>{adminName}</strong> y generado el {DateTime.Now:dd/MM/yyyy HH:mm}.</p>
 <p>Archivo: <strong>{nombreArchivo}</strong></p>
 </div>
 <div class=""footer""><p>© 2026 BLL Servicios y Proyectos Industriales. Correo automático.</p></div>

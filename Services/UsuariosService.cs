@@ -39,6 +39,15 @@ public class UsuariosService : IUsuariosService
         });
     }
 
+    public async Task<IEnumerable<UsuarioDirectorioDto>> GetDirectorioAsync()
+    {
+        var usuarios = await _usuarioRepo.GetAllAsync();
+        return usuarios
+            .Where(u => u.Activo)
+            .OrderBy(u => u.Nombre)
+            .Select(u => new UsuarioDirectorioDto { Id = u.Id, Nombre = u.Nombre, Email = u.Email });
+    }
+
     public async Task<UsuarioResponseDto?> GetByIdAsync(int id)
     {
         var u = await _usuarioRepo.GetByIdConRolAsync(id);

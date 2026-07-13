@@ -11,6 +11,9 @@ public class ConfiguracionReporteResponseDto
     public string Frecuencia { get; set; } = string.Empty;
     public int HoraEnvio { get; set; }
     public List<string> Secciones { get; set; } = [];
+    public List<string> Destinatarios { get; set; } = [];
+    public int? ProyectoId { get; set; }
+    public string? NombreProyecto { get; set; }
     public bool Activo { get; set; }
     public DateTime FechaCreacion { get; set; }
     public DateTime? UltimoEnvio { get; set; }
@@ -23,6 +26,11 @@ public class ConfiguracionReporteResponseDto
         Frecuencia = e.Frecuencia,
         HoraEnvio = e.HoraEnvio,
         Secciones = JsonSerializer.Deserialize<List<string>>(e.Secciones) ?? [],
+        Destinatarios = string.IsNullOrWhiteSpace(e.Destinatarios)
+            ? []
+            : JsonSerializer.Deserialize<List<string>>(e.Destinatarios) ?? [],
+        ProyectoId = e.ProyectoId,
+        NombreProyecto = e.Proyecto?.Nombre,
         Activo = e.Activo,
         FechaCreacion = e.FechaCreacion,
         UltimoEnvio = e.UltimoEnvio

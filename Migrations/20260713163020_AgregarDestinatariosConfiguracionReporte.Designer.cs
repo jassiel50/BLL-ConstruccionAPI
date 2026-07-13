@@ -4,6 +4,7 @@ using BLL_ConstruccionAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BLL_ConstruccionAPI.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260713163020_AgregarDestinatariosConfiguracionReporte")]
+    partial class AgregarDestinatariosConfiguracionReporte
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1515,9 +1518,6 @@ namespace BLL_ConstruccionAPI.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<int?>("ProyectoId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Secciones")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -1529,8 +1529,6 @@ namespace BLL_ConstruccionAPI.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ProyectoId");
 
                     b.HasIndex("UsuarioId");
 
@@ -1894,18 +1892,11 @@ namespace BLL_ConstruccionAPI.Migrations
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Reportes.ConfiguracionReporte", b =>
                 {
-                    b.HasOne("BLL_ConstruccionAPI.Models.Inventario.Proyectos.Proyecto", "Proyecto")
-                        .WithMany()
-                        .HasForeignKey("ProyectoId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("BLL_ConstruccionAPI.Models.Auth.Usuario", "Usuario")
                         .WithMany()
                         .HasForeignKey("UsuarioId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Proyecto");
 
                     b.Navigation("Usuario");
                 });

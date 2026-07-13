@@ -28,6 +28,16 @@ public class UsuariosController : ControllerBase
         return Ok(result);
     }
 
+    // GET api/usuarios/directorio
+    // Lista mínima (id, nombre, email) de usuarios activos, sin restricción de rol —
+    // usada por selectores como el de destinatarios de reportes programados.
+    [HttpGet("directorio")]
+    public async Task<IActionResult> GetDirectorio()
+    {
+        var result = await _usuariosService.GetDirectorioAsync();
+        return Ok(result);
+    }
+
     // GET api/usuarios/{id}
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)

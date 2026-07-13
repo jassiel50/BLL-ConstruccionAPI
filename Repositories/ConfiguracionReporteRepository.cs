@@ -16,12 +16,15 @@ public class ConfiguracionReporteRepository : IConfiguracionReporteRepository
 
     public async Task<IEnumerable<ConfiguracionReporte>> GetByUsuarioIdAsync(int usuarioId) =>
         await _context.ConfiguracionesReporte
+            .Include(c => c.Proyecto)
             .Where(c => c.UsuarioId == usuarioId)
             .OrderBy(c => c.Nombre)
             .ToListAsync();
 
     public async Task<ConfiguracionReporte?> GetByIdAsync(int id) =>
-        await _context.ConfiguracionesReporte.FindAsync(id);
+        await _context.ConfiguracionesReporte
+            .Include(c => c.Proyecto)
+            .FirstOrDefaultAsync(c => c.Id == id);
 
     public async Task<ConfiguracionReporte> CreateAsync(ConfiguracionReporte config)
     {
@@ -45,6 +48,7 @@ public class ConfiguracionReporteRepository : IConfiguracionReporteRepository
     public async Task<IEnumerable<ConfiguracionReporte>> GetActivasAsync() =>
         await _context.ConfiguracionesReporte
             .Include(c => c.Usuario)
+            .Include(c => c.Proyecto)
             .Where(c => c.Activo)
             .ToListAsync();
 }

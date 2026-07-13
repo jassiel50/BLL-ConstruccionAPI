@@ -56,23 +56,25 @@ public class ReportesProgramadosService : BackgroundService
             if (!CorrespondeEnviar(config.Frecuencia, config.HoraEnvio, ahoraLocal, config.UltimoEnvio))
                 continue;
 
+            var destinatarios = ConfiguracionReporteService.ResolverDestinatarios(config, config.Usuario.Email);
+
             try
             {
                 await reporteService.EnviarReportesDeConfiguracionAsync(
-                    config, config.Usuario.Email, config.Usuario.Nombre);
+                    config, destinatarios, config.Usuario.Nombre);
 
                 config.UltimoEnvio = DateTime.UtcNow;
                 await context.SaveChangesAsync();
 
                 _logger.LogInformation(
-                    "Reporte '{Nombre}' enviado a {Email}.",
-                    config.Nombre, config.Usuario.Email);
+                    "Reporte '{Nombre}' enviado a {Destinatarios}.",
+                    config.Nombre, string.Join(", ", destinatarios));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex,
-                    "Error al enviar reporte '{Nombre}' a {Email}.",
-                    config.Nombre, config.Usuario.Email);
+                    "Error al enviar reporte '{Nombre}' a {Destinatarios}.",
+                    config.Nombre, string.Join(", ", destinatarios));
             }
         }
     }
