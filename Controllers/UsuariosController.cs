@@ -60,6 +60,17 @@ public class UsuariosController : ControllerBase
         return Ok(new { message });
     }
 
+    // PUT api/usuarios/{id}
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Actualizar(int id, [FromBody] UsuarioUpdateDto dto)
+    {
+        var rolId = User.FindFirstValue("rolId");
+        if (rolId != "1" && rolId != "3") return Forbid();
+        var (success, message) = await _usuariosService.ActualizarAsync(id, dto);
+        if (!success) return BadRequest(new { message });
+        return Ok(new { message });
+    }
+
     // PUT api/usuarios/{id}/toggle-activo
     [HttpPut("{id:int}/toggle-activo")]
     public async Task<IActionResult> ToggleActivo(int id)

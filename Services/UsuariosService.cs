@@ -100,6 +100,34 @@ public class UsuariosService : IUsuariosService
         return (true, "Usuario registrado correctamente.");
     }
 
+    public async Task<(bool Success, string Message)> ActualizarAsync(int id, UsuarioUpdateDto dto)
+    {
+        var usuario = await _usuarioRepo.GetByIdAsync(id);
+        if (usuario is null) return (false, "Usuario no encontrado.");
+
+        var existente = await _usuarioRepo.GetByEmailAsync(dto.Email);
+        if (existente is not null && existente.Id != id)
+            return (false, "El email ya está registrado por otro usuario.");
+
+        usuario.Nombre = dto.Nombre.Trim();
+        usuario.Email = dto.Email.Trim();
+        usuario.RolId = dto.RolId;
+
+        await _usuarioRepo.UpdateAsync(usuario);
+
+        var rolNombre = dto.RolId switch
+        {
+            1 => "Admin",
+            2 => "Operador",
+            3 => "Sistemas",
+            _ => $"Rol {dto.RolId}"
+        };
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Actualizó", "Usuario", $"Usuario '{usuario.NombreUsuario}' editado (rol: {rolNombre}, email: {usuario.Email})");
+
+        return (true, "Usuario actualizado correctamente.");
+    }
+
     public async Task<(bool Success, string Message)> ToggleActivoAsync(int id)
     {
         var usuario = await _usuarioRepo.GetByIdAsync(id);
