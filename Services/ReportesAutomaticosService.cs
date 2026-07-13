@@ -1,3 +1,4 @@
+using BLL_ConstruccionAPI.Helpers;
 using BLL_ConstruccionAPI.Repositories.Interfaces;
 using BLL_ConstruccionAPI.Services.Interfaces;
 
@@ -85,7 +86,8 @@ public class ReportesAutomaticosService : BackgroundService
             {
                 var pdf = await generador();
                 foreach (var usuario in notificables)
-                    await emailService.SendReporteProgramadoAsync(usuario.Email, usuario.Nombre, tipo, pdf, nombreArchivo);
+                    foreach (var correo in usuario.CorreosNotificacion())
+                        await emailService.SendReporteProgramadoAsync(correo, usuario.Nombre, tipo, pdf, nombreArchivo);
             }
             catch (Exception ex)
             {

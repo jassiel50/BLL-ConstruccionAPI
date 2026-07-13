@@ -1,5 +1,7 @@
 using BLL_ConstruccionAPI.Data;
 using BLL_ConstruccionAPI.DTOs.Reportes;
+using BLL_ConstruccionAPI.Helpers;
+using BLL_ConstruccionAPI.Models.Auth;
 using BLL_ConstruccionAPI.Models.Reportes;
 using BLL_ConstruccionAPI.Repositories.Interfaces;
 using BLL_ConstruccionAPI.Services.Interfaces;
@@ -123,7 +125,7 @@ public class ConfiguracionReporteService : IConfiguracionReporteService
         var usuario = await _usuarioRepo.GetByIdAsync(usuarioId);
         if (usuario is null) return (false, "Usuario no encontrado.");
 
-        var destinatarios = ResolverDestinatarios(config, usuario.Email);
+        var destinatarios = ResolverDestinatarios(config, usuario);
         await EnviarReportesDeConfiguracionAsync(config, destinatarios, usuario.Nombre);
 
         config.UltimoEnvio = DateTime.UtcNow;
@@ -132,13 +134,13 @@ public class ConfiguracionReporteService : IConfiguracionReporteService
         return (true, "Reporte enviado correctamente.");
     }
 
-    /// <summary>Devuelve la lista de correos a los que debe enviarse una configuración, con respaldo al correo del dueño.</summary>
-    public static List<string> ResolverDestinatarios(ConfiguracionReporte config, string correoDueno)
+    /// <summary>Devuelve la lista de correos a los que debe enviarse una configuración, con respaldo a los correos del dueño (principal y secundario).</summary>
+    public static List<string> ResolverDestinatarios(ConfiguracionReporte config, Usuario duenio)
     {
-        if (string.IsNullOrWhiteSpace(config.Destinatarios)) return [correoDueno];
+        if (string.IsNullOrWhiteSpace(config.Destinatarios)) return duenio.CorreosNotificacion().ToList();
 
         var lista = JsonSerializer.Deserialize<List<string>>(config.Destinatarios) ?? [];
-        return lista.Count > 0 ? lista : [correoDueno];
+        return lista.Count > 0 ? lista : duenio.CorreosNotificacion().ToList();
     }
 
     internal async Task EnviarReportesDeConfiguracionAsync(ConfiguracionReporte config, List<string> destinatarios, string nombreDueno)

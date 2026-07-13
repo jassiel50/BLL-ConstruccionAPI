@@ -2,6 +2,7 @@ using System.Security.Claims;
 using BLL_ConstruccionAPI.Data;
 using BLL_ConstruccionAPI.DTOs.Fases;
 using BLL_ConstruccionAPI.DTOs.GastosExtras;
+using BLL_ConstruccionAPI.Helpers;
 using BLL_ConstruccionAPI.Models.Enums;
 using BLL_ConstruccionAPI.Models.Inventario.Proyectos;
 using BLL_ConstruccionAPI.Repositories.Interfaces;
@@ -234,18 +235,21 @@ public class FasesService : IFasesService
             {
                 foreach (var u in notificables)
                 {
-                    await _emailService.SendProyectoIniciadoAdminAsync(
-                        u.Email, u.Nombre,
-                        proyecto.Nombre,
-                        proyecto.Cliente?.Nombre ?? "-",
-                        proyecto.Ubicacion,
-                        proyecto.FechaInicio,
-                        proyecto.FechaFin,
-                        proyecto.MontoContrato,
-                        proyecto.PresupuestoEstimado,
-                        proyecto.NumeroCotizacion,
-                        proyecto.OrdenCompra,
-                        fasesData);
+                    foreach (var correo in u.CorreosNotificacion())
+                    {
+                        await _emailService.SendProyectoIniciadoAdminAsync(
+                            correo, u.Nombre,
+                            proyecto.Nombre,
+                            proyecto.Cliente?.Nombre ?? "-",
+                            proyecto.Ubicacion,
+                            proyecto.FechaInicio,
+                            proyecto.FechaFin,
+                            proyecto.MontoContrato,
+                            proyecto.PresupuestoEstimado,
+                            proyecto.NumeroCotizacion,
+                            proyecto.OrdenCompra,
+                            fasesData);
+                    }
                 }
             }
             catch (Exception ex)

@@ -56,7 +56,7 @@ public class ReportesProgramadosService : BackgroundService
             if (!CorrespondeEnviar(config.Frecuencia, config.HoraEnvio, ahoraLocal, config.UltimoEnvio))
                 continue;
 
-            var destinatarios = ConfiguracionReporteService.ResolverDestinatarios(config, config.Usuario.Email);
+            var destinatarios = ConfiguracionReporteService.ResolverDestinatarios(config, config.Usuario);
 
             try
             {

@@ -1,4 +1,5 @@
 using BLL_ConstruccionAPI.Data;
+using BLL_ConstruccionAPI.Helpers;
 using BLL_ConstruccionAPI.Repositories.Interfaces;
 using BLL_ConstruccionAPI.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -65,7 +66,8 @@ public class AlertasInventarioEmailService : BackgroundService
         var notificables = await usuarioRepo.GetUsuariosNotificablesAsync();
         foreach (var usuario in notificables)
         {
-            await emailService.SendAlertasInventarioAsync(usuario.Email, usuario.Nombre, alertas);
+            foreach (var correo in usuario.CorreosNotificacion())
+                await emailService.SendAlertasInventarioAsync(correo, usuario.Nombre, alertas);
         }
 
         _logger.LogInformation("Alertas de inventario enviadas: {Count} materiales bajo mínimo", alertas.Count);

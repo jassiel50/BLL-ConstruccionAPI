@@ -17,6 +17,11 @@ namespace BLL_ConstruccionAPI.DTOs.Auth
         [StringLength(100)]
         public string Email { get; set; } = string.Empty;
 
+        /// <summary>Correo adicional opcional para recibir notificaciones/reportes (no se usa para iniciar sesión).</summary>
+        [EmailAddress]
+        [StringLength(100)]
+        public string? EmailSecundario { get; set; }
+
         [Required]
         [StringLength(100, MinimumLength = 6)]
         public string Password { get; set; } = string.Empty;

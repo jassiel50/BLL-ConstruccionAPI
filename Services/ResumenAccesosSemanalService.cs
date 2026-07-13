@@ -1,4 +1,5 @@
 using BLL_ConstruccionAPI.Data;
+using BLL_ConstruccionAPI.Helpers;
 using BLL_ConstruccionAPI.Models.Auth;
 using BLL_ConstruccionAPI.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -137,15 +138,18 @@ public class ResumenAccesosSemanalService : BackgroundService
 
         foreach (var admin in destinatarios)
         {
-            var enviado = await emailService.SendResumenAccesosSemanalAsync(
-                admin.Email,
-                admin.Nombre,
-                inicioLocal,
-                finLocal.Date,
-                listaAccesos);
+            foreach (var correo in admin.CorreosNotificacion())
+            {
+                var enviado = await emailService.SendResumenAccesosSemanalAsync(
+                    correo,
+                    admin.Nombre,
+                    inicioLocal,
+                    finLocal.Date,
+                    listaAccesos);
 
-            if (!enviado)
-                _logger.LogWarning("Resumen semanal: no se pudo enviar a {Email}.", admin.Email);
+                if (!enviado)
+                    _logger.LogWarning("Resumen semanal: no se pudo enviar a {Email}.", correo);
+            }
         }
 
         _logger.LogInformation(

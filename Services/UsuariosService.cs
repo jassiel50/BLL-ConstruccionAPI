@@ -27,15 +27,16 @@ public class UsuariosService : IUsuariosService
         var usuarios = await _usuarioRepo.GetAllAsync();
         return usuarios.Select(u => new UsuarioResponseDto
         {
-            Id            = u.Id,
-            NombreUsuario = u.NombreUsuario,
-            Nombre        = u.Nombre,
-            Email         = u.Email,
-            RolId         = u.RolId,
-            NombreRol     = u.Rol?.Nombre ?? string.Empty,
-            Activo        = u.Activo,
-            FechaCreacion = u.FechaCreacion,
-            UltimoAcceso  = u.UltimoAcceso
+            Id             = u.Id,
+            NombreUsuario  = u.NombreUsuario,
+            Nombre         = u.Nombre,
+            Email          = u.Email,
+            EmailSecundario = u.EmailSecundario,
+            RolId          = u.RolId,
+            NombreRol      = u.Rol?.Nombre ?? string.Empty,
+            Activo         = u.Activo,
+            FechaCreacion  = u.FechaCreacion,
+            UltimoAcceso   = u.UltimoAcceso
         });
     }
 
@@ -55,15 +56,16 @@ public class UsuariosService : IUsuariosService
 
         return new UsuarioResponseDto
         {
-            Id            = u.Id,
-            NombreUsuario = u.NombreUsuario,
-            Nombre        = u.Nombre,
-            Email         = u.Email,
-            RolId         = u.RolId,
-            NombreRol     = u.Rol?.Nombre ?? string.Empty,
-            Activo        = u.Activo,
-            FechaCreacion = u.FechaCreacion,
-            UltimoAcceso  = u.UltimoAcceso
+            Id             = u.Id,
+            NombreUsuario  = u.NombreUsuario,
+            Nombre         = u.Nombre,
+            Email          = u.Email,
+            EmailSecundario = u.EmailSecundario,
+            RolId          = u.RolId,
+            NombreRol      = u.Rol?.Nombre ?? string.Empty,
+            Activo         = u.Activo,
+            FechaCreacion  = u.FechaCreacion,
+            UltimoAcceso   = u.UltimoAcceso
         };
     }
 
@@ -77,13 +79,14 @@ public class UsuariosService : IUsuariosService
 
         var usuario = new Usuario
         {
-            NombreUsuario = dto.NombreUsuario,
-            Nombre        = dto.Nombre,
-            Email         = dto.Email,
-            PasswordHash  = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-            RolId         = dto.RolId,
-            Activo        = true,
-            FechaCreacion = DateTime.UtcNow
+            NombreUsuario   = dto.NombreUsuario,
+            Nombre          = dto.Nombre,
+            Email           = dto.Email,
+            EmailSecundario = string.IsNullOrWhiteSpace(dto.EmailSecundario) ? null : dto.EmailSecundario.Trim(),
+            PasswordHash    = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+            RolId           = dto.RolId,
+            Activo          = true,
+            FechaCreacion   = DateTime.UtcNow
         };
 
         await _usuarioRepo.CreateAsync(usuario);
@@ -111,6 +114,7 @@ public class UsuariosService : IUsuariosService
 
         usuario.Nombre = dto.Nombre.Trim();
         usuario.Email = dto.Email.Trim();
+        usuario.EmailSecundario = string.IsNullOrWhiteSpace(dto.EmailSecundario) ? null : dto.EmailSecundario.Trim();
         usuario.RolId = dto.RolId;
 
         await _usuarioRepo.UpdateAsync(usuario);

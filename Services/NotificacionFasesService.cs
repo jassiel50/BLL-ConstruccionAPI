@@ -1,4 +1,5 @@
 using BLL_ConstruccionAPI.Data;
+using BLL_ConstruccionAPI.Helpers;
 using BLL_ConstruccionAPI.Models.Auth;
 using BLL_ConstruccionAPI.Models.Enums;
 using BLL_ConstruccionAPI.Services.Interfaces;
@@ -118,16 +119,19 @@ public class NotificacionFasesService : BackgroundService
 
         foreach (var usuario in destinatarios)
         {
-            var enviado = await emailService.SendNotificacionFasesVencenAsync(
-                usuario.Email,
-                usuario.Nombre,
-                esHoy,
-                listaFases);
+            foreach (var correo in usuario.CorreosNotificacion())
+            {
+                var enviado = await emailService.SendNotificacionFasesVencenAsync(
+                    correo,
+                    usuario.Nombre,
+                    esHoy,
+                    listaFases);
 
-            if (!enviado)
-                _logger.LogWarning(
-                    "Notificación fases ({Tipo}): no se pudo enviar a {Email}.",
-                    tipo, usuario.Email);
+                if (!enviado)
+                    _logger.LogWarning(
+                        "Notificación fases ({Tipo}): no se pudo enviar a {Email}.",
+                        tipo, correo);
+            }
         }
 
         context.RegistrosNotificacionFase.Add(new RegistroNotificacionFase
@@ -194,13 +198,16 @@ public class NotificacionFasesService : BackgroundService
 
         foreach (var usuario in destinatarios)
         {
-            var enviado = await emailService.SendNotificacionFasesAtrasadasAsync(
-                usuario.Email,
-                usuario.Nombre,
-                listaFases);
+            foreach (var correo in usuario.CorreosNotificacion())
+            {
+                var enviado = await emailService.SendNotificacionFasesAtrasadasAsync(
+                    correo,
+                    usuario.Nombre,
+                    listaFases);
 
-            if (!enviado)
-                _logger.LogWarning("Notificación fases atrasadas: no se pudo enviar a {Email}.", usuario.Email);
+                if (!enviado)
+                    _logger.LogWarning("Notificación fases atrasadas: no se pudo enviar a {Email}.", correo);
+            }
         }
 
         context.RegistrosNotificacionFase.Add(new RegistroNotificacionFase
