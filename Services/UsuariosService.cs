@@ -46,7 +46,7 @@ public class UsuariosService : IUsuariosService
         return usuarios
             .Where(u => u.Activo)
             .OrderBy(u => u.Nombre)
-            .Select(u => new UsuarioDirectorioDto { Id = u.Id, Nombre = u.Nombre, Email = u.Email });
+            .Select(u => new UsuarioDirectorioDto { Id = u.Id, Nombre = u.Nombre, Email = u.Email, EmailSecundario = u.EmailSecundario });
     }
 
     public async Task<UsuarioResponseDto?> GetByIdAsync(int id)

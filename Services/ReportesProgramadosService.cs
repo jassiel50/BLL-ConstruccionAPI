@@ -34,7 +34,7 @@ public class ReportesProgramadosService : BackgroundService
                 _logger.LogError(ex, "Error al procesar reportes programados.");
             }
 
-            await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+            await Task.Delay(TimeSpan.FromMinutes(15), stoppingToken);
         }
     }
 
@@ -56,7 +56,7 @@ public class ReportesProgramadosService : BackgroundService
             if (!CorrespondeEnviar(config.Frecuencia, config.HoraEnvio, ahoraLocal, config.UltimoEnvio))
                 continue;
 
-            var destinatarios = ConfiguracionReporteService.ResolverDestinatarios(config, config.Usuario);
+            var destinatarios = await reporteService.ResolverDestinatariosAsync(config, config.Usuario);
 
             try
             {
@@ -82,15 +82,16 @@ public class ReportesProgramadosService : BackgroundService
     private static bool CorrespondeEnviar(
         string frecuencia, int horaEnvio, DateTime ahoraLocal, DateTime? ultimoEnvio)
     {
-        // Solo actuar en la hora correcta (ventana de 1h coincide con el delay del loop)
-        if (ahoraLocal.Hour != horaEnvio) return false;
+        // Ya pasó (o es) la hora programada de hoy. Se usa ">=" en vez de "==" para que,
+        // si el servicio estuvo caído durante la hora exacta (reinicio, redeploy, etc.),
+        // se recupere y envíe en cuanto vuelva a correr — en vez de saltarse el día completo.
+        if (ahoraLocal.Hour < horaEnvio) return false;
 
-        // Evitar reenvío en la misma ventana horaria
+        // Ya se envió hoy — evita reenvíos aunque el proceso se reinicie varias veces el mismo día.
         if (ultimoEnvio.HasValue)
         {
             var ultimoLocal = TimeZoneInfo.ConvertTimeFromUtc(ultimoEnvio.Value, ZonaMexico);
-            if (ultimoLocal.Date == ahoraLocal.Date && ultimoLocal.Hour == horaEnvio)
-                return false;
+            if (ultimoLocal.Date == ahoraLocal.Date) return false;
         }
 
         return frecuencia switch

@@ -125,7 +125,7 @@ public class ConfiguracionReporteService : IConfiguracionReporteService
         var usuario = await _usuarioRepo.GetByIdAsync(usuarioId);
         if (usuario is null) return (false, "Usuario no encontrado.");
 
-        var destinatarios = ResolverDestinatarios(config, usuario);
+        var destinatarios = await ResolverDestinatariosAsync(config, usuario);
         await EnviarReportesDeConfiguracionAsync(config, destinatarios, usuario.Nombre);
 
         config.UltimoEnvio = DateTime.UtcNow;
@@ -134,13 +134,35 @@ public class ConfiguracionReporteService : IConfiguracionReporteService
         return (true, "Reporte enviado correctamente.");
     }
 
-    /// <summary>Devuelve la lista de correos a los que debe enviarse una configuración, con respaldo a los correos del dueño (principal y secundario).</summary>
-    public static List<string> ResolverDestinatarios(ConfiguracionReporte config, Usuario duenio)
+    /// <summary>
+    /// Devuelve la lista de correos a los que debe enviarse una configuración: los destinatarios
+    /// guardados (o, si no hay ninguno, los correos del dueño). Además, expande el resultado: si
+    /// algún destinatario coincide con el correo principal de un usuario del sistema que tenga
+    /// correo secundario registrado, también se incluye el secundario — sin importar cómo se haya
+    /// guardado la lista (configuraciones creadas antes de tener correo secundario también se benefician).
+    /// </summary>
+    public async Task<List<string>> ResolverDestinatariosAsync(ConfiguracionReporte config, Usuario duenio)
     {
-        if (string.IsNullOrWhiteSpace(config.Destinatarios)) return duenio.CorreosNotificacion().ToList();
+        List<string> baseList;
+        if (string.IsNullOrWhiteSpace(config.Destinatarios))
+        {
+            baseList = duenio.CorreosNotificacion().ToList();
+        }
+        else
+        {
+            var lista = JsonSerializer.Deserialize<List<string>>(config.Destinatarios) ?? [];
+            baseList = lista.Count > 0 ? lista : duenio.CorreosNotificacion().ToList();
+        }
 
-        var lista = JsonSerializer.Deserialize<List<string>>(config.Destinatarios) ?? [];
-        return lista.Count > 0 ? lista : duenio.CorreosNotificacion().ToList();
+        var secundarios = await _context.Usuarios
+            .Where(u => baseList.Contains(u.Email) && u.EmailSecundario != null && u.EmailSecundario != "")
+            .Select(u => u.EmailSecundario!)
+            .ToListAsync();
+
+        return baseList
+            .Concat(secundarios)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     internal async Task EnviarReportesDeConfiguracionAsync(ConfiguracionReporte config, List<string> destinatarios, string nombreDueno)
