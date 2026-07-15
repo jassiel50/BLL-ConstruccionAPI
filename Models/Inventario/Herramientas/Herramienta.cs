@@ -12,7 +12,9 @@ namespace BLL_ConstruccionAPI.Models.Inventario.Herramientas
         public string NumeroSerie { get; set; } = string.Empty;
         public int CategoriaHerramientaId { get; set; }
         public Zona Zona { get; set; } = Zona.Guadalajara;
-        public TipoUbicacion TipoUbicacion { get; set; } = TipoUbicacion.Almacen;
+
+        /// <summary>Ubicación física libre (ej. "Planta Texcoco", "Almacén Central"). Ya no es un enum fijo.</summary>
+        public string TipoUbicacion { get; set; } = string.Empty;
         public EstadoHerramienta Estado { get; set; } = EstadoHerramienta.Disponible;
         public decimal ValorAdquisicion { get; set; }
         public DateTime FechaAdquisicion { get; set; }

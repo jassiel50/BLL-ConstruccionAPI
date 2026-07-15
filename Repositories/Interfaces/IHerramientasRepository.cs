@@ -16,6 +16,7 @@ public interface IHerramientasRepository
 
     // ─── Asignaciones ─────────────────────────────────────────────────────────
     Task<IEnumerable<AsignacionHerramienta>> GetAsignacionesByHerramientaAsync(int herramientaId);
+    Task<IEnumerable<AsignacionHerramienta>> GetAsignacionesActivasAsync();
     Task<AsignacionHerramienta?> GetAsignacionByIdAsync(int id);
     Task<AsignacionHerramienta?> GetAsignacionActivaAsync(int herramientaId);
     Task<int> GetCantidadAsignadaAsync(int herramientaId);
@@ -25,4 +26,5 @@ public interface IHerramientasRepository
     // ─── Operaciones atómicas ─────────────────────────────────────────────────
     Task AsignarHerramientaAsync(AsignacionHerramienta asignacion, Herramienta herramienta);
     Task DevolverHerramientaAsync(AsignacionHerramienta asignacion, Herramienta herramienta);
+    Task TransferirHerramientaAsync(AsignacionHerramienta asignacionActual, AsignacionHerramienta nuevaAsignacion);
 }

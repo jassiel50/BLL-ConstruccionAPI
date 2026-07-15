@@ -80,8 +80,8 @@ public class HerramientasService : IHerramientasService
         if (!Enum.TryParse<Zona>(dto.Zona, out var zona))
             return (false, $"Zona inválida. Valores permitidos: {string.Join(", ", Enum.GetNames<Zona>())}.", null);
 
-        if (!Enum.TryParse<TipoUbicacion>(dto.TipoUbicacion, out var tipoUbicacion))
-            return (false, $"TipoUbicacion inválido. Valores permitidos: {string.Join(", ", Enum.GetNames<TipoUbicacion>())}.", null);
+        if (string.IsNullOrWhiteSpace(dto.TipoUbicacion))
+            return (false, "TipoUbicacion es requerido.", null);
 
         if (await _herramientasRepo.ExisteCodigoAsync(dto.Codigo))
             return (false, "Ya existe una herramienta con ese código.", null);
@@ -102,7 +102,7 @@ public class HerramientasService : IHerramientasService
             CategoriaHerramientaId = dto.CategoriaHerramientaId,
             Estado = estadoHerramienta,
             Zona = zona,
-            TipoUbicacion = tipoUbicacion,
+            TipoUbicacion = dto.TipoUbicacion.Trim(),
             ValorAdquisicion = dto.ValorAdquisicion,
             FechaAdquisicion = dto.FechaAdquisicion,
             Cantidad = dto.Cantidad,
@@ -146,8 +146,8 @@ public class HerramientasService : IHerramientasService
         if (!Enum.TryParse<Zona>(dto.Zona, out var zonaActualizada))
             return (false, $"Zona inválida. Valores permitidos: {string.Join(", ", Enum.GetNames<Zona>())}.");
 
-        if (!Enum.TryParse<TipoUbicacion>(dto.TipoUbicacion, out var tipoUbicacionActualizado))
-            return (false, $"TipoUbicacion inválido. Valores permitidos: {string.Join(", ", Enum.GetNames<TipoUbicacion>())}.");
+        if (string.IsNullOrWhiteSpace(dto.TipoUbicacion))
+            return (false, "TipoUbicacion es requerido.");
 
         if (herramienta.Codigo != dto.Codigo && await _herramientasRepo.ExisteCodigoAsync(dto.Codigo))
             return (false, "Ya existe una herramienta con ese código.");
@@ -166,7 +166,7 @@ public class HerramientasService : IHerramientasService
         herramienta.CategoriaHerramientaId = dto.CategoriaHerramientaId;
         herramienta.Estado = estadoActualizado;
         herramienta.Zona = zonaActualizada;
-        herramienta.TipoUbicacion = tipoUbicacionActualizado;
+        herramienta.TipoUbicacion = dto.TipoUbicacion.Trim();
         herramienta.ValorAdquisicion = dto.ValorAdquisicion;
         herramienta.FechaAdquisicion = dto.FechaAdquisicion;
         herramienta.Cantidad = dto.Cantidad;
@@ -258,6 +258,111 @@ public class HerramientasService : IHerramientasService
         await _bitacora.RegistrarAsync(uid, uname, "Devolvió", "Herramienta", $"'{herramienta.Nombre}' devuelta");
 
         return (true, "Herramienta devuelta correctamente.");
+    }
+
+    public async Task<IEnumerable<AsignacionActivaDto>> GetAsignacionesActivasAsync()
+    {
+        var asignaciones = await _herramientasRepo.GetAsignacionesActivasAsync();
+        return asignaciones.Select(AsignacionActivaDto.FromEntity);
+    }
+
+    public async Task<List<AsignacionOperacionResultDto>> DevolverMultipleAsync(List<int> asignacionIds, string observacionesDevolucion)
+    {
+        var resultados = new List<AsignacionOperacionResultDto>();
+        var dto = new DevolucionRequestDto { ObservacionesDevolucion = observacionesDevolucion };
+
+        foreach (var id in asignacionIds)
+        {
+            var (success, message) = await DevolverAsync(id, dto);
+            resultados.Add(new AsignacionOperacionResultDto
+            {
+                AsignacionId = id,
+                ResponseCode = success ? 1 : -2,
+                ResponseMsg = message
+            });
+        }
+
+        return resultados;
+    }
+
+    public async Task<(bool Success, string Message)> TransferirAsync(int asignacionId, int nuevoProyectoId, int usuarioId)
+    {
+        var asignacion = await _herramientasRepo.GetAsignacionByIdAsync(asignacionId);
+        if (asignacion is null) return (false, "Asignación no encontrada.");
+
+        if (asignacion.Estado != EstadoAsignacion.Asignada)
+            return (false, "Esta asignación ya fue devuelta.");
+
+        if (asignacion.ProyectoId == nuevoProyectoId)
+            return (false, "La herramienta ya está asignada a ese proyecto.");
+
+        var proyectoDestino = await _proyectosRepo.GetByIdAsync(nuevoProyectoId);
+        if (proyectoDestino is null)
+            return (false, "El proyecto destino no existe.");
+
+        var herramienta = await _herramientasRepo.GetByIdAsync(asignacion.HerramientaId);
+        if (herramienta is null)
+            return (false, "La herramienta asociada a la asignación no fue encontrada.");
+
+        var proyectoOrigenNombre = asignacion.Proyecto?.Nombre ?? $"#{asignacion.ProyectoId}";
+
+        asignacion.Estado = EstadoAsignacion.Devuelta;
+        asignacion.FechaDevolucion = DateTime.UtcNow;
+        asignacion.ObservacionesDevolucion = $"Transferida al proyecto '{proyectoDestino.Nombre}'.";
+
+        var nuevaAsignacion = new AsignacionHerramienta
+        {
+            HerramientaId = herramienta.Id,
+            ProyectoId = nuevoProyectoId,
+            UsuarioAsignoId = usuarioId,
+            UsuarioRecibeId = asignacion.UsuarioRecibeId,
+            FechaAsignacion = DateTime.UtcNow,
+            Estado = EstadoAsignacion.Asignada,
+            Observaciones = $"Transferida desde el proyecto '{proyectoOrigenNombre}'."
+        };
+
+        await _herramientasRepo.TransferirHerramientaAsync(asignacion, nuevaAsignacion);
+
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Transfirió", "Herramienta", $"'{herramienta.Nombre}' transferida del proyecto '{proyectoOrigenNombre}' a '{proyectoDestino.Nombre}'");
+
+        return (true, "Herramienta transferida correctamente.");
+    }
+
+    public async Task<List<AsignacionOperacionResultDto>> TransferirMultipleAsync(List<int> asignacionIds, int nuevoProyectoId, int usuarioId)
+    {
+        var resultados = new List<AsignacionOperacionResultDto>();
+
+        foreach (var id in asignacionIds)
+        {
+            var (success, message) = await TransferirAsync(id, nuevoProyectoId, usuarioId);
+            resultados.Add(new AsignacionOperacionResultDto
+            {
+                AsignacionId = id,
+                ResponseCode = success ? 1 : -2,
+                ResponseMsg = message
+            });
+        }
+
+        return resultados;
+    }
+
+    public async Task<(bool Success, string Message)> CambiarUbicacionAsync(int herramientaId, string tipoUbicacion)
+    {
+        if (string.IsNullOrWhiteSpace(tipoUbicacion))
+            return (false, "TipoUbicacion es requerido.");
+
+        var herramienta = await _herramientasRepo.GetByIdAsync(herramientaId);
+        if (herramienta is null) return (false, "Herramienta no encontrada.");
+
+        var nuevaUbicacion = tipoUbicacion.Trim();
+        herramienta.TipoUbicacion = nuevaUbicacion;
+        await _herramientasRepo.UpdateAsync(herramienta);
+
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Actualizó", "Herramienta", $"'{herramienta.Nombre}' movida a {nuevaUbicacion}");
+
+        return (true, "Ubicación actualizada correctamente.");
     }
 
     private (int UsuarioId, string NombreUsuario) GetUsuarioInfo()

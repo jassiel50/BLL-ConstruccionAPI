@@ -282,6 +282,10 @@ public class AppDbContext : DbContext
             .Property(h => h.ValorAdquisicion)
             .HasColumnType("decimal(18,2)");
 
+        modelBuilder.Entity<Herramienta>()
+            .Property(h => h.TipoUbicacion)
+            .HasMaxLength(150);
+
         // ─── Conversión string para enums ─────────────────────────────────────
 
         modelBuilder.Entity<Herramienta>()

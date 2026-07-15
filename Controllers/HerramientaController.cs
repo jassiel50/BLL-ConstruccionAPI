@@ -108,4 +108,55 @@ public class HerramientaController : ControllerBase
         if (!success) return BadRequest(new { message });
         return Ok(new { message });
     }
+
+    // GET api/herramientas/asignaciones
+    // Todas las asignaciones activas del sistema (todas las herramientas, todos los proyectos)
+    [HttpGet("asignaciones")]
+    public async Task<IActionResult> GetAsignacionesActivas()
+    {
+        var asignaciones = await _service.GetAsignacionesActivasAsync();
+        return Ok(asignaciones);
+    }
+
+    // POST api/herramientas/devolver-multiple
+    [HttpPost("devolver-multiple")]
+    public async Task<IActionResult> DevolverMultiple([FromBody] DevolverMultipleRequestDto dto)
+    {
+        var resultados = await _service.DevolverMultipleAsync(dto.AsignacionIds, dto.ObservacionesDevolucion);
+        return Ok(new { message = "Proceso de devolución finalizado.", data = resultados });
+    }
+
+    // POST api/herramientas/transferir
+    // Mueve una asignación activa de su proyecto actual a otro proyecto.
+    [HttpPost("transferir")]
+    public async Task<IActionResult> Transferir([FromBody] TransferirRequestDto dto)
+    {
+        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var usuarioId))
+            return Unauthorized(new { message = "Token inválido." });
+
+        var (success, message) = await _service.TransferirAsync(dto.AsignacionId, dto.NuevoProyectoId, usuarioId);
+        if (!success) return BadRequest(new { message });
+        return Ok(new { message });
+    }
+
+    // POST api/herramientas/transferir-multiple
+    [HttpPost("transferir-multiple")]
+    public async Task<IActionResult> TransferirMultiple([FromBody] TransferirMultipleRequestDto dto)
+    {
+        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var usuarioId))
+            return Unauthorized(new { message = "Token inválido." });
+
+        var resultados = await _service.TransferirMultipleAsync(dto.AsignacionIds, dto.NuevoProyectoId, usuarioId);
+        return Ok(new { message = "Proceso de transferencia finalizado.", data = resultados });
+    }
+
+    // PUT api/herramientas/{id}/ubicacion
+    // Cambia el TipoUbicacion (Almacen/Oficina) de una herramienta, incluso si está asignada.
+    [HttpPut("{id:int}/ubicacion")]
+    public async Task<IActionResult> CambiarUbicacion(int id, [FromBody] CambiarUbicacionRequestDto dto)
+    {
+        var (success, message) = await _service.CambiarUbicacionAsync(id, dto.TipoUbicacion);
+        if (!success) return BadRequest(new { message });
+        return Ok(new { message });
+    }
 }

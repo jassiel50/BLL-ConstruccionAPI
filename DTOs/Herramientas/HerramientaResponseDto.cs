@@ -34,6 +34,6 @@ public class HerramientaResponseDto
         Cantidad = e.Cantidad,
         CantidadDisponible = cantidadDisponible ?? e.Cantidad,
         Zona = e.Zona.ToString(),
-        TipoUbicacion = e.TipoUbicacion.ToString()
+        TipoUbicacion = e.TipoUbicacion
     };
 }

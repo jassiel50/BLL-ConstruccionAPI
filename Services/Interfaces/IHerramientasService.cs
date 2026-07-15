@@ -14,4 +14,10 @@ public interface IHerramientasService
     Task<(bool Success, string Message)> DeleteAsync(int id);
     Task<(bool Success, string Message, AsignacionHerramientaResponseDto? Data)> AsignarAsync(AsignacionRequestDto dto, int usuarioId);
     Task<(bool Success, string Message)> DevolverAsync(int asignacionId, DevolucionRequestDto dto);
+
+    Task<IEnumerable<AsignacionActivaDto>> GetAsignacionesActivasAsync();
+    Task<List<AsignacionOperacionResultDto>> DevolverMultipleAsync(List<int> asignacionIds, string observacionesDevolucion);
+    Task<(bool Success, string Message)> TransferirAsync(int asignacionId, int nuevoProyectoId, int usuarioId);
+    Task<List<AsignacionOperacionResultDto>> TransferirMultipleAsync(List<int> asignacionIds, int nuevoProyectoId, int usuarioId);
+    Task<(bool Success, string Message)> CambiarUbicacionAsync(int herramientaId, string tipoUbicacion);
 }

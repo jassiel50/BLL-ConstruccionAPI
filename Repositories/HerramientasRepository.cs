@@ -71,6 +71,15 @@ public class HerramientasRepository : IHerramientasRepository
             .OrderByDescending(a => a.FechaAsignacion)
             .ToListAsync();
 
+    public async Task<IEnumerable<AsignacionHerramienta>> GetAsignacionesActivasAsync()
+        => await _context.AsignacionesHerramienta
+            .AsNoTracking()
+            .Include(a => a.Herramienta)
+            .Include(a => a.Proyecto)
+            .Where(a => a.Estado == EstadoAsignacion.Asignada)
+            .OrderByDescending(a => a.FechaAsignacion)
+            .ToListAsync();
+
     public async Task<AsignacionHerramienta?> GetAsignacionByIdAsync(int id)
         => await _context.AsignacionesHerramienta
             .Include(a => a.Herramienta)
@@ -109,6 +118,13 @@ public class HerramientasRepository : IHerramientasRepository
     {
         _context.AsignacionesHerramienta.Update(asignacion);
         _context.Herramientas.Update(herramienta);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task TransferirHerramientaAsync(AsignacionHerramienta asignacionActual, AsignacionHerramienta nuevaAsignacion)
+    {
+        _context.AsignacionesHerramienta.Update(asignacionActual);
+        _context.AsignacionesHerramienta.Add(nuevaAsignacion);
         await _context.SaveChangesAsync();
     }
 }
