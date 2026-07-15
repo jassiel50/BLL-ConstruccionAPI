@@ -60,6 +60,16 @@ public class HerramientaController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = data!.Id }, new { message, data });
     }
 
+    // POST api/herramientas/bulk
+    // Carga masiva: procesa cada herramienta con la misma validación que el alta individual
+    // y devuelve un resultado por cada una (éxito o motivo de error), identificado por Codigo.
+    [HttpPost("bulk")]
+    public async Task<IActionResult> CreateBulk([FromBody] List<HerramientaRequestDto> dtos)
+    {
+        var resultados = await _service.CreateBulkAsync(dtos);
+        return Ok(new { message = "Proceso de carga masiva finalizado.", data = resultados });
+    }
+
     // PUT api/herramientas/{id}
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, [FromBody] HerramientaRequestDto dto)

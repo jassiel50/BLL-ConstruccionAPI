@@ -9,6 +9,7 @@ public interface IHerramientasService
     Task<HerramientaResponseDto?> GetByIdAsync(int id);
     Task<IEnumerable<AsignacionHerramientaResponseDto>> GetAsignacionesAsync(int herramientaId);
     Task<(bool Success, string Message, HerramientaResponseDto? Data)> CreateAsync(HerramientaRequestDto dto);
+    Task<List<HerramientaBulkResultDto>> CreateBulkAsync(List<HerramientaRequestDto> dtos);
     Task<(bool Success, string Message)> UpdateAsync(int id, HerramientaRequestDto dto);
     Task<(bool Success, string Message)> DeleteAsync(int id);
     Task<(bool Success, string Message, AsignacionHerramientaResponseDto? Data)> AsignarAsync(AsignacionRequestDto dto, int usuarioId);

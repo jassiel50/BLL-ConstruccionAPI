@@ -116,6 +116,25 @@ public class HerramientasService : IHerramientasService
         return (true, "Herramienta registrada correctamente.", HerramientaResponseDto.FromEntity(herramienta));
     }
 
+    public async Task<List<HerramientaBulkResultDto>> CreateBulkAsync(List<HerramientaRequestDto> dtos)
+    {
+        var resultados = new List<HerramientaBulkResultDto>();
+
+        foreach (var dto in dtos)
+        {
+            var (success, message, data) = await CreateAsync(dto);
+            resultados.Add(new HerramientaBulkResultDto
+            {
+                Codigo = dto.Codigo,
+                ResponseCode = success ? 1 : -2,
+                ResponseMsg = message,
+                Id = data?.Id
+            });
+        }
+
+        return resultados;
+    }
+
     public async Task<(bool Success, string Message)> UpdateAsync(int id, HerramientaRequestDto dto)
     {
         var herramienta = await _herramientasRepo.GetByIdAsync(id);
