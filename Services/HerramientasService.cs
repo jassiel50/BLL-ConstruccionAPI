@@ -72,7 +72,7 @@ public class HerramientasService : IHerramientasService
         return asignaciones.Select(AsignacionHerramientaResponseDto.FromEntity);
     }
 
-    public async Task<(bool Success, string Message, HerramientaResponseDto? Data)> CreateAsync(HerramientaRequestDto dto)
+    public async Task<(bool Success, string Message, HerramientaResponseDto? Data)> CreateAsync(HerramientaRequestDto dto, bool registrarBitacora = true)
     {
         if (!Enum.TryParse<EstadoHerramienta>(dto.Estado, out var estadoHerramienta))
             return (false, $"Estado inválido. Valores permitidos: {string.Join(", ", Enum.GetNames<EstadoHerramienta>())}.", null);
@@ -111,8 +111,13 @@ public class HerramientasService : IHerramientasService
         };
 
         await _herramientasRepo.CreateAsync(herramienta);
-        var (uid, uname) = GetUsuarioInfo();
-        await _bitacora.RegistrarAsync(uid, uname, "Creó", "Herramienta", $"Herramienta '{herramienta.Nombre}' creada");
+
+        if (registrarBitacora)
+        {
+            var (uid, uname) = GetUsuarioInfo();
+            await _bitacora.RegistrarAsync(uid, uname, "Creó", "Herramienta", $"Herramienta '{herramienta.Nombre}' creada");
+        }
+
         return (true, "Herramienta registrada correctamente.", HerramientaResponseDto.FromEntity(herramienta));
     }
 
@@ -122,7 +127,7 @@ public class HerramientasService : IHerramientasService
 
         foreach (var dto in dtos)
         {
-            var (success, message, data) = await CreateAsync(dto);
+            var (success, message, data) = await CreateAsync(dto, registrarBitacora: false);
             resultados.Add(new HerramientaBulkResultDto
             {
                 Codigo = dto.Codigo,
@@ -131,6 +136,13 @@ public class HerramientasService : IHerramientasService
                 Id = data?.Id
             });
         }
+
+        var exitosas = resultados.Count(r => r.ResponseCode == 1);
+        var fallidas = resultados.Count - exitosas;
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Carga masiva", "Herramienta",
+            $"Carga masiva de herramientas: {exitosas} registrada{(exitosas == 1 ? "" : "s")} correctamente" +
+            (fallidas > 0 ? $", {fallidas} con error" : ""));
 
         return resultados;
     }
