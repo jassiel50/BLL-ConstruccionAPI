@@ -86,6 +86,9 @@ builder.Services.AddScoped<IPerdidasService, PerdidasService>();
 // Devoluciones de material
 builder.Services.AddScoped<IDevolucionesMaterialService, DevolucionesMaterialService>();
 
+// Servicios (Operador de Servicio)
+builder.Services.AddScoped<IServiciosService, ServiciosService>();
+
 // Reportes
 builder.Services.AddScoped<IReportesService, ReportesService>();
 builder.Services.AddScoped<IConfiguracionReporteRepository, ConfiguracionReporteRepository>();

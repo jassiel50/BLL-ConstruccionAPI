@@ -7,6 +7,7 @@ using BLL_ConstruccionAPI.Models.Inventario.Materiales;
 using BLL_ConstruccionAPI.Models.Inventario.Perdidas;
 using BLL_ConstruccionAPI.Models.Inventario.Proyectos;
 using BLL_ConstruccionAPI.Models.Reportes;
+using BLL_ConstruccionAPI.Models.Servicios;
 // Referencia implícita — los namespaces de Cátalogos y de Inventario coexisten
 using Microsoft.EntityFrameworkCore;
 
@@ -74,6 +75,9 @@ public class AppDbContext : DbContext
 
     // ─── BITÁCORA ─────────────────────────────────────────────────────────────
     public DbSet<BitacoraActividad> Bitacora { get; set; }
+
+    // ─── SERVICIOS ────────────────────────────────────────────────────────────
+    public DbSet<Servicio> Servicios { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -457,5 +461,21 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<ConfiguracionReporte>()
             .Property(c => c.Frecuencia)
             .HasMaxLength(20);
+
+        // ─── Servicio ─────────────────────────────────────────────────────────
+
+        modelBuilder.Entity<Servicio>()
+            .Property(s => s.Tipo)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<Servicio>()
+            .Property(s => s.Estado)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<Servicio>()
+            .HasOne(s => s.Cliente)
+            .WithMany()
+            .HasForeignKey(s => s.ClienteId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }
