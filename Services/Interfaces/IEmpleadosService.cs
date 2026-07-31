@@ -19,4 +19,6 @@ public interface IEmpleadosService
     Task<List<AsignacionEmpleadoResponseDto>> GetAsignacionesAsync(int empleadoId);
     Task<(bool Success, string Message, AsignacionEmpleadoResponseDto? Data)> AsignarAsync(int empleadoId, AsignacionEmpleadoRequestDto dto, int usuarioId);
     Task<(bool Success, string Message)> FinalizarAsignacionAsync(int asignacionId, AsignacionEmpleadoFinalizarDto dto);
+
+    Task<byte[]> GenerarContratoAsync(int empleadoId, GenerarContratoRequestDto dto);
 }

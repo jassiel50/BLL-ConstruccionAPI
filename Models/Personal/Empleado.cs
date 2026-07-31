@@ -16,6 +16,7 @@ public class Empleado
 
     public string? Telefono { get; set; }
     public string? ContactoEmergencia { get; set; }
+    public string? Domicilio { get; set; }
 
     public DateTime? FechaIngreso { get; set; }
     public EstatusEmpleado Estatus { get; set; } = EstatusEmpleado.Activo;

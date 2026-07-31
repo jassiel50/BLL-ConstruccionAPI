@@ -3,9 +3,11 @@ using BLL_ConstruccionAPI.Data;
 using BLL_ConstruccionAPI.DTOs.Personal;
 using BLL_ConstruccionAPI.Models.Enums;
 using BLL_ConstruccionAPI.Models.Personal;
+using BLL_ConstruccionAPI.Reports;
 using BLL_ConstruccionAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using QuestPDF.Fluent;
 
 namespace BLL_ConstruccionAPI.Services;
 
@@ -88,6 +90,7 @@ public class EmpleadosService : IEmpleadosService
             NSS                    = dto.NSS,
             Telefono               = dto.Telefono,
             ContactoEmergencia     = dto.ContactoEmergencia,
+            Domicilio              = dto.Domicilio,
             FechaIngreso           = dto.FechaIngreso,
             Estatus                = EstatusEmpleado.Activo,
             SueldoNetoSemanal      = dto.SueldoNetoSemanal,
@@ -129,6 +132,7 @@ public class EmpleadosService : IEmpleadosService
         empleado.NSS                    = dto.NSS;
         empleado.Telefono               = dto.Telefono;
         empleado.ContactoEmergencia     = dto.ContactoEmergencia;
+        empleado.Domicilio              = dto.Domicilio;
         empleado.FechaIngreso           = dto.FechaIngreso;
         empleado.SueldoNetoSemanal      = dto.SueldoNetoSemanal;
         empleado.CreditoInfonavit       = dto.CreditoInfonavit;
@@ -297,5 +301,23 @@ public class EmpleadosService : IEmpleadosService
             $"'{asignacion.Empleado?.NombreCompleto}' finalizó su asignación al proyecto '{asignacion.Proyecto?.Nombre}'");
 
         return (true, "Asignación finalizada correctamente.");
+    }
+
+    // ─── CONTRATO ───────────────────────────────────────────────────────────
+
+    public async Task<byte[]> GenerarContratoAsync(int empleadoId, GenerarContratoRequestDto dto)
+    {
+        var empleado = await _context.Empleados.AsNoTracking().FirstOrDefaultAsync(e => e.Id == empleadoId);
+        if (empleado is null) return [];
+
+        var pdf = Document.Create(container =>
+                new ContratoEmpleadoDocument(empleado, dto.FechaInicio, dto.DuracionMeses).Compose(container))
+            .GeneratePdf();
+
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Generó contrato", "Empleado",
+            $"Contrato generado para '{empleado.NombreCompleto}' ({dto.DuracionMeses} mes(es) desde {dto.FechaInicio:dd/MM/yyyy})");
+
+        return pdf;
     }
 }

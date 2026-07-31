@@ -15,6 +15,7 @@ public class EmpleadoResponseDto
 
     public string? Telefono { get; set; }
     public string? ContactoEmergencia { get; set; }
+    public string? Domicilio { get; set; }
 
     public DateTime? FechaIngreso { get; set; }
     public string Estatus { get; set; } = string.Empty;
@@ -41,6 +42,7 @@ public class EmpleadoResponseDto
         NSS                    = e.NSS,
         Telefono               = e.Telefono,
         ContactoEmergencia     = e.ContactoEmergencia,
+        Domicilio              = e.Domicilio,
         FechaIngreso           = e.FechaIngreso,
         Estatus                = e.Estatus.ToString(),
         SueldoNetoSemanal      = e.SueldoNetoSemanal,

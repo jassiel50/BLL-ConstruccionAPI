@@ -12,6 +12,7 @@ public class EmpleadoRequestDto
 
     public string? Telefono { get; set; }
     public string? ContactoEmergencia { get; set; }
+    public string? Domicilio { get; set; }
 
     public DateTime? FechaIngreso { get; set; }
 

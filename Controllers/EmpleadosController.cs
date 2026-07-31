@@ -152,4 +152,16 @@ public class EmpleadosController : ControllerBase
         if (!success) return BadRequest(new { message });
         return Ok(new { message });
     }
+
+    // ─── CONTRATO ───────────────────────────────────────────────────────────
+
+    // POST api/empleados/{id}/contrato/pdf
+    [HttpPost("{id:int}/contrato/pdf")]
+    public async Task<IActionResult> GenerarContrato(int id, [FromBody] GenerarContratoRequestDto dto)
+    {
+        if (!EsAdminOSistemas()) return Forbid();
+        var pdf = await _service.GenerarContratoAsync(id, dto);
+        if (pdf.Length == 0) return NotFound(new { message = "Empleado no encontrado." });
+        return File(pdf, "application/pdf", $"Contrato_{id}_{DateTime.UtcNow:yyyyMMdd}.pdf");
+    }
 }
