@@ -6,6 +6,7 @@ using BLL_ConstruccionAPI.Models.Inventario.Herramientas;
 using BLL_ConstruccionAPI.Models.Inventario.Materiales;
 using BLL_ConstruccionAPI.Models.Inventario.Perdidas;
 using BLL_ConstruccionAPI.Models.Inventario.Proyectos;
+using BLL_ConstruccionAPI.Models.Personal;
 using BLL_ConstruccionAPI.Models.Reportes;
 using BLL_ConstruccionAPI.Models.Servicios;
 // Referencia implícita — los namespaces de Cátalogos y de Inventario coexisten
@@ -78,6 +79,11 @@ public class AppDbContext : DbContext
 
     // ─── SERVICIOS ────────────────────────────────────────────────────────────
     public DbSet<Servicio> Servicios { get; set; }
+
+    // ─── EMPLEADOS ────────────────────────────────────────────────────────────
+    public DbSet<Empleado> Empleados { get; set; }
+    public DbSet<ArchivoEmpleado> ArchivosEmpleado { get; set; }
+    public DbSet<AsignacionEmpleadoProyecto> AsignacionesEmpleadoProyecto { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -477,5 +483,53 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(s => s.ClienteId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // ─── Empleado ───────────────────────────────────────────────────────────
+
+        modelBuilder.Entity<Empleado>()
+            .Property(e => e.Estatus)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<Empleado>()
+            .Property(e => e.SueldoNetoSemanal)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<Empleado>()
+            .Property(e => e.CuotaInfonavit)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<Empleado>()
+            .HasIndex(e => e.NumeroEmpleado)
+            .IsUnique();
+
+        // ─── ArchivoEmpleado ────────────────────────────────────────────────────
+
+        modelBuilder.Entity<ArchivoEmpleado>()
+            .Property(a => a.TipoDocumento)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<ArchivoEmpleado>()
+            .HasOne(a => a.Empleado)
+            .WithMany(e => e.Archivos)
+            .HasForeignKey(a => a.EmpleadoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // ─── AsignacionEmpleadoProyecto ─────────────────────────────────────────
+
+        modelBuilder.Entity<AsignacionEmpleadoProyecto>()
+            .Property(a => a.Estado)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<AsignacionEmpleadoProyecto>()
+            .HasOne(a => a.Empleado)
+            .WithMany(e => e.Asignaciones)
+            .HasForeignKey(a => a.EmpleadoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<AsignacionEmpleadoProyecto>()
+            .HasOne(a => a.Proyecto)
+            .WithMany()
+            .HasForeignKey(a => a.ProyectoId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

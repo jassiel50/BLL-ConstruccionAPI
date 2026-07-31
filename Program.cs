@@ -89,6 +89,9 @@ builder.Services.AddScoped<IDevolucionesMaterialService, DevolucionesMaterialSer
 // Servicios (Operador de Servicio)
 builder.Services.AddScoped<IServiciosService, ServiciosService>();
 
+// Empleados
+builder.Services.AddScoped<IEmpleadosService, EmpleadosService>();
+
 // Reportes
 builder.Services.AddScoped<IReportesService, ReportesService>();
 builder.Services.AddScoped<IConfiguracionReporteRepository, ConfiguracionReporteRepository>();
