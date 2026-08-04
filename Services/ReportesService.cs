@@ -245,7 +245,20 @@ public class ReportesService : IReportesService
             }).ToList()
         };
 
-        var fasesDto = fases.Select(DTOs.Fases.FaseResponseDto.FromEntity).ToList();
+        var faseIds = fases.Select(f => f.Id).ToList();
+        var checklistPorFase = await _context.ChecklistItemsFase
+            .AsNoTracking()
+            .Where(c => faseIds.Contains(c.FaseId))
+            .OrderBy(c => c.Orden)
+            .ThenBy(c => c.Id)
+            .ToListAsync();
+
+        var fasesDto = fases.Select(f =>
+        {
+            var dto = DTOs.Fases.FaseResponseDto.FromEntity(f);
+            dto.Checklist = checklistPorFase.Where(c => c.FaseId == f.Id).Select(DTOs.Fases.ChecklistItemFaseDto.FromEntity).ToList();
+            return dto;
+        }).ToList();
 
         return Document.Create(container =>
             new ReporteAvanceInternoDocument(proyectoEntity, proyectoDto, fasesDto, resumenPagos).Compose(container))

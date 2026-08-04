@@ -128,6 +128,38 @@ public class ReporteAvanceInternoDocument : IDocument
                     }
                 });
 
+                // ─── Checklist de actividades por fase ────────────────────
+                var fasesConChecklist = _fases.Where(f => f.Checklist.Count > 0).OrderBy(f => f.Orden).ToList();
+                if (fasesConChecklist.Count > 0)
+                {
+                    col.Item().PaddingTop(20);
+                    col.Item().Text("Checklist de Actividades").FontSize(11).Bold().FontColor(ReporteEstilos.ColorPrimario);
+
+                    foreach (var fase in fasesConChecklist)
+                    {
+                        var completados = fase.Checklist.Count(c => c.Completado);
+                        col.Item().PaddingTop(8).Row(row =>
+                        {
+                            row.RelativeItem().Text(fase.Nombre).FontSize(9).Bold().FontColor(ReporteEstilos.ColorSecundario);
+                            row.AutoItem().Text($"{completados} de {fase.Checklist.Count}").FontSize(8).FontColor(ReporteEstilos.ColorGris);
+                        });
+
+                        col.Item().PaddingTop(3).Column(items =>
+                        {
+                            foreach (var item in fase.Checklist)
+                            {
+                                items.Item().Row(itemRow =>
+                                {
+                                    itemRow.AutoItem().Width(14).Text(item.Completado ? "✔" : "○")
+                                        .FontSize(9).FontColor(item.Completado ? ReporteEstilos.ColorExito : ReporteEstilos.ColorGris);
+                                    itemRow.RelativeItem().Text(item.Descripcion).FontSize(8.5f)
+                                        .FontColor(item.Completado ? ReporteEstilos.ColorGris : ReporteEstilos.ColorPrimario);
+                                });
+                            }
+                        });
+                    }
+                }
+
                 col.Item().PaddingTop(20);
 
                 // ─── Resumen financiero interno ───────────────────────────

@@ -60,6 +60,12 @@ public class FasesService : IFasesService
             .Where(g => faseIds.Contains(g.FaseId))
             .ToListAsync();
 
+        var checklistPorFase = await _context.ChecklistItemsFase
+            .Where(c => faseIds.Contains(c.FaseId))
+            .OrderBy(c => c.Orden)
+            .ThenBy(c => c.Id)
+            .ToListAsync();
+
         return fases.Select(f =>
         {
             var dto = FaseResponseDto.FromEntity(f);
@@ -74,6 +80,7 @@ public class FasesService : IFasesService
                 Observaciones = g.Observaciones
             }).ToList();
             dto.GastoExtra = extras.Sum(g => g.Monto);
+            dto.Checklist = checklistPorFase.Where(c => c.FaseId == f.Id).Select(ChecklistItemFaseDto.FromEntity).ToList();
             return dto;
         }).ToList();
     }

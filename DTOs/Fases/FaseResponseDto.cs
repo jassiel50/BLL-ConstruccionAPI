@@ -23,6 +23,7 @@ public class FaseResponseDto
 
     public decimal GastoExtra { get; set; } = 0;
     public List<GastoExtraDto> GastosExtras { get; set; } = [];
+    public List<ChecklistItemFaseDto> Checklist { get; set; } = [];
 
     public static FaseResponseDto FromEntity(FaseProyecto f) => new()
     {
