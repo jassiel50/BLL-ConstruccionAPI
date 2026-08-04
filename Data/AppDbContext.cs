@@ -46,6 +46,7 @@ public class AppDbContext : DbContext
     // ─── PROYECTOS ────────────────────────────────────────────────────────────
     public DbSet<Proyecto> Proyectos { get; set; }
     public DbSet<FaseProyecto> FaseProyectos { get; set; }
+    public DbSet<ChecklistItemFase> ChecklistItemsFase { get; set; }
     public DbSet<GastoExtra> GastosExtras { get; set; }
     public DbSet<GastoSemanal> GastosSemanales { get; set; }
     public DbSet<ArchivoProyecto> ArchivosProyecto { get; set; }
@@ -344,6 +345,14 @@ public class AppDbContext : DbContext
             .HasOne(f => f.Proyecto)
             .WithMany()
             .HasForeignKey(f => f.ProyectoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // ─── ChecklistItemFase ──────────────────────────────────────────────────
+
+        modelBuilder.Entity<ChecklistItemFase>()
+            .HasOne(c => c.Fase)
+            .WithMany()
+            .HasForeignKey(c => c.FaseId)
             .OnDelete(DeleteBehavior.Cascade);
 
         // ─── RegistroPerdida ──────────────────────────────────────────────────

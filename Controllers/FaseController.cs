@@ -93,4 +93,41 @@ public class FaseController : ControllerBase
         var fases = await _service.GetPorVencerAsync();
         return Ok(fases);
     }
+
+    // ─── CHECKLIST DE FASE ──────────────────────────────────────────────────
+
+    // GET api/fases/{faseId}/checklist
+    [HttpGet("api/fases/{faseId:int}/checklist")]
+    public async Task<IActionResult> GetChecklist(int faseId)
+    {
+        var items = await _service.GetChecklistAsync(faseId);
+        return Ok(items);
+    }
+
+    // POST api/fases/{faseId}/checklist
+    [HttpPost("api/fases/{faseId:int}/checklist")]
+    public async Task<IActionResult> AgregarChecklistItem(int faseId, [FromBody] ChecklistItemFaseRequestDto dto)
+    {
+        var (success, message, data) = await _service.AgregarChecklistItemAsync(faseId, dto);
+        if (!success) return BadRequest(new { message });
+        return Created(string.Empty, new { message, data });
+    }
+
+    // PUT api/checklist/{itemId}/toggle
+    [HttpPut("api/checklist/{itemId:int}/toggle")]
+    public async Task<IActionResult> ToggleChecklistItem(int itemId)
+    {
+        var (success, message) = await _service.ToggleChecklistItemAsync(itemId);
+        if (!success) return BadRequest(new { message });
+        return Ok(new { message });
+    }
+
+    // DELETE api/checklist/{itemId}
+    [HttpDelete("api/checklist/{itemId:int}")]
+    public async Task<IActionResult> EliminarChecklistItem(int itemId)
+    {
+        var (success, message) = await _service.EliminarChecklistItemAsync(itemId);
+        if (!success) return BadRequest(new { message });
+        return Ok(new { message });
+    }
 }

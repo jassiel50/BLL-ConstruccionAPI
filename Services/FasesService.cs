@@ -260,4 +260,81 @@ public class FasesService : IFasesService
 
         return (true, "Planeación iniciada correctamente.", fasesCreadas.Select(FaseResponseDto.FromEntity).ToList());
     }
+
+    // ─── CHECKLIST DE FASE ────────────────────────────────────────────────────
+
+    public async Task<List<ChecklistItemFaseDto>> GetChecklistAsync(int faseId) =>
+        await _context.ChecklistItemsFase
+            .AsNoTracking()
+            .Where(c => c.FaseId == faseId)
+            .OrderBy(c => c.Orden)
+            .ThenBy(c => c.Id)
+            .Select(c => ChecklistItemFaseDto.FromEntity(c))
+            .ToListAsync();
+
+    public async Task<(bool Success, string Message, ChecklistItemFaseDto? Data)> AgregarChecklistItemAsync(int faseId, ChecklistItemFaseRequestDto dto)
+    {
+        var fase = await _fasesRepo.GetByIdAsync(faseId);
+        if (fase is null) return (false, "Fase no encontrada.", null);
+
+        if (string.IsNullOrWhiteSpace(dto.Descripcion))
+            return (false, "La descripción del punto es requerida.", null);
+
+        var siguienteOrden = await _context.ChecklistItemsFase
+            .Where(c => c.FaseId == faseId)
+            .Select(c => (int?)c.Orden)
+            .MaxAsync() ?? 0;
+
+        var item = new ChecklistItemFase
+        {
+            FaseId        = faseId,
+            Descripcion   = dto.Descripcion.Trim(),
+            Orden         = siguienteOrden + 1,
+            Completado    = false,
+            FechaCreacion = DateTime.UtcNow
+        };
+
+        _context.ChecklistItemsFase.Add(item);
+        await _context.SaveChangesAsync();
+
+        var (uid, uname, ip) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Agregó punto de checklist", "FaseProyecto",
+            $"Punto '{item.Descripcion}' agregado al checklist de la fase '{fase.Nombre}' (ID {faseId})", ip);
+
+        return (true, "Punto agregado al checklist.", ChecklistItemFaseDto.FromEntity(item));
+    }
+
+    public async Task<(bool Success, string Message)> ToggleChecklistItemAsync(int itemId)
+    {
+        var item = await _context.ChecklistItemsFase.FirstOrDefaultAsync(c => c.Id == itemId);
+        if (item is null) return (false, "Punto de checklist no encontrado.");
+
+        var (uid, uname, ip) = GetUsuarioInfo();
+
+        item.Completado = !item.Completado;
+        item.FechaCompletado = item.Completado ? DateTime.UtcNow : null;
+        item.CompletadoPorId = item.Completado ? uid : null;
+
+        await _context.SaveChangesAsync();
+
+        await _bitacora.RegistrarAsync(uid, uname, item.Completado ? "Marcó punto de checklist" : "Desmarcó punto de checklist",
+            "FaseProyecto", $"Punto '{item.Descripcion}' (ID {itemId})", ip);
+
+        return (true, item.Completado ? "Punto marcado como completado." : "Punto marcado como pendiente.");
+    }
+
+    public async Task<(bool Success, string Message)> EliminarChecklistItemAsync(int itemId)
+    {
+        var item = await _context.ChecklistItemsFase.FirstOrDefaultAsync(c => c.Id == itemId);
+        if (item is null) return (false, "Punto de checklist no encontrado.");
+
+        _context.ChecklistItemsFase.Remove(item);
+        await _context.SaveChangesAsync();
+
+        var (uid, uname, ip) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Eliminó punto de checklist", "FaseProyecto",
+            $"Punto '{item.Descripcion}' (ID {itemId}) eliminado", ip);
+
+        return (true, "Punto eliminado del checklist.");
+    }
 }

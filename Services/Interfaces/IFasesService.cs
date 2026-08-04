@@ -13,4 +13,9 @@ public interface IFasesService
     Task<List<FaseResponseDto>> GetAtrasadasAsync();
     Task<List<FaseResponseDto>> GetPorVencerAsync();
     Task<(bool Success, string Message, List<FaseResponseDto> Data)> CrearPlaneacionInicialAsync(int proyectoId, PlaneacionInicialRequestDto dto);
+
+    Task<List<ChecklistItemFaseDto>> GetChecklistAsync(int faseId);
+    Task<(bool Success, string Message, ChecklistItemFaseDto? Data)> AgregarChecklistItemAsync(int faseId, ChecklistItemFaseRequestDto dto);
+    Task<(bool Success, string Message)> ToggleChecklistItemAsync(int itemId);
+    Task<(bool Success, string Message)> EliminarChecklistItemAsync(int itemId);
 }
