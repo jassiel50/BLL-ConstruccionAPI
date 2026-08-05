@@ -19,6 +19,7 @@ public class Empleado
     public string? Domicilio { get; set; }
 
     public DateTime? FechaIngreso { get; set; }
+    public DateTime? FechaVencimientoContrato { get; set; }
     public EstatusEmpleado Estatus { get; set; } = EstatusEmpleado.Activo;
 
     // Campos listos para la fase de Nómina — se capturan pero no se usan todavía

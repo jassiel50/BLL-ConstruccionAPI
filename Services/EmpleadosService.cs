@@ -92,6 +92,7 @@ public class EmpleadosService : IEmpleadosService
             ContactoEmergencia     = dto.ContactoEmergencia,
             Domicilio              = dto.Domicilio,
             FechaIngreso           = dto.FechaIngreso,
+            FechaVencimientoContrato = dto.FechaVencimientoContrato,
             Estatus                = EstatusEmpleado.Activo,
             SueldoNetoSemanal      = dto.SueldoNetoSemanal,
             CreditoInfonavit       = dto.CreditoInfonavit,
@@ -134,6 +135,7 @@ public class EmpleadosService : IEmpleadosService
         empleado.ContactoEmergencia     = dto.ContactoEmergencia;
         empleado.Domicilio              = dto.Domicilio;
         empleado.FechaIngreso           = dto.FechaIngreso;
+        empleado.FechaVencimientoContrato = dto.FechaVencimientoContrato;
         empleado.SueldoNetoSemanal      = dto.SueldoNetoSemanal;
         empleado.CreditoInfonavit       = dto.CreditoInfonavit;
         empleado.TipoDescuentoInfonavit = dto.TipoDescuentoInfonavit;
@@ -307,12 +309,15 @@ public class EmpleadosService : IEmpleadosService
 
     public async Task<byte[]> GenerarContratoAsync(int empleadoId, GenerarContratoRequestDto dto)
     {
-        var empleado = await _context.Empleados.AsNoTracking().FirstOrDefaultAsync(e => e.Id == empleadoId);
+        var empleado = await _context.Empleados.FirstOrDefaultAsync(e => e.Id == empleadoId);
         if (empleado is null) return [];
 
         var pdf = Document.Create(container =>
                 new ContratoEmpleadoDocument(empleado, dto.FechaInicio, dto.DuracionMeses).Compose(container))
             .GeneratePdf();
+
+        empleado.FechaVencimientoContrato = dto.FechaInicio.AddMonths(dto.DuracionMeses).AddDays(-1);
+        await _context.SaveChangesAsync();
 
         var (uid, uname) = GetUsuarioInfo();
         await _bitacora.RegistrarAsync(uid, uname, "Generó contrato", "Empleado",

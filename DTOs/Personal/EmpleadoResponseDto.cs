@@ -18,6 +18,7 @@ public class EmpleadoResponseDto
     public string? Domicilio { get; set; }
 
     public DateTime? FechaIngreso { get; set; }
+    public DateTime? FechaVencimientoContrato { get; set; }
     public string Estatus { get; set; } = string.Empty;
 
     public decimal? SueldoNetoSemanal { get; set; }
@@ -44,6 +45,7 @@ public class EmpleadoResponseDto
         ContactoEmergencia     = e.ContactoEmergencia,
         Domicilio              = e.Domicilio,
         FechaIngreso           = e.FechaIngreso,
+        FechaVencimientoContrato = e.FechaVencimientoContrato,
         Estatus                = e.Estatus.ToString(),
         SueldoNetoSemanal      = e.SueldoNetoSemanal,
         CreditoInfonavit       = e.CreditoInfonavit,

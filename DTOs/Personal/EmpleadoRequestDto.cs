@@ -15,6 +15,7 @@ public class EmpleadoRequestDto
     public string? Domicilio { get; set; }
 
     public DateTime? FechaIngreso { get; set; }
+    public DateTime? FechaVencimientoContrato { get; set; }
 
     public decimal? SueldoNetoSemanal { get; set; }
     public bool CreditoInfonavit { get; set; }

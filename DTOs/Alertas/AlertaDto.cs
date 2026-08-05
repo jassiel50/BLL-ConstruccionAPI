@@ -4,7 +4,8 @@ public class AlertaDto
 {
     public string Tipo { get; set; } = string.Empty;
     // Valores posibles: "StockBajo", "StockCritico", "FaseAtrasada",
-    // "FasePorVencer", "ProyectoSinFases", "HerramientaSinDevolver", "SinHerramientasDisponibles"
+    // "FasePorVencer", "ProyectoSinFases", "HerramientaSinDevolver", "SinHerramientasDisponibles",
+    // "ContratoPorVencer"
     public string Severidad { get; set; } = string.Empty;
     // Valores posibles: "Alta", "Media"
     public string Mensaje { get; set; } = string.Empty;

@@ -228,6 +228,39 @@ public class AlertasService : IAlertasService
         }).ToList();
     }
 
+    public async Task<List<AlertaDto>> GetContratosPorVencerAsync()
+    {
+        var hoy = DateTime.UtcNow.Date;
+        var limite = hoy.AddDays(30);
+
+        var empleados = await _context.Empleados
+            .AsNoTracking()
+            .Where(e => e.Estatus == EstatusEmpleado.Activo
+                     && e.FechaVencimientoContrato != null
+                     && e.FechaVencimientoContrato.Value.Date <= limite)
+            .OrderBy(e => e.FechaVencimientoContrato)
+            .ToListAsync();
+
+        return empleados.Select(e =>
+        {
+            var dias = (e.FechaVencimientoContrato!.Value.Date - hoy).Days;
+            var vencido = dias < 0;
+            var mensaje = vencido
+                ? $"El contrato de '{e.NombreCompleto}' venció hace {-dias} día(s)"
+                : dias == 0
+                    ? $"El contrato de '{e.NombreCompleto}' vence HOY"
+                    : $"El contrato de '{e.NombreCompleto}' vence en {dias} día(s)";
+
+            return new AlertaDto
+            {
+                Tipo = "ContratoPorVencer",
+                Severidad = vencido ? "Alta" : "Media",
+                Mensaje = mensaje,
+                Referencia = $"/empleados/{e.Id}"
+            };
+        }).ToList();
+    }
+
     public async Task<ResumenAlertasDto> GetResumenAsync()
     {
         var stock             = await GetStockBajoAsync();
@@ -236,6 +269,7 @@ public class AlertasService : IAlertasService
         var proyectosSinFases = await GetProyectosSinFasesAsync();
         var herramientas      = await GetHerramientasSinDevolverAsync();
         var sinDisponibles    = await GetSinHerramientasDisponiblesAsync();
+        var contratos         = await GetContratosPorVencerAsync();
 
         var detalle = stock
             .Concat(fasesAtrasadas)
@@ -243,6 +277,7 @@ public class AlertasService : IAlertasService
             .Concat(proyectosSinFases)
             .Concat(herramientas)
             .Concat(sinDisponibles)
+            .Concat(contratos)
             .OrderByDescending(a => a.Severidad == "Alta")
             .ThenBy(a => a.Fecha)
             .ToList();
@@ -256,6 +291,7 @@ public class AlertasService : IAlertasService
             ProyectosSinFases          = proyectosSinFases.Count,
             HerramientasSinDevolver    = herramientas.Count,
             SinHerramientasDisponibles = sinDisponibles.Count,
+            ContratosPorVencer         = contratos.Count,
             Detalle                    = detalle
         };
     }

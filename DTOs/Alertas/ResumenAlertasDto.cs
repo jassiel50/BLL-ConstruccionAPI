@@ -9,5 +9,6 @@ public class ResumenAlertasDto
     public int ProyectosSinFases { get; set; }
     public int HerramientasSinDevolver { get; set; }
     public int SinHerramientasDisponibles { get; set; }
+    public int ContratosPorVencer { get; set; }
     public List<AlertaDto> Detalle { get; set; } = new();
 }

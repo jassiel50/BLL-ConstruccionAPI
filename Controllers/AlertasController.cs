@@ -78,4 +78,12 @@ public class AlertasController : ControllerBase
         var alertas = await _service.GetProyectosConFasesCompletadasAsync();
         return Ok(alertas);
     }
+
+    // GET api/alertas/contratos-por-vencer
+    [HttpGet("api/alertas/contratos-por-vencer")]
+    public async Task<IActionResult> GetContratosPorVencer()
+    {
+        var alertas = await _service.GetContratosPorVencerAsync();
+        return Ok(alertas);
+    }
 }
