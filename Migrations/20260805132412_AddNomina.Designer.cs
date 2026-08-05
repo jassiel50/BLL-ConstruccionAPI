@@ -4,6 +4,7 @@ using BLL_ConstruccionAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BLL_ConstruccionAPI.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260805132412_AddNomina")]
+    partial class AddNomina
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -57,7 +60,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Bitacora", (string)null);
+                    b.ToTable("Bitacora");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Auth.LogAcceso", b =>
@@ -85,7 +88,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("LogAccesos", (string)null);
+                    b.ToTable("LogAccesos");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Auth.MfaEmailCode", b =>
@@ -134,7 +137,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasIndex("UsuarioId", "Usado", "FechaExpira");
 
-                    b.ToTable("MfaEmailCodes", (string)null);
+                    b.ToTable("MfaEmailCodes");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Auth.PasswordResetCode", b =>
@@ -179,7 +182,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasIndex("UsuarioId", "Usado", "FechaExpira");
 
-                    b.ToTable("PasswordResetCodes", (string)null);
+                    b.ToTable("PasswordResetCodes");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Auth.RegistroCorreoSemanal", b =>
@@ -198,7 +201,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("RegistrosCorreoSemanal", (string)null);
+                    b.ToTable("RegistrosCorreoSemanal");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Auth.RegistroNotificacionFase", b =>
@@ -221,7 +224,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("RegistrosNotificacionFase", (string)null);
+                    b.ToTable("RegistrosNotificacionFase");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Auth.Rol", b =>
@@ -244,7 +247,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Roles", (string)null);
+                    b.ToTable("Roles");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Auth.TokenSesion", b =>
@@ -279,7 +282,7 @@ namespace BLL_ConstruccionAPI.Migrations
                     b.HasIndex("Token")
                         .IsUnique();
 
-                    b.ToTable("TokensSesion", (string)null);
+                    b.ToTable("TokensSesion");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Auth.Usuario", b =>
@@ -331,7 +334,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasIndex("RolId");
 
-                    b.ToTable("Usuarios", (string)null);
+                    b.ToTable("Usuarios");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Auth.Usuario2FA", b =>
@@ -357,7 +360,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Usuarios2FA", (string)null);
+                    b.ToTable("Usuarios2FA");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Auth.UsuarioMfaConfig", b =>
@@ -391,7 +394,7 @@ namespace BLL_ConstruccionAPI.Migrations
                     b.HasIndex("UsuarioId")
                         .IsUnique();
 
-                    b.ToTable("UsuariosMfaConfig", (string)null);
+                    b.ToTable("UsuariosMfaConfig");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Cliente", b =>
@@ -438,7 +441,7 @@ namespace BLL_ConstruccionAPI.Migrations
                     b.HasIndex("RFC")
                         .IsUnique();
 
-                    b.ToTable("Clientes", (string)null);
+                    b.ToTable("Clientes");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.ContactoCliente", b =>
@@ -474,7 +477,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasIndex("ClienteId");
 
-                    b.ToTable("ContactosCliente", (string)null);
+                    b.ToTable("ContactosCliente");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.ContactoProveedor", b =>
@@ -510,7 +513,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasIndex("ProveedorId");
 
-                    b.ToTable("ContactosProveedor", (string)null);
+                    b.ToTable("ContactosProveedor");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Cátalogos.CategoriaCliente", b =>
@@ -534,7 +537,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("CategoriasCliente", (string)null);
+                    b.ToTable("CategoriasCliente");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Cátalogos.CategoriaHerramienta", b =>
@@ -558,7 +561,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("CategoriasHerramienta", (string)null);
+                    b.ToTable("CategoriasHerramienta");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Cátalogos.CategoriaMaterial", b =>
@@ -582,7 +585,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Categorias", (string)null);
+                    b.ToTable("Categorias");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Cátalogos.CategoriaProveedor", b =>
@@ -606,7 +609,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("CategoriasProveedor", (string)null);
+                    b.ToTable("CategoriasProveedor");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Cátalogos.UnidadMedida", b =>
@@ -633,7 +636,7 @@ namespace BLL_ConstruccionAPI.Migrations
                     b.HasIndex("Abreviatura")
                         .IsUnique();
 
-                    b.ToTable("UnidadesMedida", (string)null);
+                    b.ToTable("UnidadesMedida");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Herramientas.AsignacionHerramienta", b =>
@@ -679,7 +682,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasIndex("ProyectoId");
 
-                    b.ToTable("AsignacionesHerramienta", (string)null);
+                    b.ToTable("AsignacionesHerramienta");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Herramientas.Herramienta", b =>
@@ -746,7 +749,7 @@ namespace BLL_ConstruccionAPI.Migrations
                     b.HasIndex("NumeroSerie")
                         .IsUnique();
 
-                    b.ToTable("Herramientas", (string)null);
+                    b.ToTable("Herramientas");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Materiales.AlmacenCentral", b =>
@@ -779,7 +782,7 @@ namespace BLL_ConstruccionAPI.Migrations
                     b.HasIndex("MaterialId")
                         .IsUnique();
 
-                    b.ToTable("AlmacenCentral", (string)null);
+                    b.ToTable("AlmacenCentral");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Materiales.AlmacenProyecto", b =>
@@ -817,7 +820,7 @@ namespace BLL_ConstruccionAPI.Migrations
                     b.HasIndex("ProyectoId", "MaterialId")
                         .IsUnique();
 
-                    b.ToTable("AlmacenProyecto", (string)null);
+                    b.ToTable("AlmacenProyecto");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Materiales.DevolucionMaterial", b =>
@@ -853,7 +856,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasIndex("ProyectoId");
 
-                    b.ToTable("DevolucionesMaterial", (string)null);
+                    b.ToTable("DevolucionesMaterial");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Materiales.Entrada", b =>
@@ -888,7 +891,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasIndex("ProveedorId");
 
-                    b.ToTable("Entradas", (string)null);
+                    b.ToTable("Entradas");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Materiales.EntradaDetalle", b =>
@@ -928,7 +931,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasIndex("MaterialId");
 
-                    b.ToTable("EntradasDetalle", (string)null);
+                    b.ToTable("EntradasDetalle");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Materiales.Material", b =>
@@ -978,7 +981,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasIndex("UnidadMedidaId");
 
-                    b.ToTable("Materiales", (string)null);
+                    b.ToTable("Materiales");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Materiales.Salida", b =>
@@ -1010,7 +1013,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasIndex("ProyectoId");
 
-                    b.ToTable("Salidas", (string)null);
+                    b.ToTable("Salidas");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Materiales.SalidaDetalle", b =>
@@ -1039,7 +1042,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasIndex("SalidaId");
 
-                    b.ToTable("SalidasDetalle", (string)null);
+                    b.ToTable("SalidasDetalle");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Perdidas.RegistroPerdida", b =>
@@ -1091,7 +1094,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasIndex("ProyectoId");
 
-                    b.ToTable("RegistrosPerdidas", (string)null);
+                    b.ToTable("RegistrosPerdidas");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Proveedor", b =>
@@ -1138,7 +1141,7 @@ namespace BLL_ConstruccionAPI.Migrations
                     b.HasIndex("RFC")
                         .IsUnique();
 
-                    b.ToTable("Proveedores", (string)null);
+                    b.ToTable("Proveedores");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Proyectos.ArchivoProyecto", b =>
@@ -1186,7 +1189,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasIndex("ProyectoId");
 
-                    b.ToTable("ArchivosProyecto", (string)null);
+                    b.ToTable("ArchivosProyecto");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Proyectos.CarpetaProyecto", b =>
@@ -1215,7 +1218,7 @@ namespace BLL_ConstruccionAPI.Migrations
                     b.HasIndex("ProyectoId", "Nombre")
                         .IsUnique();
 
-                    b.ToTable("CarpetasProyecto", (string)null);
+                    b.ToTable("CarpetasProyecto");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Proyectos.ChecklistItemFase", b =>
@@ -1252,7 +1255,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasIndex("FaseId");
 
-                    b.ToTable("ChecklistItemsFase", (string)null);
+                    b.ToTable("ChecklistItemsFase");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Proyectos.FaseProyecto", b =>
@@ -1297,7 +1300,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasIndex("ProyectoId");
 
-                    b.ToTable("FaseProyectos", (string)null);
+                    b.ToTable("FaseProyectos");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Proyectos.GastoExtra", b =>
@@ -1347,7 +1350,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasIndex("ProveedorId");
 
-                    b.ToTable("GastosExtras", (string)null);
+                    b.ToTable("GastosExtras");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Proyectos.GastoSemanal", b =>
@@ -1391,7 +1394,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasIndex("ProyectoId");
 
-                    b.ToTable("GastosSemanales", (string)null);
+                    b.ToTable("GastosSemanales");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Proyectos.PagoCliente", b =>
@@ -1461,7 +1464,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasIndex("ProyectoId");
 
-                    b.ToTable("PagosCliente", (string)null);
+                    b.ToTable("PagosCliente");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Proyectos.Proyecto", b =>
@@ -1524,7 +1527,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasIndex("ClienteId");
 
-                    b.ToTable("Proyectos", (string)null);
+                    b.ToTable("Proyectos");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Nomina.NominaDetalle", b =>
@@ -1567,7 +1570,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasIndex("ProyectoId");
 
-                    b.ToTable("NominaDetalles", (string)null);
+                    b.ToTable("NominaDetalles");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Nomina.PeriodoNomina", b =>
@@ -1596,7 +1599,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PeriodosNomina", (string)null);
+                    b.ToTable("PeriodosNomina");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Personal.ArchivoEmpleado", b =>
@@ -1639,7 +1642,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasIndex("EmpleadoId");
 
-                    b.ToTable("ArchivosEmpleado", (string)null);
+                    b.ToTable("ArchivosEmpleado");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Personal.AsignacionEmpleadoProyecto", b =>
@@ -1681,7 +1684,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasIndex("ProyectoId");
 
-                    b.ToTable("AsignacionesEmpleadoProyecto", (string)null);
+                    b.ToTable("AsignacionesEmpleadoProyecto");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Personal.Empleado", b =>
@@ -1755,7 +1758,7 @@ namespace BLL_ConstruccionAPI.Migrations
                     b.HasIndex("NumeroEmpleado")
                         .IsUnique();
 
-                    b.ToTable("Empleados", (string)null);
+                    b.ToTable("Empleados");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Reportes.ConfiguracionReporte", b =>
@@ -1807,7 +1810,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasIndex("UsuarioId");
 
-                    b.ToTable("ConfiguracionesReporte", (string)null);
+                    b.ToTable("ConfiguracionesReporte");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Servicios.Servicio", b =>
@@ -1923,7 +1926,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasIndex("ClienteId");
 
-                    b.ToTable("Servicios", (string)null);
+                    b.ToTable("Servicios");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Servicios.ServicioFoto", b =>
@@ -1959,7 +1962,7 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasIndex("ServicioId");
 
-                    b.ToTable("ServiciosFotos", (string)null);
+                    b.ToTable("ServiciosFotos");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Auth.MfaEmailCode", b =>
