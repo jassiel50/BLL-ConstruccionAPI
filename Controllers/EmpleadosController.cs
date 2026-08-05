@@ -18,10 +18,15 @@ public class EmpleadosController : ControllerBase
         _service = service;
     }
 
+    // Usuarios con acceso temporal de prueba mientras el módulo se restringe por rol a Sistemas.
+    // TODO: quitar esta excepción cuando se defina el rol/permiso definitivo para estos usuarios.
+    private static readonly HashSet<int> UsuariosPruebaTemporal = [3]; // vannia.dionisio
+
     private bool EsAdminOSistemas()
     {
         var rolId = User.FindFirstValue("rolId");
-        return rolId == "1" || rolId == "3";
+        if (rolId == "1" || rolId == "3") return true;
+        return UsuariosPruebaTemporal.Contains(GetUsuarioId());
     }
 
     private int GetUsuarioId()
