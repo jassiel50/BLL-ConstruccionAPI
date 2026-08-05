@@ -6,6 +6,7 @@ using BLL_ConstruccionAPI.Models.Inventario.Herramientas;
 using BLL_ConstruccionAPI.Models.Inventario.Materiales;
 using BLL_ConstruccionAPI.Models.Inventario.Perdidas;
 using BLL_ConstruccionAPI.Models.Inventario.Proyectos;
+using BLL_ConstruccionAPI.Models.Nomina;
 using BLL_ConstruccionAPI.Models.Personal;
 using BLL_ConstruccionAPI.Models.Reportes;
 using BLL_ConstruccionAPI.Models.Servicios;
@@ -86,6 +87,10 @@ public class AppDbContext : DbContext
     public DbSet<Empleado> Empleados { get; set; }
     public DbSet<ArchivoEmpleado> ArchivosEmpleado { get; set; }
     public DbSet<AsignacionEmpleadoProyecto> AsignacionesEmpleadoProyecto { get; set; }
+
+    // ─── NÓMINA ───────────────────────────────────────────────────────────────
+    public DbSet<PeriodoNomina> PeriodosNomina { get; set; }
+    public DbSet<NominaDetalle> NominaDetalles { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -550,6 +555,42 @@ public class AppDbContext : DbContext
             .HasOne(a => a.Proyecto)
             .WithMany()
             .HasForeignKey(a => a.ProyectoId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // ─── Nómina ─────────────────────────────────────────────────────────────
+
+        modelBuilder.Entity<PeriodoNomina>()
+            .Property(p => p.Estado)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<NominaDetalle>()
+            .Property(d => d.SueldoBruto)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<NominaDetalle>()
+            .Property(d => d.DescuentoInfonavit)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<NominaDetalle>()
+            .Property(d => d.SueldoNeto)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<NominaDetalle>()
+            .HasOne(d => d.PeriodoNomina)
+            .WithMany(p => p.Detalles)
+            .HasForeignKey(d => d.PeriodoNominaId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<NominaDetalle>()
+            .HasOne(d => d.Empleado)
+            .WithMany()
+            .HasForeignKey(d => d.EmpleadoId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<NominaDetalle>()
+            .HasOne(d => d.Proyecto)
+            .WithMany()
+            .HasForeignKey(d => d.ProyectoId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

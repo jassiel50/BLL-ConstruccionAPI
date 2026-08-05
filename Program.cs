@@ -92,6 +92,9 @@ builder.Services.AddScoped<IServiciosService, ServiciosService>();
 // Empleados
 builder.Services.AddScoped<IEmpleadosService, EmpleadosService>();
 
+// Nómina
+builder.Services.AddScoped<INominaService, NominaService>();
+
 // Reportes
 builder.Services.AddScoped<IReportesService, ReportesService>();
 builder.Services.AddScoped<IConfiguracionReporteRepository, ConfiguracionReporteRepository>();
