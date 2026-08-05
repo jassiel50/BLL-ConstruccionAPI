@@ -30,6 +30,21 @@ public class ServicioResponseDto
     public string? NombreQuienFirma { get; set; }
     public DateTime? FechaFirma { get; set; }
 
+    public string? NombreSolicitante { get; set; }
+    public string? FirmaSolicitanteBase64 { get; set; }
+    public DateTime? FechaFirmaSolicitante { get; set; }
+
+    public string? HorarioTrabajo { get; set; }
+    public int? NumeroTrabajadores { get; set; }
+    public decimal? TotalHorasTrabajadas { get; set; }
+
+    public string? RecursoManoDeObra { get; set; }
+    public string? RecursoHerramienta { get; set; }
+    public string? RecursoRefacciones { get; set; }
+    public string? RecursoConsumibles { get; set; }
+
+    public List<string> TiposTrabajo { get; set; } = [];
+
     public DateTime FechaCreacion { get; set; }
 
     public static ServicioResponseDto FromEntity(Servicio s) => new()
@@ -53,6 +68,19 @@ public class ServicioResponseDto
         FirmaBase64          = s.FirmaBase64,
         NombreQuienFirma     = s.NombreQuienFirma,
         FechaFirma           = s.FechaFirma,
+        NombreSolicitante      = s.NombreSolicitante,
+        FirmaSolicitanteBase64 = s.FirmaSolicitanteBase64,
+        FechaFirmaSolicitante  = s.FechaFirmaSolicitante,
+        HorarioTrabajo         = s.HorarioTrabajo,
+        NumeroTrabajadores     = s.NumeroTrabajadores,
+        TotalHorasTrabajadas   = s.TotalHorasTrabajadas,
+        RecursoManoDeObra      = s.RecursoManoDeObra,
+        RecursoHerramienta     = s.RecursoHerramienta,
+        RecursoRefacciones     = s.RecursoRefacciones,
+        RecursoConsumibles     = s.RecursoConsumibles,
+        TiposTrabajo           = string.IsNullOrWhiteSpace(s.TiposTrabajo)
+            ? []
+            : s.TiposTrabajo.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList(),
         FechaCreacion        = s.FechaCreacion
     };
 }

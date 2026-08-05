@@ -80,6 +80,7 @@ public class AppDbContext : DbContext
 
     // ─── SERVICIOS ────────────────────────────────────────────────────────────
     public DbSet<Servicio> Servicios { get; set; }
+    public DbSet<ServicioFoto> ServiciosFotos { get; set; }
 
     // ─── EMPLEADOS ────────────────────────────────────────────────────────────
     public DbSet<Empleado> Empleados { get; set; }
@@ -492,6 +493,16 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(s => s.ClienteId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Servicio>()
+            .Property(s => s.TotalHorasTrabajadas)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<ServicioFoto>()
+            .HasOne(f => f.Servicio)
+            .WithMany(s => s.Fotos)
+            .HasForeignKey(f => f.ServicioId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // ─── Empleado ───────────────────────────────────────────────────────────
 

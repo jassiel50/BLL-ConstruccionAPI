@@ -33,8 +33,28 @@ public class Servicio
     public string? NombreQuienFirma { get; set; }
     public DateTime? FechaFirma { get; set; }
 
+    // Firma de quien solicita el trabajo — se captura al crear el servicio
+    public string? NombreSolicitante { get; set; }
+    public string? FirmaSolicitanteBase64 { get; set; }
+    public DateTime? FechaFirmaSolicitante { get; set; }
+
+    // Datos del Servicio (machote de reporte)
+    public string? HorarioTrabajo { get; set; }
+    public int? NumeroTrabajadores { get; set; }
+    public decimal? TotalHorasTrabajadas { get; set; }
+
+    // Recursos Utilizados
+    public string? RecursoManoDeObra { get; set; }
+    public string? RecursoHerramienta { get; set; }
+    public string? RecursoRefacciones { get; set; }
+    public string? RecursoConsumibles { get; set; }
+
+    // Tipo de Trabajo — CSV de disciplinas seleccionadas (aditivo, no reemplaza Tipo)
+    public string? TiposTrabajo { get; set; }
+
     public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
 
     // Navegación
     public Cliente? Cliente { get; set; }
+    public ICollection<ServicioFoto> Fotos { get; set; } = new List<ServicioFoto>();
 }

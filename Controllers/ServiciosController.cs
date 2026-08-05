@@ -79,6 +79,67 @@ public class ServiciosController : ControllerBase
         return Ok(new { message });
     }
 
+    // ─── EVIDENCIAS FOTOGRÁFICAS ────────────────────────────────────────────
+
+    // GET api/servicios/{id}/fotos
+    [HttpGet("{id:int}/fotos")]
+    public async Task<IActionResult> GetFotos(int id)
+    {
+        var (usuarioId, rolId) = GetUsuario();
+        var (success, message, data) = await _service.GetFotosAsync(id, rolId, usuarioId);
+        if (!success) return BadRequest(new { message });
+        return Ok(data);
+    }
+
+    // POST api/servicios/{id}/fotos
+    // Form: foto (IFormFile)
+    [HttpPost("{id:int}/fotos")]
+    [RequestSizeLimit(20 * 1024 * 1024)]
+    public async Task<IActionResult> SubirFoto(int id, IFormFile foto)
+    {
+        if (foto is null || foto.Length == 0)
+            return BadRequest(new { message = "Se requiere una foto." });
+
+        var (usuarioId, _) = GetUsuario();
+        var (success, message, data) = await _service.SubirFotoAsync(id, usuarioId, foto);
+        if (!success) return BadRequest(new { message });
+        return Created(string.Empty, new { message, data });
+    }
+
+    // GET api/servicios/fotos/{fotoId}/descargar
+    [HttpGet("fotos/{fotoId:int}/descargar")]
+    public async Task<IActionResult> DescargarFoto(int fotoId)
+    {
+        var (usuarioId, rolId) = GetUsuario();
+        var (found, nombreOriginal, contentType, contenido) = await _service.DescargarFotoAsync(fotoId, rolId, usuarioId);
+        if (!found) return NotFound(new { message = "Foto no encontrada." });
+        return File(contenido!, contentType, nombreOriginal);
+    }
+
+    // DELETE api/servicios/fotos/{fotoId}
+    [HttpDelete("fotos/{fotoId:int}")]
+    public async Task<IActionResult> EliminarFoto(int fotoId)
+    {
+        var (usuarioId, _) = GetUsuario();
+        var (success, message) = await _service.EliminarFotoAsync(fotoId, usuarioId);
+        if (!success) return BadRequest(new { message });
+        return Ok(new { message });
+    }
+
+    // ─── REPORTE PDF ────────────────────────────────────────────────────────
+
+    // GET api/servicios/{id}/reporte/pdf
+    [HttpGet("{id:int}/reporte/pdf")]
+    public async Task<IActionResult> GenerarReporte(int id)
+    {
+        var (usuarioId, rolId) = GetUsuario();
+        var pdf = await _service.GenerarReporteAsync(id, rolId, usuarioId);
+        if (pdf.Length == 0)
+            return BadRequest(new { message = "El servicio no existe, no tienes permiso, o debe estar firmado y finalizado para descargar el reporte." });
+
+        return File(pdf, "application/pdf", $"Reporte_Servicio_{id}.pdf");
+    }
+
     private (int UsuarioId, int RolId) GetUsuario()
     {
         int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var usuarioId);
