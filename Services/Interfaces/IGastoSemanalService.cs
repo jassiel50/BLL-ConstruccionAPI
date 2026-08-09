@@ -8,4 +8,7 @@ public interface IGastoSemanalService
     Task<(bool Success, GastoSemanalDto? Data)> CreateAsync(int proyectoId, GastoSemanalRequestDto dto);
     Task<bool> DeleteAsync(int id);
     Task<(bool Found, GastoSemanalDto? Data)> GetUltimoAsync(int proyectoId);
+
+    Task<List<NominaDisponibleProyectoDto>> GetNominaDisponibleParaProyectoAsync(int proyectoId);
+    Task<(bool Success, string Message, GastoSemanalDto? Data)> CrearDesdeNominaAsync(int proyectoId, int periodoNominaId);
 }

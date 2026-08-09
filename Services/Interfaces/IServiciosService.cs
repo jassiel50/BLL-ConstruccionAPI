@@ -18,4 +18,17 @@ public interface IServiciosService
     Task<(bool Success, string Message)> EliminarFotoAsync(int fotoId, int usuarioId);
 
     Task<byte[]> GenerarReporteAsync(int servicioId, int solicitanteRolId, int solicitanteUsuarioId);
+
+    // ─── LIGA PÚBLICA (operador interno) ───────────────────────────────────
+    Task<(bool Success, string Message, ServicioLigaDto? Data)> GenerarLigaAsync(int servicioId, int usuarioId);
+    Task<ServicioLigaDto?> GetLigaActualAsync(int servicioId, int usuarioId);
+
+    // ─── ACCESO POR TOKEN (sin sesión) ─────────────────────────────────────
+    Task<(bool Valido, string Motivo, ServicioPublicoDto? Data)> GetPorTokenAsync(string token);
+    Task<(bool Success, string Message, ServicioPublicoDto? Data)> ActualizarPorTokenAsync(string token, ServicioPublicoUpdateDto dto);
+    Task<(bool Success, string Message, List<ServicioFotoDto> Data)> GetFotosPorTokenAsync(string token);
+    Task<(bool Success, string Message, ServicioFotoDto? Data)> SubirFotoPorTokenAsync(string token, IFormFile foto);
+    Task<(bool Found, string NombreOriginal, string ContentType, byte[]? Contenido)> DescargarFotoPorTokenAsync(string token, int fotoId);
+    Task<(bool Success, string Message)> EliminarFotoPorTokenAsync(string token, int fotoId);
+    Task<(bool Success, string Message, ServicioPublicoDto? Data)> FirmarPorTokenAsync(string token, ServicioFirmarDto dto);
 }

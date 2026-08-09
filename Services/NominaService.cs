@@ -46,6 +46,8 @@ public class NominaService : INominaService
                 ProyectoNombre = d.Proyecto?.Nombre,
                 SueldoBruto = d.SueldoBruto,
                 DescuentoInfonavit = d.DescuentoInfonavit,
+                MontoAjuste = d.MontoAjuste,
+                MotivoAjuste = d.MotivoAjuste,
                 SueldoNeto = d.SueldoNeto,
                 Pagado = d.Pagado,
                 FechaPago = d.FechaPago
@@ -115,6 +117,10 @@ public class NominaService : INominaService
             .Where(a => a.Estado == EstadoAsignacionEmpleado.Activa)
             .ToDictionaryAsync(a => a.EmpleadoId, a => a.ProyectoId);
 
+        var ajustes = (dto.Ajustes ?? [])
+            .GroupBy(a => a.EmpleadoId)
+            .ToDictionary(g => g.Key, g => g.First());
+
         var periodo = new PeriodoNomina
         {
             FechaInicio = dto.FechaInicio.Date,
@@ -130,13 +136,18 @@ public class NominaService : INominaService
             var descuento = e.CreditoInfonavit ? (e.CuotaInfonavit ?? 0m) : 0m;
             asignacionesActivas.TryGetValue(e.Id, out var proyectoId);
 
+            ajustes.TryGetValue(e.Id, out var ajuste);
+            var montoAjuste = ajuste?.MontoAjuste ?? 0m;
+
             periodo.Detalles.Add(new NominaDetalle
             {
                 EmpleadoId = e.Id,
                 ProyectoId = proyectoId == 0 ? null : proyectoId,
                 SueldoBruto = bruto,
                 DescuentoInfonavit = descuento,
-                SueldoNeto = bruto - descuento,
+                MontoAjuste = montoAjuste,
+                MotivoAjuste = ajuste?.MotivoAjuste,
+                SueldoNeto = bruto - descuento + montoAjuste,
                 Pagado = false
             });
         }
@@ -224,6 +235,8 @@ public class NominaService : INominaService
                 ProyectoNombre = d.Proyecto != null ? d.Proyecto.Nombre : null,
                 SueldoBruto = d.SueldoBruto,
                 DescuentoInfonavit = d.DescuentoInfonavit,
+                MontoAjuste = d.MontoAjuste,
+                MotivoAjuste = d.MotivoAjuste,
                 SueldoNeto = d.SueldoNeto,
                 Pagado = d.Pagado,
                 FechaPago = d.FechaPago

@@ -47,4 +47,18 @@ public class GastosSemanalesController : ControllerBase
         if (!success) return NotFound(new { message = "Gasto semanal no encontrado." });
         return NoContent();
     }
+
+    // GET api/proyectos/{id}/gastos-semanales/nomina-disponible
+    [HttpGet("api/proyectos/{id:int}/gastos-semanales/nomina-disponible")]
+    public async Task<IActionResult> GetNominaDisponible(int id)
+        => Ok(await _service.GetNominaDisponibleParaProyectoAsync(id));
+
+    // POST api/proyectos/{id}/gastos-semanales/desde-nomina
+    [HttpPost("api/proyectos/{id:int}/gastos-semanales/desde-nomina")]
+    public async Task<IActionResult> CrearDesdeNomina(int id, [FromBody] CrearGastoDesdeNominaDto dto)
+    {
+        var (success, message, data) = await _service.CrearDesdeNominaAsync(id, dto.PeriodoNominaId);
+        if (!success) return BadRequest(new { message });
+        return Created(string.Empty, data);
+    }
 }

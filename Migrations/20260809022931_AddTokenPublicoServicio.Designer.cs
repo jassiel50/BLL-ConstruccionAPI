@@ -4,6 +4,7 @@ using BLL_ConstruccionAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BLL_ConstruccionAPI.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260809022931_AddTokenPublicoServicio")]
+    partial class AddTokenPublicoServicio
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1380,9 +1383,6 @@ namespace BLL_ConstruccionAPI.Migrations
                     b.Property<string>("Observaciones")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("PeriodoNominaId")
-                        .HasColumnType("int");
-
                     b.Property<int>("ProyectoId")
                         .HasColumnType("int");
 
@@ -1391,8 +1391,6 @@ namespace BLL_ConstruccionAPI.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("PeriodoNominaId");
 
                     b.HasIndex("ProyectoId");
 
@@ -1548,12 +1546,6 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.Property<DateTime?>("FechaPago")
                         .HasColumnType("datetime2");
-
-                    b.Property<decimal>("MontoAjuste")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("MotivoAjuste")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("Pagado")
                         .HasColumnType("bit");
@@ -2318,18 +2310,11 @@ namespace BLL_ConstruccionAPI.Migrations
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Proyectos.GastoSemanal", b =>
                 {
-                    b.HasOne("BLL_ConstruccionAPI.Models.Nomina.PeriodoNomina", "PeriodoNomina")
-                        .WithMany()
-                        .HasForeignKey("PeriodoNominaId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("BLL_ConstruccionAPI.Models.Inventario.Proyectos.Proyecto", "Proyecto")
                         .WithMany()
                         .HasForeignKey("ProyectoId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("PeriodoNomina");
 
                     b.Navigation("Proyecto");
                 });

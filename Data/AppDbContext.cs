@@ -240,6 +240,12 @@ public class AppDbContext : DbContext
             .Property(g => g.Monto)
             .HasColumnType("decimal(18,2)");
 
+        modelBuilder.Entity<GastoSemanal>()
+            .HasOne(g => g.PeriodoNomina)
+            .WithMany()
+            .HasForeignKey(g => g.PeriodoNominaId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         // ─── ArchivoProyecto ──────────────────────────────────────────────────
         modelBuilder.Entity<ArchivoProyecto>()
             .HasOne(a => a.Proyecto)
@@ -503,6 +509,10 @@ public class AppDbContext : DbContext
             .Property(s => s.TotalHorasTrabajadas)
             .HasColumnType("decimal(18,2)");
 
+        modelBuilder.Entity<Servicio>()
+            .HasIndex(s => s.TokenPublico)
+            .IsUnique();
+
         modelBuilder.Entity<ServicioFoto>()
             .HasOne(f => f.Servicio)
             .WithMany(s => s.Fotos)
@@ -573,6 +583,10 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<NominaDetalle>()
             .Property(d => d.SueldoNeto)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<NominaDetalle>()
+            .Property(d => d.MontoAjuste)
             .HasColumnType("decimal(18,2)");
 
         modelBuilder.Entity<NominaDetalle>()

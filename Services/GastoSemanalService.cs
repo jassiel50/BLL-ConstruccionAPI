@@ -2,6 +2,7 @@ using System.Security.Claims;
 using BLL_ConstruccionAPI.Data;
 using BLL_ConstruccionAPI.DTOs.GastosSemanales;
 using BLL_ConstruccionAPI.Models.Inventario.Proyectos;
+using BLL_ConstruccionAPI.Models.Nomina;
 using BLL_ConstruccionAPI.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -41,7 +42,8 @@ public class GastoSemanalService : IGastoSemanalService
         Observaciones = g.Observaciones,
         NumPersonas = g.NumPersonas,
         FechaRegistro = g.FechaRegistro,
-        DiasDesdeUltimo = diasDesdeUltimo
+        DiasDesdeUltimo = diasDesdeUltimo,
+        PeriodoNominaId = g.PeriodoNominaId
     };
 
     public async Task<List<GastoSemanalDto>> GetByProyectoAsync(int proyectoId)
@@ -110,5 +112,79 @@ public class GastoSemanalService : IGastoSemanalService
 
         var dias = (int)(DateTime.UtcNow.Date - ultimo.FechaFin.Date).TotalDays;
         return (true, MapToDto(ultimo, dias));
+    }
+
+    public async Task<List<NominaDisponibleProyectoDto>> GetNominaDisponibleParaProyectoAsync(int proyectoId)
+    {
+        var periodosUsados = await _context.GastosSemanales
+            .Where(g => g.ProyectoId == proyectoId && g.PeriodoNominaId != null)
+            .Select(g => g.PeriodoNominaId!.Value)
+            .ToListAsync();
+
+        var detalles = await _context.NominaDetalles
+            .AsNoTracking()
+            .Include(d => d.Empleado)
+            .Include(d => d.PeriodoNomina)
+            .Where(d => d.ProyectoId == proyectoId && !periodosUsados.Contains(d.PeriodoNominaId))
+            .ToListAsync();
+
+        return detalles
+            .GroupBy(d => d.PeriodoNominaId)
+            .Select(g => new NominaDisponibleProyectoDto
+            {
+                PeriodoNominaId = g.Key,
+                FechaInicio = g.First().PeriodoNomina!.FechaInicio,
+                FechaFin = g.First().PeriodoNomina!.FechaFin,
+                MontoTotal = g.Sum(d => d.SueldoNeto),
+                NumEmpleados = g.Count(),
+                Empleados = g.Select(d => new EmpleadoMontoDto
+                {
+                    EmpleadoNombre = d.Empleado?.NombreCompleto ?? string.Empty,
+                    SueldoNeto = d.SueldoNeto
+                }).ToList()
+            })
+            .OrderByDescending(x => x.FechaInicio)
+            .ToList();
+    }
+
+    public async Task<(bool Success, string Message, GastoSemanalDto? Data)> CrearDesdeNominaAsync(int proyectoId, int periodoNominaId)
+    {
+        var yaUsado = await _context.GastosSemanales
+            .AnyAsync(g => g.ProyectoId == proyectoId && g.PeriodoNominaId == periodoNominaId);
+        if (yaUsado)
+            return (false, "Esta nómina ya fue asociada a un gasto de este proyecto.", null);
+
+        var detalles = await _context.NominaDetalles
+            .AsNoTracking()
+            .Include(d => d.PeriodoNomina)
+            .Where(d => d.ProyectoId == proyectoId && d.PeriodoNominaId == periodoNominaId)
+            .ToListAsync();
+
+        if (detalles.Count == 0)
+            return (false, "No hay empleados de este proyecto en la nómina seleccionada.", null);
+
+        var periodo = detalles[0].PeriodoNomina!;
+        var entity = new GastoSemanal
+        {
+            ProyectoId = proyectoId,
+            Concepto = $"Nómina {periodo.FechaInicio:dd/MM/yyyy} - {periodo.FechaFin:dd/MM/yyyy}",
+            Monto = detalles.Sum(d => d.SueldoNeto),
+            FechaInicio = periodo.FechaInicio,
+            FechaFin = periodo.FechaFin,
+            Tipo = "Nomina",
+            NumPersonas = detalles.Count,
+            PeriodoNominaId = periodoNominaId,
+            FechaRegistro = DateTime.UtcNow
+        };
+
+        _context.GastosSemanales.Add(entity);
+        await _context.SaveChangesAsync();
+
+        var (uid, uname, ip) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Registró gasto semanal desde nómina", "GastoSemanal",
+            $"Gasto semanal '{entity.Concepto}' (${entity.Monto:N2}) generado a partir de la nómina #{periodoNominaId} en proyecto ID {proyectoId}.", ip);
+
+        var dias = (int)(DateTime.UtcNow.Date - entity.FechaFin.Date).TotalDays;
+        return (true, "Gasto registrado a partir de la nómina.", MapToDto(entity, dias));
     }
 }

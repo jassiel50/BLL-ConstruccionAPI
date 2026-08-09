@@ -13,6 +13,7 @@ namespace BLL_ConstruccionAPI.Services;
 public class ServiciosService : IServiciosService
 {
     private const int RolOperadorServicio = 4;
+    private const int LigaDuracionHoras = 24;
 
     private readonly AppDbContext _context;
     private readonly IBitacoraService _bitacora;
@@ -327,5 +328,188 @@ public class ServiciosService : IServiciosService
         return Document.Create(container =>
                 new ReporteServicioDocument(servicio, fotos).Compose(container))
             .GeneratePdf();
+    }
+
+    // ─── LIGA PÚBLICA (operador interno) ───────────────────────────────────
+
+    public async Task<(bool Success, string Message, ServicioLigaDto? Data)> GenerarLigaAsync(int servicioId, int usuarioId)
+    {
+        var servicio = await _context.Servicios.FirstOrDefaultAsync(s => s.Id == servicioId);
+        if (servicio is null) return (false, "Servicio no encontrado.", null);
+
+        if (servicio.OperadorId != usuarioId)
+            return (false, "No tienes permiso para generar una liga para este servicio.", null);
+
+        if (servicio.Estado != EstadoServicio.Activo)
+            return (false, "El servicio ya fue finalizado; no se puede generar una liga.", null);
+
+        servicio.TokenPublico = Guid.NewGuid().ToString("N");
+        servicio.TokenExpira = DateTime.UtcNow.AddHours(LigaDuracionHoras);
+        await _context.SaveChangesAsync();
+
+        await _bitacora.RegistrarAsync(usuarioId, servicio.OperadorNombre, "Generó", "Servicio", $"Liga pública generada para el servicio #{servicioId}");
+
+        return (true, "Liga generada correctamente.", new ServicioLigaDto { Token = servicio.TokenPublico, Expira = servicio.TokenExpira.Value });
+    }
+
+    public async Task<ServicioLigaDto?> GetLigaActualAsync(int servicioId, int usuarioId)
+    {
+        var servicio = await _context.Servicios.AsNoTracking().FirstOrDefaultAsync(s => s.Id == servicioId);
+        if (servicio is null || servicio.OperadorId != usuarioId) return null;
+
+        if (string.IsNullOrWhiteSpace(servicio.TokenPublico) || servicio.TokenExpira is null || servicio.TokenExpira < DateTime.UtcNow)
+            return null;
+
+        return new ServicioLigaDto { Token = servicio.TokenPublico, Expira = servicio.TokenExpira.Value };
+    }
+
+    // ─── ACCESO POR TOKEN (sin sesión) ─────────────────────────────────────
+
+    private async Task<(Servicio? Servicio, string Motivo)> ValidarTokenAsync(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token)) return (null, "Liga inválida.");
+
+        var servicio = await _context.Servicios
+            .Include(s => s.Cliente)
+            .FirstOrDefaultAsync(s => s.TokenPublico == token);
+
+        if (servicio is null) return (null, "Esta liga no es válida o ya fue utilizada.");
+        if (servicio.Estado != EstadoServicio.Activo) return (null, "Este servicio ya fue finalizado; la liga ya no está disponible.");
+        if (servicio.TokenExpira is null || servicio.TokenExpira < DateTime.UtcNow) return (null, "Esta liga expiró. Pide que te generen una nueva.");
+
+        return (servicio, "");
+    }
+
+    public async Task<(bool Valido, string Motivo, ServicioPublicoDto? Data)> GetPorTokenAsync(string token)
+    {
+        var (servicio, motivo) = await ValidarTokenAsync(token);
+        if (servicio is null) return (false, motivo, null);
+
+        return (true, "", ServicioPublicoDto.FromEntity(servicio));
+    }
+
+    public async Task<(bool Success, string Message, ServicioPublicoDto? Data)> ActualizarPorTokenAsync(string token, ServicioPublicoUpdateDto dto)
+    {
+        var (servicio, motivo) = await ValidarTokenAsync(token);
+        if (servicio is null) return (false, motivo, null);
+
+        servicio.Equipo               = dto.Equipo;
+        servicio.DescripcionTrabajo   = dto.DescripcionTrabajo;
+        servicio.MaterialesUtilizados = dto.MaterialesUtilizados;
+        servicio.Observaciones        = dto.Observaciones;
+        servicio.HorarioTrabajo       = dto.HorarioTrabajo;
+        servicio.NumeroTrabajadores   = dto.NumeroTrabajadores;
+        servicio.TotalHorasTrabajadas = dto.TotalHorasTrabajadas;
+        servicio.RecursoManoDeObra    = dto.RecursoManoDeObra;
+        servicio.RecursoHerramienta   = dto.RecursoHerramienta;
+        servicio.RecursoRefacciones   = dto.RecursoRefacciones;
+        servicio.RecursoConsumibles   = dto.RecursoConsumibles;
+        servicio.TiposTrabajo         = dto.TiposTrabajo is { Count: > 0 } ? string.Join(',', dto.TiposTrabajo) : null;
+
+        await _context.SaveChangesAsync();
+
+        var result = await _context.Servicios.AsNoTracking().Include(s => s.Cliente).FirstAsync(s => s.Id == servicio.Id);
+        return (true, "Datos guardados correctamente.", ServicioPublicoDto.FromEntity(result));
+    }
+
+    public async Task<(bool Success, string Message, List<ServicioFotoDto> Data)> GetFotosPorTokenAsync(string token)
+    {
+        var (servicio, motivo) = await ValidarTokenAsync(token);
+        if (servicio is null) return (false, motivo, []);
+
+        var fotos = await _context.ServiciosFotos
+            .AsNoTracking()
+            .Where(f => f.ServicioId == servicio.Id)
+            .OrderBy(f => f.FechaCaptura)
+            .Select(f => ServicioFotoDto.FromEntity(f))
+            .ToListAsync();
+
+        return (true, "OK", fotos);
+    }
+
+    public async Task<(bool Success, string Message, ServicioFotoDto? Data)> SubirFotoPorTokenAsync(string token, IFormFile foto)
+    {
+        var (servicio, motivo) = await ValidarTokenAsync(token);
+        if (servicio is null) return (false, motivo, null);
+
+        if (foto.Length == 0) return (false, "El archivo está vacío.", null);
+        if (foto.Length > MaxTamanioFotoBytes) return (false, "La foto supera el límite de 20 MB.", null);
+
+        using var ms = new MemoryStream();
+        await foto.CopyToAsync(ms);
+
+        var entity = new ServicioFoto
+        {
+            ServicioId     = servicio.Id,
+            NombreOriginal = foto.FileName,
+            ContentType    = foto.ContentType,
+            TamanioBytes   = foto.Length,
+            Contenido      = ms.ToArray(),
+            FechaCaptura   = DateTime.UtcNow
+        };
+
+        _context.ServiciosFotos.Add(entity);
+        await _context.SaveChangesAsync();
+
+        return (true, "Foto subida correctamente.", ServicioFotoDto.FromEntity(entity));
+    }
+
+    public async Task<(bool Found, string NombreOriginal, string ContentType, byte[]? Contenido)> DescargarFotoPorTokenAsync(string token, int fotoId)
+    {
+        var (servicio, _) = await ValidarTokenAsync(token);
+        if (servicio is null) return (false, "", "", null);
+
+        var foto = await _context.ServiciosFotos.FirstOrDefaultAsync(f => f.Id == fotoId && f.ServicioId == servicio.Id);
+        if (foto is null) return (false, "", "", null);
+
+        return (true, foto.NombreOriginal, foto.ContentType, foto.Contenido);
+    }
+
+    public async Task<(bool Success, string Message)> EliminarFotoPorTokenAsync(string token, int fotoId)
+    {
+        var (servicio, motivo) = await ValidarTokenAsync(token);
+        if (servicio is null) return (false, motivo);
+
+        var foto = await _context.ServiciosFotos.FirstOrDefaultAsync(f => f.Id == fotoId && f.ServicioId == servicio.Id);
+        if (foto is null) return (false, "Foto no encontrada.");
+
+        _context.ServiciosFotos.Remove(foto);
+        await _context.SaveChangesAsync();
+
+        return (true, "Foto eliminada.");
+    }
+
+    public async Task<(bool Success, string Message, ServicioPublicoDto? Data)> FirmarPorTokenAsync(string token, ServicioFirmarDto dto)
+    {
+        var (servicio, motivo) = await ValidarTokenAsync(token);
+        if (servicio is null) return (false, motivo, null);
+
+        if (string.IsNullOrWhiteSpace(dto.FirmaBase64))
+            return (false, "La firma es requerida para finalizar el servicio.", null);
+
+        if (string.IsNullOrWhiteSpace(dto.NombreQuienFirma))
+            return (false, "El nombre de quien firma es requerido.", null);
+
+        var totalFotos = await _context.ServiciosFotos.CountAsync(f => f.ServicioId == servicio.Id);
+        if (totalFotos < 3)
+            return (false, "Se requieren al menos 3 fotos de evidencia antes de finalizar el servicio.", null);
+
+        servicio.FirmaBase64      = dto.FirmaBase64;
+        servicio.NombreQuienFirma = dto.NombreQuienFirma;
+        servicio.FechaFirma       = DateTime.UtcNow;
+        servicio.FechaFin         = DateTime.UtcNow;
+        servicio.Estado           = EstadoServicio.Terminado;
+
+        // Candado de un solo uso: la liga deja de ser válida en cuanto se firma.
+        servicio.TokenPublico = null;
+        servicio.TokenExpira = null;
+
+        await _context.SaveChangesAsync();
+
+        var result = await _context.Servicios.AsNoTracking().Include(s => s.Cliente).FirstAsync(s => s.Id == servicio.Id);
+
+        await _bitacora.RegistrarAsync(servicio.OperadorId, servicio.OperadorNombre, "Firmó", "Servicio", $"Servicio #{servicio.Id} finalizado y firmado por {dto.NombreQuienFirma} (vía liga pública)");
+
+        return (true, "Servicio finalizado y firmado correctamente.", ServicioPublicoDto.FromEntity(result));
     }
 }

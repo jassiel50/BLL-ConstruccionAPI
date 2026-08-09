@@ -1,3 +1,5 @@
+using BLL_ConstruccionAPI.Models.Nomina;
+
 namespace BLL_ConstruccionAPI.Models.Inventario.Proyectos;
 
 public class GastoSemanal
@@ -13,5 +15,10 @@ public class GastoSemanal
     public int NumPersonas { get; set; } = 0;
     public DateTime FechaRegistro { get; set; } = DateTime.UtcNow;
 
+    // Vínculo opcional a la nómina de la que se heredó el monto (evita discrepancias
+    // entre lo registrado a mano y lo que realmente calculó nómina para este proyecto).
+    public int? PeriodoNominaId { get; set; }
+
     public Proyecto? Proyecto { get; set; }
+    public PeriodoNomina? PeriodoNomina { get; set; }
 }

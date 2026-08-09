@@ -140,6 +140,28 @@ public class ServiciosController : ControllerBase
         return File(pdf, "application/pdf", $"Reporte_Servicio_{id}.pdf");
     }
 
+    // ─── LIGA PÚBLICA ───────────────────────────────────────────────────────
+
+    // POST api/servicios/{id}/liga
+    [HttpPost("{id:int}/liga")]
+    public async Task<IActionResult> GenerarLiga(int id)
+    {
+        var (usuarioId, _) = GetUsuario();
+        var (success, message, data) = await _service.GenerarLigaAsync(id, usuarioId);
+        if (!success) return BadRequest(new { message });
+        return Ok(new { message, data });
+    }
+
+    // GET api/servicios/{id}/liga
+    [HttpGet("{id:int}/liga")]
+    public async Task<IActionResult> GetLigaActual(int id)
+    {
+        var (usuarioId, _) = GetUsuario();
+        var data = await _service.GetLigaActualAsync(id, usuarioId);
+        if (data is null) return NotFound(new { message = "No hay una liga vigente para este servicio." });
+        return Ok(new { message = "", data });
+    }
+
     private (int UsuarioId, int RolId) GetUsuario()
     {
         int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var usuarioId);

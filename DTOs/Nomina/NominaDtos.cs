@@ -4,6 +4,16 @@ public class GenerarPeriodoNominaRequestDto
 {
     public DateTime FechaInicio { get; set; }
     public DateTime FechaFin { get; set; }
+    public List<AjusteEmpleadoDto> Ajustes { get; set; } = [];
+}
+
+// Ajuste manual por empleado al generar un periodo: positivo (bono, hora extra)
+// o negativo (descuento por falta, retardo, etc.).
+public class AjusteEmpleadoDto
+{
+    public int EmpleadoId { get; set; }
+    public decimal MontoAjuste { get; set; }
+    public string? MotivoAjuste { get; set; }
 }
 
 public class NominaDetalleDto
@@ -17,6 +27,8 @@ public class NominaDetalleDto
 
     public decimal SueldoBruto { get; set; }
     public decimal DescuentoInfonavit { get; set; }
+    public decimal MontoAjuste { get; set; }
+    public string? MotivoAjuste { get; set; }
     public decimal SueldoNeto { get; set; }
 
     public bool Pagado { get; set; }
@@ -47,6 +59,8 @@ public class HistorialNominaEmpleadoDto
     public string? ProyectoNombre { get; set; }
     public decimal SueldoBruto { get; set; }
     public decimal DescuentoInfonavit { get; set; }
+    public decimal MontoAjuste { get; set; }
+    public string? MotivoAjuste { get; set; }
     public decimal SueldoNeto { get; set; }
     public bool Pagado { get; set; }
     public DateTime? FechaPago { get; set; }

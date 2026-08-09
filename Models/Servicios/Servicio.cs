@@ -54,6 +54,10 @@ public class Servicio
 
     public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
 
+    // Liga pública de un solo uso para llenado sin sesión (operador de servicio externo)
+    public string? TokenPublico { get; set; }
+    public DateTime? TokenExpira { get; set; }
+
     // Navegación
     public Cliente? Cliente { get; set; }
     public ICollection<ServicioFoto> Fotos { get; set; } = new List<ServicioFoto>();

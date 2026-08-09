@@ -13,6 +13,10 @@ public class NominaDetalle
 
     public decimal SueldoBruto { get; set; }
     public decimal DescuentoInfonavit { get; set; }
+    // Ajuste manual capturado al generar el periodo: positivo (bono, hora extra) o
+    // negativo (descuento por falta, retardo, etc.).
+    public decimal MontoAjuste { get; set; }
+    public string? MotivoAjuste { get; set; }
     public decimal SueldoNeto { get; set; }
 
     public bool Pagado { get; set; }
