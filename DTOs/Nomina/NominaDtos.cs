@@ -14,6 +14,9 @@ public class AjusteEmpleadoDto
     public int EmpleadoId { get; set; }
     public decimal MontoAjuste { get; set; }
     public string? MotivoAjuste { get; set; }
+
+    // true = no se le genera pago en este periodo (p.ej. personal freelance que no trabajó esta semana).
+    public bool Excluido { get; set; }
 }
 
 public class NominaDetalleDto

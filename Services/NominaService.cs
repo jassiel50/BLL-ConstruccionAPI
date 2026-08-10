@@ -135,11 +135,13 @@ public class NominaService : INominaService
 
         foreach (var e in empleadosActivos)
         {
+            ajustes.TryGetValue(e.Id, out var ajuste);
+            if (ajuste?.Excluido == true) continue; // no se le paga en este periodo (p.ej. freelance)
+
             var bruto = e.SueldoNetoSemanal!.Value;
             var descuento = e.CreditoInfonavit ? (e.CuotaInfonavit ?? 0m) : 0m;
             asignacionesActivas.TryGetValue(e.Id, out var proyectoId);
 
-            ajustes.TryGetValue(e.Id, out var ajuste);
             var montoAjuste = ajuste?.MontoAjuste ?? 0m;
 
             periodo.Detalles.Add(new NominaDetalle
@@ -154,6 +156,9 @@ public class NominaService : INominaService
                 Pagado = false
             });
         }
+
+        if (periodo.Detalles.Count == 0)
+            return (false, "Todos los empleados fueron excluidos de este periodo.", null);
 
         _context.PeriodosNomina.Add(periodo);
         await _context.SaveChangesAsync();
