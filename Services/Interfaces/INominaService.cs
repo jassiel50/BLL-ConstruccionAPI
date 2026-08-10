@@ -12,6 +12,7 @@ public interface INominaService
 
     Task<List<HistorialNominaEmpleadoDto>> GetHistorialEmpleadoAsync(int empleadoId);
     Task<List<CostoProyectoNominaDto>> GetCostosPorProyectoAsync();
+    Task<List<PagoNominaDto>> GetPagosAsync();
 
     Task<byte[]> GenerarReportePdfAsync(int periodoId);
 }

@@ -73,3 +73,17 @@ public class CostoProyectoNominaDto
     public decimal TotalManoDeObra { get; set; }
     public int TotalRegistros { get; set; }
 }
+
+// Un pago de nómina ya efectuado (NominaDetalle con Pagado = true), plano, para
+// alimentar el dashboard de Gastos de Nómina (agrupación por fecha/empleado en el cliente).
+public class PagoNominaDto
+{
+    public int EmpleadoId { get; set; }
+    public string EmpleadoNombre { get; set; } = string.Empty;
+    public int? ProyectoId { get; set; }
+    public string? ProyectoNombre { get; set; }
+    public decimal SueldoNeto { get; set; }
+    public DateTime FechaPago { get; set; }
+    public DateTime FechaInicioPeriodo { get; set; }
+    public DateTime FechaFinPeriodo { get; set; }
+}

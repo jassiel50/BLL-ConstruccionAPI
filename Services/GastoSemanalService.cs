@@ -163,6 +163,30 @@ public class GastoSemanalService : IGastoSemanalService
         if (detalles.Count == 0)
             return (false, "No hay empleados de este proyecto en la nómina seleccionada.", null);
 
+        var dto = await CrearGastoDesdeNominaAsync(proyectoId, periodoNominaId, detalles, automatico: false);
+        return (true, "Gasto registrado a partir de la nómina.", dto);
+    }
+
+    public async Task AsociarSiCompletoAsync(int proyectoId, int periodoNominaId)
+    {
+        var yaUsado = await _context.GastosSemanales
+            .AnyAsync(g => g.ProyectoId == proyectoId && g.PeriodoNominaId == periodoNominaId);
+        if (yaUsado) return;
+
+        var detalles = await _context.NominaDetalles
+            .AsNoTracking()
+            .Include(d => d.PeriodoNomina)
+            .Where(d => d.ProyectoId == proyectoId && d.PeriodoNominaId == periodoNominaId)
+            .ToListAsync();
+
+        if (detalles.Count == 0 || detalles.Any(d => !d.Pagado)) return;
+
+        await CrearGastoDesdeNominaAsync(proyectoId, periodoNominaId, detalles, automatico: true);
+    }
+
+    private async Task<GastoSemanalDto> CrearGastoDesdeNominaAsync(
+        int proyectoId, int periodoNominaId, List<NominaDetalle> detalles, bool automatico)
+    {
         var periodo = detalles[0].PeriodoNomina!;
         var entity = new GastoSemanal
         {
@@ -181,10 +205,12 @@ public class GastoSemanalService : IGastoSemanalService
         await _context.SaveChangesAsync();
 
         var (uid, uname, ip) = GetUsuarioInfo();
-        await _bitacora.RegistrarAsync(uid, uname, "Registró gasto semanal desde nómina", "GastoSemanal",
-            $"Gasto semanal '{entity.Concepto}' (${entity.Monto:N2}) generado a partir de la nómina #{periodoNominaId} en proyecto ID {proyectoId}.", ip);
+        var descripcion = automatico
+            ? $"Gasto semanal '{entity.Concepto}' (${entity.Monto:N2}) generado automáticamente al completarse el pago de la nómina #{periodoNominaId} en proyecto ID {proyectoId}."
+            : $"Gasto semanal '{entity.Concepto}' (${entity.Monto:N2}) generado a partir de la nómina #{periodoNominaId} en proyecto ID {proyectoId}.";
+        await _bitacora.RegistrarAsync(uid, uname, "Registró gasto semanal desde nómina", "GastoSemanal", descripcion, ip);
 
         var dias = (int)(DateTime.UtcNow.Date - entity.FechaFin.Date).TotalDays;
-        return (true, "Gasto registrado a partir de la nómina.", MapToDto(entity, dias));
+        return MapToDto(entity, dias);
     }
 }

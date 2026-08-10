@@ -16,12 +16,15 @@ public class NominaService : INominaService
     private readonly AppDbContext _context;
     private readonly IBitacoraService _bitacora;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IGastoSemanalService _gastoSemanalService;
 
-    public NominaService(AppDbContext context, IBitacoraService bitacora, IHttpContextAccessor httpContextAccessor)
+    public NominaService(AppDbContext context, IBitacoraService bitacora, IHttpContextAccessor httpContextAccessor,
+        IGastoSemanalService gastoSemanalService)
     {
         _context = context;
         _bitacora = bitacora;
         _httpContextAccessor = httpContextAccessor;
+        _gastoSemanalService = gastoSemanalService;
     }
 
     private (int Id, string Nombre) GetUsuarioInfo()
@@ -192,6 +195,13 @@ public class NominaService : INominaService
         await _bitacora.RegistrarAsync(uid, uname, "Marcó pagado", "Nómina",
             $"Periodo de nómina {periodo.FechaInicio:dd/MM/yyyy} - {periodo.FechaFin:dd/MM/yyyy} marcado como pagado ({periodo.Detalles.Count} empleado(s))");
 
+        var proyectosDelPeriodo = periodo.Detalles
+            .Where(d => d.ProyectoId != null)
+            .Select(d => d.ProyectoId!.Value)
+            .Distinct();
+        foreach (var proyectoId in proyectosDelPeriodo)
+            await _gastoSemanalService.AsociarSiCompletoAsync(proyectoId, periodoId);
+
         return (true, "Periodo marcado como pagado.");
     }
 
@@ -216,6 +226,9 @@ public class NominaService : INominaService
         var (uid, uname) = GetUsuarioInfo();
         await _bitacora.RegistrarAsync(uid, uname, "Marcó pagado", "Nómina",
             $"Pago de nómina de '{detalle.Empleado?.NombreCompleto}' marcado como pagado");
+
+        if (detalle.ProyectoId != null)
+            await _gastoSemanalService.AsociarSiCompletoAsync(detalle.ProyectoId.Value, detalle.PeriodoNominaId);
 
         return (true, "Pago registrado correctamente.");
     }
@@ -256,6 +269,27 @@ public class NominaService : INominaService
                 TotalRegistros = g.Count()
             })
             .OrderByDescending(c => c.TotalManoDeObra)
+            .ToListAsync();
+
+    public async Task<List<PagoNominaDto>> GetPagosAsync() =>
+        await _context.NominaDetalles
+            .AsNoTracking()
+            .Include(d => d.Empleado)
+            .Include(d => d.Proyecto)
+            .Include(d => d.PeriodoNomina)
+            .Where(d => d.Pagado)
+            .OrderByDescending(d => d.FechaPago)
+            .Select(d => new PagoNominaDto
+            {
+                EmpleadoId = d.EmpleadoId,
+                EmpleadoNombre = d.Empleado!.NombreCompleto,
+                ProyectoId = d.ProyectoId,
+                ProyectoNombre = d.Proyecto != null ? d.Proyecto.Nombre : null,
+                SueldoNeto = d.SueldoNeto,
+                FechaPago = d.FechaPago!.Value,
+                FechaInicioPeriodo = d.PeriodoNomina!.FechaInicio,
+                FechaFinPeriodo = d.PeriodoNomina.FechaFin
+            })
             .ToListAsync();
 
     public async Task<byte[]> GenerarReportePdfAsync(int periodoId)

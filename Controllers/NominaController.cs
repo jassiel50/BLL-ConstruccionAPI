@@ -94,6 +94,14 @@ public class NominaController : ControllerBase
         return Ok(await _service.GetCostosPorProyectoAsync());
     }
 
+    // GET api/nomina/pagos
+    [HttpGet("pagos")]
+    public async Task<IActionResult> GetPagos()
+    {
+        if (!EsAdminOSistemas()) return Forbid();
+        return Ok(await _service.GetPagosAsync());
+    }
+
     // GET api/nomina/periodos/{id}/reporte/pdf
     [HttpGet("periodos/{id:int}/reporte/pdf")]
     public async Task<IActionResult> GetReportePdf(int id)

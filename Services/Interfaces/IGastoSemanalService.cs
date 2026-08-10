@@ -11,4 +11,11 @@ public interface IGastoSemanalService
 
     Task<List<NominaDisponibleProyectoDto>> GetNominaDisponibleParaProyectoAsync(int proyectoId);
     Task<(bool Success, string Message, GastoSemanalDto? Data)> CrearDesdeNominaAsync(int proyectoId, int periodoNominaId);
+
+    /// <summary>
+    /// Crea el GastoSemanal de este proyecto+periodo automáticamente, solo si todos los
+    /// NominaDetalle de ese proyecto en ese periodo ya están pagados y aún no se había asociado.
+    /// Es un no-op silencioso si falta algún pago o si ya existe (idempotente).
+    /// </summary>
+    Task AsociarSiCompletoAsync(int proyectoId, int periodoNominaId);
 }
