@@ -591,6 +591,14 @@ public class AppDbContext : DbContext
             .HasColumnType("decimal(18,2)");
 
         modelBuilder.Entity<NominaDetalle>()
+            .Property(d => d.SueldoDiario)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<NominaDetalle>()
+            .Property(d => d.HorasExtra)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<NominaDetalle>()
             .HasOne(d => d.PeriodoNomina)
             .WithMany(p => p.Detalles)
             .HasForeignKey(d => d.PeriodoNominaId)

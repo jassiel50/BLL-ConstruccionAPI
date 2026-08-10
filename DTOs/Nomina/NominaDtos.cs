@@ -45,6 +45,12 @@ public class NominaDetalleDto
     public int? ProyectoId { get; set; }
     public string? ProyectoNombre { get; set; }
 
+    public decimal SueldoDiario { get; set; }
+    public int DiasTrabajados { get; set; }
+    public int Faltas { get; set; }
+    public int Retardos { get; set; }
+    public decimal HorasExtra { get; set; }
+
     public decimal SueldoBruto { get; set; }
     public decimal DescuentoInfonavit { get; set; }
     public decimal MontoAjuste { get; set; }
