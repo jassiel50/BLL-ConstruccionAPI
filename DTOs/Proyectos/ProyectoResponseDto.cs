@@ -22,6 +22,7 @@ public class ProyectoResponseDto
     public decimal GastoMateriales { get; set; } = 0;
     public decimal GastoHerramientas { get; set; } = 0;
     public decimal GastoExtras { get; set; } = 0;
+    public decimal GastoSemanales { get; set; } = 0;
     public decimal GastoReal { get; set; } = 0;
     public decimal Utilidad { get; set; } = 0;
     public decimal Varianza { get; set; } = 0;

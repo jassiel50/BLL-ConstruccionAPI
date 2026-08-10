@@ -108,16 +108,24 @@ public class ProyectosService : IProyectosService
             .GroupBy(f => f.ProyectoId)
             .ToDictionary(g => g.Key, g => g.Sum(f => gastoExtrasPorFase.GetValueOrDefault(f.Id)));
 
+        var gastoSemanalesPorProyecto = await _context.GastosSemanales
+            .Where(g => proyectoIds.Contains(g.ProyectoId))
+            .GroupBy(g => g.ProyectoId)
+            .Select(g => new { ProyectoId = g.Key, Total = g.Sum(x => x.Monto) })
+            .ToDictionaryAsync(g => g.ProyectoId, g => g.Total);
+
         foreach (var dto in dtos)
         {
             var gastoMateriales = gastoMaterialesPorProyecto.GetValueOrDefault(dto.Id);
             var gastoHerramientas = gastoHerramientasPorProyecto.GetValueOrDefault(dto.Id);
             var gastoExtras = gastoExtrasPorProyecto.GetValueOrDefault(dto.Id);
-            var gastoReal = gastoMateriales + gastoHerramientas + gastoExtras;
+            var gastoSemanales = gastoSemanalesPorProyecto.GetValueOrDefault(dto.Id);
+            var gastoReal = gastoMateriales + gastoHerramientas + gastoExtras + gastoSemanales;
 
             dto.GastoMateriales = gastoMateriales;
             dto.GastoHerramientas = gastoHerramientas;
             dto.GastoExtras = gastoExtras;
+            dto.GastoSemanales = gastoSemanales;
             dto.GastoReal = gastoReal;
             dto.Utilidad = dto.MontoContrato - gastoReal;
             dto.Varianza = dto.PresupuestoEstimado - gastoReal;
