@@ -13,6 +13,8 @@ namespace BLL_ConstruccionAPI.Services;
 
 public class NominaService : INominaService
 {
+    private const decimal TarifaHoraExtra = 100m;
+
     private readonly AppDbContext _context;
     private readonly IBitacoraService _bitacora;
     private readonly IHttpContextAccessor _httpContextAccessor;
@@ -124,6 +126,12 @@ public class NominaService : INominaService
             .GroupBy(a => a.EmpleadoId)
             .ToDictionary(g => g.Key, g => g.First());
 
+        var asistencias = (dto.Asistencias ?? [])
+            .GroupBy(a => a.EmpleadoId)
+            .ToDictionary(g => g.Key, g => g.First().Dias ?? []);
+
+        var totalDiasPeriodo = (dto.FechaFin.Date - dto.FechaInicio.Date).Days + 1;
+
         var periodo = new PeriodoNomina
         {
             FechaInicio = dto.FechaInicio.Date,
@@ -133,12 +141,26 @@ public class NominaService : INominaService
             Estado = EstadoPeriodoNomina.Generada
         };
 
+        var excepcionesAsistencia = new List<AsistenciaDiaria>();
+
         foreach (var e in empleadosActivos)
         {
             ajustes.TryGetValue(e.Id, out var ajuste);
             if (ajuste?.Excluido == true) continue; // no se le paga en este periodo (p.ej. freelance)
 
-            var bruto = e.SueldoNetoSemanal!.Value;
+            var sueldoDiario = e.SueldoNetoSemanal!.Value / 6m;
+            asistencias.TryGetValue(e.Id, out var dias);
+            dias ??= [];
+
+            var faltas = dias.Count(d => d.Estado == "Falta");
+            var retardos = dias.Count(d => d.Estado == "Retardo");
+            var horasExtra = dias.Sum(d => d.HorasExtra);
+
+            var diasPresentes = totalDiasPeriodo - faltas;
+            var penalizacionPorRetardos = retardos / 3; // 3 retardos = 1 falta
+            var diasEfectivos = Math.Max(0, diasPresentes - penalizacionPorRetardos);
+
+            var bruto = diasEfectivos * sueldoDiario + horasExtra * TarifaHoraExtra;
             var descuento = e.CreditoInfonavit ? (e.CuotaInfonavit ?? 0m) : 0m;
             asignacionesActivas.TryGetValue(e.Id, out var proyectoId);
 
@@ -155,12 +177,25 @@ public class NominaService : INominaService
                 SueldoNeto = bruto - descuento + montoAjuste,
                 Pagado = false
             });
+
+            foreach (var d in dias.Where(d => d.Estado != "Presente" || d.HorasExtra != 0))
+            {
+                excepcionesAsistencia.Add(new AsistenciaDiaria
+                {
+                    EmpleadoId = e.Id,
+                    Fecha = d.Fecha.Date,
+                    Estado = Enum.Parse<EstadoAsistencia>(d.Estado),
+                    HorasExtra = d.HorasExtra
+                });
+            }
         }
 
         if (periodo.Detalles.Count == 0)
             return (false, "Todos los empleados fueron excluidos de este periodo.", null);
 
         _context.PeriodosNomina.Add(periodo);
+        if (excepcionesAsistencia.Count > 0)
+            _context.AsistenciasDiarias.AddRange(excepcionesAsistencia);
         await _context.SaveChangesAsync();
 
         var (uid, uname) = GetUsuarioInfo();

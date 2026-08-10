@@ -91,6 +91,7 @@ public class AppDbContext : DbContext
     // ─── NÓMINA ───────────────────────────────────────────────────────────────
     public DbSet<PeriodoNomina> PeriodosNomina { get; set; }
     public DbSet<NominaDetalle> NominaDetalles { get; set; }
+    public DbSet<AsistenciaDiaria> AsistenciasDiarias { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -605,6 +606,24 @@ public class AppDbContext : DbContext
             .HasOne(d => d.Proyecto)
             .WithMany()
             .HasForeignKey(d => d.ProyectoId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<AsistenciaDiaria>()
+            .Property(a => a.Estado)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<AsistenciaDiaria>()
+            .Property(a => a.HorasExtra)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<AsistenciaDiaria>()
+            .HasIndex(a => new { a.EmpleadoId, a.Fecha })
+            .IsUnique();
+
+        modelBuilder.Entity<AsistenciaDiaria>()
+            .HasOne(a => a.Empleado)
+            .WithMany()
+            .HasForeignKey(a => a.EmpleadoId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -5,6 +5,23 @@ public class GenerarPeriodoNominaRequestDto
     public DateTime FechaInicio { get; set; }
     public DateTime FechaFin { get; set; }
     public List<AjusteEmpleadoDto> Ajustes { get; set; } = [];
+    public List<AsistenciaEmpleadoDto> Asistencias { get; set; } = [];
+}
+
+// Asistencia por empleado dentro del rango del periodo. Solo se envían los días
+// que difieren del default (Estado != Presente o HorasExtra > 0); un día ausente
+// del arreglo se interpreta como Presente, sin horas extra.
+public class AsistenciaEmpleadoDto
+{
+    public int EmpleadoId { get; set; }
+    public List<AsistenciaDiaDto> Dias { get; set; } = [];
+}
+
+public class AsistenciaDiaDto
+{
+    public DateTime Fecha { get; set; }
+    public string Estado { get; set; } = "Presente";
+    public decimal HorasExtra { get; set; }
 }
 
 // Ajuste manual por empleado al generar un periodo: positivo (bono, hora extra)
