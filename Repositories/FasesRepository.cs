@@ -30,7 +30,8 @@ public class FasesRepository : IFasesRepository
         => await _context.FaseProyectos
             .AsNoTracking()
             .Include(f => f.Proyecto)
-            .Where(f => f.Estado != EstadoFase.Completada && f.FechaLimite < DateTime.UtcNow)
+            .Where(f => f.Estado != EstadoFase.Completada && f.FechaLimite < DateTime.UtcNow
+                     && f.Proyecto!.Activo)
             .OrderBy(f => f.FechaLimite)
             .ToListAsync();
 
@@ -43,7 +44,8 @@ public class FasesRepository : IFasesRepository
             .Include(f => f.Proyecto)
             .Where(f => f.Estado != EstadoFase.Completada
                      && f.FechaLimite.Date >= hoy
-                     && f.FechaLimite.Date <= limite)
+                     && f.FechaLimite.Date <= limite
+                     && f.Proyecto!.Activo)
             .OrderBy(f => f.FechaLimite)
             .ToListAsync();
     }
