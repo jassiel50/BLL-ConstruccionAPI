@@ -171,35 +171,26 @@ public class ReportesService : IReportesService
             .OrderBy(f => f.Orden)
             .ToListAsync();
 
-        var pagos = await _context.PagosCliente
+        var faseIds = fases.Select(f => f.Id).ToList();
+        var checklistPorFase = await _context.ChecklistItemsFase
             .AsNoTracking()
-            .Where(p => p.ProyectoId == proyectoId)
-            .OrderBy(p => p.FechaPago)
+            .Where(c => faseIds.Contains(c.FaseId))
+            .OrderBy(c => c.Orden)
+            .ThenBy(c => c.Id)
             .ToListAsync();
 
-        var totalPagado = pagos.Sum(p => p.Monto);
-        var resumenPagos = new DTOs.Pagos.ResumenPagosDto
+        var fasesDto = fases.Select(f =>
         {
-            ProyectoId = proyectoId,
-            NombreProyecto = proyecto.Nombre,
-            MontoContrato = proyecto.MontoContrato,
-            TotalPagado = totalPagado,
-            SaldoPendiente = proyecto.MontoContrato - totalPagado,
-            NumeroPagos = pagos.Count,
-            Pagos = pagos.Select(p => new DTOs.Pagos.PagoClienteDto
-            {
-                Id = p.Id, ProyectoId = p.ProyectoId, NombreProyecto = proyecto.Nombre,
-                Concepto = p.Concepto, NumeroFactura = p.NumeroFactura, FechaCotizacion = p.FechaCotizacion,
-                Subtotal = p.Subtotal, Iva = p.Iva, Total = p.Total, Monto = p.Monto, FechaPago = p.FechaPago,
-                MetodoPago = p.MetodoPago, Referencia = p.Referencia, Estado = p.Estado.ToString(),
-                ActividadStatus = p.ActividadStatus, Observaciones = p.Observaciones, FechaRegistro = p.FechaRegistro
-            }).ToList()
-        };
-
-        var fasesDto = fases.Select(DTOs.Fases.FaseResponseDto.FromEntity).ToList();
+            var dto = DTOs.Fases.FaseResponseDto.FromEntity(f);
+            dto.Checklist = checklistPorFase
+                .Where(c => c.FaseId == f.Id)
+                .Select(DTOs.Fases.ChecklistItemFaseDto.FromEntity)
+                .ToList();
+            return dto;
+        }).ToList();
 
         return Document.Create(container =>
-            new AvanceProyectoClienteDocument(proyecto, fasesDto, resumenPagos).Compose(container))
+            new AvanceProyectoClienteDocument(proyecto, fasesDto).Compose(container))
             .GeneratePdf();
     }
 
