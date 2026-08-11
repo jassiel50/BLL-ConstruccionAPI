@@ -7,6 +7,7 @@ public class ServicioPublicoUpdateDto
     public string? Tipo { get; set; } // Instalacion, Mantenimiento, Reparacion, Otro
     public string? DireccionServicio { get; set; }
     public string? NombreSolicitante { get; set; }
+    public string? OperadorNombre { get; set; } // quien realiza el servicio en campo
 
     public string Equipo { get; set; } = string.Empty;
     public string DescripcionTrabajo { get; set; } = string.Empty;

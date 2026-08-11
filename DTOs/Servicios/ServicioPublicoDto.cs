@@ -21,6 +21,8 @@ public class ServicioPublicoDto
 
     public string Estado { get; set; } = string.Empty;
 
+    public string? OperadorNombre { get; set; }
+
     public string? NombreSolicitante { get; set; }
     public string? FirmaSolicitanteBase64 { get; set; }
     public DateTime? FechaFirmaSolicitante { get; set; }
@@ -51,6 +53,7 @@ public class ServicioPublicoDto
         MaterialesUtilizados = s.MaterialesUtilizados,
         Observaciones        = s.Observaciones,
         Estado               = s.Estado.ToString(),
+        OperadorNombre         = s.OperadorNombre,
         NombreSolicitante      = s.NombreSolicitante,
         FirmaSolicitanteBase64 = s.FirmaSolicitanteBase64,
         FechaFirmaSolicitante  = s.FechaFirmaSolicitante,

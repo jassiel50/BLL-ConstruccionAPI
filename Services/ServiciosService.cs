@@ -405,6 +405,8 @@ public class ServiciosService : IServiciosService
             servicio.DireccionServicio = dto.DireccionServicio;
         if (dto.NombreSolicitante is not null)
             servicio.NombreSolicitante = dto.NombreSolicitante;
+        if (!string.IsNullOrWhiteSpace(dto.OperadorNombre))
+            servicio.OperadorNombre = dto.OperadorNombre;
 
         servicio.Equipo               = dto.Equipo;
         servicio.DescripcionTrabajo   = dto.DescripcionTrabajo;
