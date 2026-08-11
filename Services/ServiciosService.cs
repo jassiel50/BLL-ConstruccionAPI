@@ -56,8 +56,14 @@ public class ServiciosService : IServiciosService
 
     public async Task<(bool Success, string Message, ServicioResponseDto? Data)> CreateAsync(int usuarioId, string nombreUsuario, ServicioRequestDto dto)
     {
-        if (!Enum.TryParse<TipoServicio>(dto.Tipo, ignoreCase: true, out var tipo))
-            return (false, $"Tipo de servicio inválido: '{dto.Tipo}'.", null);
+        // Tipo ya no es obligatorio al crear — lo define el técnico desde la liga pública.
+        TipoServicio? tipo = null;
+        if (!string.IsNullOrWhiteSpace(dto.Tipo))
+        {
+            if (!Enum.TryParse<TipoServicio>(dto.Tipo, ignoreCase: true, out var tipoParseado))
+                return (false, $"Tipo de servicio inválido: '{dto.Tipo}'.", null);
+            tipo = tipoParseado;
+        }
 
         if (dto.ClienteId is null && string.IsNullOrWhiteSpace(dto.ClienteNombre))
             return (false, "Debes seleccionar un cliente del catálogo o capturar los datos de un cliente nuevo.", null);
@@ -68,12 +74,6 @@ public class ServiciosService : IServiciosService
             if (!clienteExiste)
                 return (false, "El cliente seleccionado no existe.", null);
         }
-
-        if (string.IsNullOrWhiteSpace(dto.NombreSolicitante))
-            return (false, "Captura el nombre de quien solicita el servicio.", null);
-
-        if (string.IsNullOrWhiteSpace(dto.FirmaSolicitanteBase64))
-            return (false, "Se requiere la firma de quien solicita el servicio.", null);
 
         var servicio = new Servicio
         {
@@ -92,9 +92,6 @@ public class ServiciosService : IServiciosService
             OperadorNombre       = nombreUsuario,
             FechaInicio          = DateTime.UtcNow,
             FechaCreacion        = DateTime.UtcNow,
-            NombreSolicitante      = dto.NombreSolicitante,
-            FirmaSolicitanteBase64 = dto.FirmaSolicitanteBase64,
-            FechaFirmaSolicitante  = DateTime.UtcNow,
             HorarioTrabajo         = dto.HorarioTrabajo,
             NumeroTrabajadores     = dto.NumeroTrabajadores,
             TotalHorasTrabajadas   = dto.TotalHorasTrabajadas,
@@ -114,7 +111,7 @@ public class ServiciosService : IServiciosService
             .FirstAsync(s => s.Id == servicio.Id);
 
         var nombreCliente = result.ClienteId.HasValue && result.Cliente is not null ? result.Cliente.Nombre : result.ClienteNombre;
-        await _bitacora.RegistrarAsync(usuarioId, nombreUsuario, "Registró", "Servicio", $"Nuevo servicio de {tipo} para '{nombreCliente}'");
+        await _bitacora.RegistrarAsync(usuarioId, nombreUsuario, "Registró", "Servicio", $"Nuevo servicio para '{nombreCliente}'");
 
         return (true, "Servicio registrado correctamente.", ServicioResponseDto.FromEntity(result));
     }
@@ -131,8 +128,13 @@ public class ServiciosService : IServiciosService
         if (servicio.Estado != EstadoServicio.Activo)
             return (false, "El servicio ya fue firmado/finalizado y no se puede modificar.", null);
 
-        if (!Enum.TryParse<TipoServicio>(dto.Tipo, ignoreCase: true, out var tipo))
-            return (false, $"Tipo de servicio inválido: '{dto.Tipo}'.", null);
+        TipoServicio? tipo = null;
+        if (!string.IsNullOrWhiteSpace(dto.Tipo))
+        {
+            if (!Enum.TryParse<TipoServicio>(dto.Tipo, ignoreCase: true, out var tipoParseado))
+                return (false, $"Tipo de servicio inválido: '{dto.Tipo}'.", null);
+            tipo = tipoParseado;
+        }
 
         if (dto.ClienteId is null && string.IsNullOrWhiteSpace(dto.ClienteNombre))
             return (false, "Debes seleccionar un cliente del catálogo o capturar los datos de un cliente nuevo.", null);
@@ -392,6 +394,17 @@ public class ServiciosService : IServiciosService
     {
         var (servicio, motivo) = await ValidarTokenAsync(token);
         if (servicio is null) return (false, motivo, null);
+
+        if (!string.IsNullOrWhiteSpace(dto.Tipo))
+        {
+            if (!Enum.TryParse<TipoServicio>(dto.Tipo, ignoreCase: true, out var tipoParseado))
+                return (false, $"Tipo de servicio inválido: '{dto.Tipo}'.", null);
+            servicio.Tipo = tipoParseado;
+        }
+        if (dto.DireccionServicio is not null)
+            servicio.DireccionServicio = dto.DireccionServicio;
+        if (dto.NombreSolicitante is not null)
+            servicio.NombreSolicitante = dto.NombreSolicitante;
 
         servicio.Equipo               = dto.Equipo;
         servicio.DescripcionTrabajo   = dto.DescripcionTrabajo;

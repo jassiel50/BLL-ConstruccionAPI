@@ -54,7 +54,7 @@ public class ServicioResponseDto
         ClienteNombre        = s.ClienteId.HasValue && s.Cliente is not null ? s.Cliente.Nombre : s.ClienteNombre,
         ClienteDireccion     = s.ClienteId.HasValue && s.Cliente is not null ? s.Cliente.Direccion : s.ClienteDireccion,
         ClienteTelefono      = s.ClienteTelefono,
-        Tipo                 = s.Tipo.ToString(),
+        Tipo                 = s.Tipo?.ToString() ?? "",
         Equipo               = s.Equipo,
         DireccionServicio    = s.DireccionServicio,
         DescripcionTrabajo   = s.DescripcionTrabajo,

@@ -13,7 +13,8 @@ public class Servicio
     public string ClienteDireccion { get; set; } = string.Empty;
     public string ClienteTelefono { get; set; } = string.Empty;
 
-    public TipoServicio Tipo { get; set; }
+    // Nulo hasta que el técnico lo define desde la liga pública.
+    public TipoServicio? Tipo { get; set; }
     public string Equipo { get; set; } = string.Empty;
     public string DireccionServicio { get; set; } = string.Empty;
     public string DescripcionTrabajo { get; set; } = string.Empty;
