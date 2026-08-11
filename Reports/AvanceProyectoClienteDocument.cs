@@ -1,5 +1,4 @@
 using BLL_ConstruccionAPI.DTOs.Fases;
-using BLL_ConstruccionAPI.DTOs.Pagos;
 using BLL_ConstruccionAPI.Models.Inventario.Proyectos;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
@@ -8,31 +7,28 @@ using QuestPDF.Infrastructure;
 namespace BLL_ConstruccionAPI.Reports;
 
 /// <summary>
-/// Reporte de avance de proyecto pensado para compartirse con el cliente: progreso
-/// de fases, checklist de actividades, fechas y estado de cuenta (los pagos que el
-/// cliente ya hizo — información que él mismo conoce). No incluye datos financieros
-/// internos (presupuesto, gasto real desglosado ni utilidad).
+/// Reporte de avance de proyecto pensado para compartirse con el cliente: solo
+/// progreso general de fases y checklist de actividades. No incluye fechas límite
+/// por fase, estado de atraso, ni ningún dato financiero (contrato, pagos, saldo,
+/// presupuesto, gasto real ni utilidad).
 /// </summary>
 public class AvanceProyectoClienteDocument : IDocument
 {
     private readonly Proyecto _proyecto;
     private readonly List<FaseResponseDto> _fases;
-    private readonly ResumenPagosDto _pagos;
 
-    public AvanceProyectoClienteDocument(Proyecto proyecto, List<FaseResponseDto> fases, ResumenPagosDto pagos)
+    public AvanceProyectoClienteDocument(Proyecto proyecto, List<FaseResponseDto> fases)
     {
         _proyecto = proyecto;
         _fases = fases;
-        _pagos = pagos;
     }
 
     public void Compose(IDocumentContainer container)
     {
         var totalFases = _fases.Count;
         var completadas = _fases.Count(f => f.Estado == "Completada");
-        var atrasadas = _fases.Count(f => f.Atrasada);
+        var pendientes = totalFases - completadas;
         var porcentaje = totalFases > 0 ? (double)completadas / totalFases * 100 : 0;
-        var diasTranscurridos = Math.Max(0, (DateTime.UtcNow.Date - _proyecto.FechaInicio.Date).Days);
 
         container.Page(page =>
         {
@@ -65,9 +61,7 @@ public class AvanceProyectoClienteDocument : IDocument
                     Etiqueta("Cliente:"); Valor(_proyecto.Cliente?.Nombre ?? "-");
                     Etiqueta("Ubicación:"); Valor(_proyecto.Ubicacion);
                     Etiqueta("Fecha Inicio:"); Valor(_proyecto.FechaInicio.ToString("dd/MM/yyyy"));
-                    Etiqueta("Fecha Fin Est.:"); Valor(_proyecto.FechaFin?.ToString("dd/MM/yyyy") ?? "Por definir");
                     Etiqueta("Estado:"); Valor(_proyecto.Estado.ToString());
-                    Etiqueta("Días transcurridos:"); Valor($"{diasTranscurridos} día(s)");
                 });
 
                 col.Item().PaddingTop(16);
@@ -79,8 +73,7 @@ public class AvanceProyectoClienteDocument : IDocument
                     row.ConstantItem(8);
                     InfoBox(row.RelativeItem(), "Fases Completadas", $"{completadas} de {totalFases}", ReporteEstilos.ColorExito);
                     row.ConstantItem(8);
-                    InfoBox(row.RelativeItem(), "Fases Atrasadas", atrasadas.ToString(),
-                        atrasadas > 0 ? ReporteEstilos.ColorAlerta : ReporteEstilos.ColorGris);
+                    InfoBox(row.RelativeItem(), "Fases Pendientes", pendientes.ToString(), ReporteEstilos.ColorGris);
                 });
 
                 col.Item().PaddingTop(18);
@@ -93,14 +86,13 @@ public class AvanceProyectoClienteDocument : IDocument
                     {
                         c.ConstantColumn(22);
                         c.RelativeColumn(3);
-                        c.RelativeColumn(4);
-                        c.ConstantColumn(75);
-                        c.ConstantColumn(95);
+                        c.RelativeColumn(5);
+                        c.ConstantColumn(90);
                     });
 
                     table.Header(h =>
                     {
-                        foreach (var t in new[] { "#", "Fase", "Descripción", "Fecha Límite", "Estado" })
+                        foreach (var t in new[] { "#", "Fase", "Descripción", "Estado" })
                             h.Cell().Background(ReporteEstilos.ColorPrimario).Padding(6)
                                 .Text(t).FontSize(8).Bold().FontColor("#FFFFFF");
                     });
@@ -114,14 +106,13 @@ public class AvanceProyectoClienteDocument : IDocument
                         table.Cell().Background(bg).Padding(5).Text(num.ToString()).FontSize(8).FontColor(ReporteEstilos.ColorGris);
                         table.Cell().Background(bg).Padding(5).Text(fase.Nombre).FontSize(8).Bold();
                         table.Cell().Background(bg).Padding(5).Text(fase.Descripcion).FontSize(8);
-                        table.Cell().Background(bg).Padding(5).Text(fase.FechaLimite.ToString("dd/MM/yyyy")).FontSize(8);
                         table.Cell().Background(bg).Padding(5).Text(estadoTexto).FontSize(8).Bold().FontColor(estadoColor);
                         num++;
                     }
 
                     if (_fases.Count == 0)
                     {
-                        table.Cell().ColumnSpan(5).Padding(12)
+                        table.Cell().ColumnSpan(4).Padding(12)
                             .Text("Sin fases registradas.").FontSize(9).FontColor(ReporteEstilos.ColorGris).Italic();
                     }
                 });
@@ -157,78 +148,16 @@ public class AvanceProyectoClienteDocument : IDocument
                         });
                     }
                 }
-
-                col.Item().PaddingTop(20);
-
-                // ─── Estado de cuenta ─────────────────────────────────────
-                col.Item().Text("Estado de Cuenta").FontSize(11).Bold().FontColor(ReporteEstilos.ColorPrimario);
-                col.Item().PaddingTop(8).Row(row =>
-                {
-                    InfoBox(row.RelativeItem(), "Monto Contrato", $"${_pagos.MontoContrato:N2}", ReporteEstilos.ColorPrimario);
-                    row.ConstantItem(8);
-                    InfoBox(row.RelativeItem(), "Total Pagado", $"${_pagos.TotalPagado:N2}", ReporteEstilos.ColorExito);
-                    row.ConstantItem(8);
-                    var colorSaldo = _pagos.SaldoPendiente <= 0 ? ReporteEstilos.ColorExito : ReporteEstilos.ColorAdvertencia;
-                    InfoBox(row.RelativeItem(), "Saldo Pendiente", $"${_pagos.SaldoPendiente:N2}", colorSaldo);
-                });
-
-                if (_pagos.Pagos.Count > 0)
-                {
-                    col.Item().PaddingTop(12).Table(table =>
-                    {
-                        table.ColumnsDefinition(c =>
-                        {
-                            c.RelativeColumn(3);
-                            c.RelativeColumn(2);
-                            c.RelativeColumn(2);
-                            c.RelativeColumn(2);
-                        });
-
-                        table.Header(h =>
-                        {
-                            foreach (var t in new[] { "Concepto", "Fecha", "Monto Pagado", "Estado" })
-                                h.Cell().Background(ReporteEstilos.ColorSecundario).Padding(5)
-                                    .Text(t).FontSize(8).Bold().FontColor("#FFFFFF");
-                        });
-
-                        var n = 1;
-                        foreach (var pago in _pagos.Pagos.OrderByDescending(p => p.FechaPago))
-                        {
-                            var bg = n % 2 == 0 ? ReporteEstilos.ColorFondoTabla : "#FFFFFF";
-                            table.Cell().Background(bg).Padding(5).Text(pago.Concepto).FontSize(8);
-                            table.Cell().Background(bg).Padding(5).Text(pago.FechaPago.ToString("dd/MM/yyyy")).FontSize(8);
-                            table.Cell().Background(bg).Padding(5).Text($"${pago.Monto:N2}").FontSize(8);
-                            table.Cell().Background(bg).Padding(5).Text(pago.Estado).FontSize(8);
-                            n++;
-                        }
-                    });
-
-                    if (_pagos.MontoContrato > 0)
-                    {
-                        var pct = _pagos.TotalPagado / _pagos.MontoContrato * 100;
-                        col.Item().PaddingTop(10).Text($"Porcentaje cubierto: {pct:N1}% del contrato")
-                            .FontSize(9).Italic().FontColor(ReporteEstilos.ColorGris);
-                    }
-                }
-                else
-                {
-                    col.Item().PaddingTop(10).Text("Sin pagos registrados.")
-                        .FontSize(9).FontColor(ReporteEstilos.ColorGris).Italic();
-                }
             });
         });
     }
 
-    private static (string Texto, string Color) EstadoVisual(FaseResponseDto f)
-    {
-        if (f.Estado == "Completada")
-            return f.CompletadaConRetraso
-                ? ("Completada (con retraso)", ReporteEstilos.ColorAdvertencia)
-                : ("Completada", ReporteEstilos.ColorExito);
-        if (f.Atrasada) return ("Atrasada", ReporteEstilos.ColorAlerta);
-        if (f.PorVencer) return ("Por vencer", ReporteEstilos.ColorAdvertencia);
-        return ("En curso", ReporteEstilos.ColorGris);
-    }
+    // Simplificado a propósito: el cliente solo ve si una fase ya se completó o
+    // sigue en curso, sin exponer atrasos, fechas límite ni retrasos.
+    private static (string Texto, string Color) EstadoVisual(FaseResponseDto f) =>
+        f.Estado == "Completada"
+            ? ("Completada", ReporteEstilos.ColorExito)
+            : ("En curso", ReporteEstilos.ColorGris);
 
     private static void InfoBox(IContainer container, string label, string valor, string color)
     {
