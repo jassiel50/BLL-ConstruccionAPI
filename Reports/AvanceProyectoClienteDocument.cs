@@ -1,4 +1,5 @@
 using BLL_ConstruccionAPI.DTOs.Fases;
+using BLL_ConstruccionAPI.DTOs.Pagos;
 using BLL_ConstruccionAPI.Models.Inventario.Proyectos;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
@@ -7,19 +8,22 @@ using QuestPDF.Infrastructure;
 namespace BLL_ConstruccionAPI.Reports;
 
 /// <summary>
-/// Reporte de avance de proyecto pensado para compartirse con el cliente: solo
-/// progreso de fases, checklist de actividades y fechas. No incluye ningún dato
-/// financiero (contrato, pagos, saldo, presupuesto, gasto real ni utilidad).
+/// Reporte de avance de proyecto pensado para compartirse con el cliente: progreso
+/// de fases, checklist de actividades, fechas y estado de cuenta (los pagos que el
+/// cliente ya hizo — información que él mismo conoce). No incluye datos financieros
+/// internos (presupuesto, gasto real desglosado ni utilidad).
 /// </summary>
 public class AvanceProyectoClienteDocument : IDocument
 {
     private readonly Proyecto _proyecto;
     private readonly List<FaseResponseDto> _fases;
+    private readonly ResumenPagosDto _pagos;
 
-    public AvanceProyectoClienteDocument(Proyecto proyecto, List<FaseResponseDto> fases)
+    public AvanceProyectoClienteDocument(Proyecto proyecto, List<FaseResponseDto> fases, ResumenPagosDto pagos)
     {
         _proyecto = proyecto;
         _fases = fases;
+        _pagos = pagos;
     }
 
     public void Compose(IDocumentContainer container)
@@ -152,6 +156,64 @@ public class AvanceProyectoClienteDocument : IDocument
                             }
                         });
                     }
+                }
+
+                col.Item().PaddingTop(20);
+
+                // ─── Estado de cuenta ─────────────────────────────────────
+                col.Item().Text("Estado de Cuenta").FontSize(11).Bold().FontColor(ReporteEstilos.ColorPrimario);
+                col.Item().PaddingTop(8).Row(row =>
+                {
+                    InfoBox(row.RelativeItem(), "Monto Contrato", $"${_pagos.MontoContrato:N2}", ReporteEstilos.ColorPrimario);
+                    row.ConstantItem(8);
+                    InfoBox(row.RelativeItem(), "Total Pagado", $"${_pagos.TotalPagado:N2}", ReporteEstilos.ColorExito);
+                    row.ConstantItem(8);
+                    var colorSaldo = _pagos.SaldoPendiente <= 0 ? ReporteEstilos.ColorExito : ReporteEstilos.ColorAdvertencia;
+                    InfoBox(row.RelativeItem(), "Saldo Pendiente", $"${_pagos.SaldoPendiente:N2}", colorSaldo);
+                });
+
+                if (_pagos.Pagos.Count > 0)
+                {
+                    col.Item().PaddingTop(12).Table(table =>
+                    {
+                        table.ColumnsDefinition(c =>
+                        {
+                            c.RelativeColumn(3);
+                            c.RelativeColumn(2);
+                            c.RelativeColumn(2);
+                            c.RelativeColumn(2);
+                        });
+
+                        table.Header(h =>
+                        {
+                            foreach (var t in new[] { "Concepto", "Fecha", "Monto Pagado", "Estado" })
+                                h.Cell().Background(ReporteEstilos.ColorSecundario).Padding(5)
+                                    .Text(t).FontSize(8).Bold().FontColor("#FFFFFF");
+                        });
+
+                        var n = 1;
+                        foreach (var pago in _pagos.Pagos.OrderByDescending(p => p.FechaPago))
+                        {
+                            var bg = n % 2 == 0 ? ReporteEstilos.ColorFondoTabla : "#FFFFFF";
+                            table.Cell().Background(bg).Padding(5).Text(pago.Concepto).FontSize(8);
+                            table.Cell().Background(bg).Padding(5).Text(pago.FechaPago.ToString("dd/MM/yyyy")).FontSize(8);
+                            table.Cell().Background(bg).Padding(5).Text($"${pago.Monto:N2}").FontSize(8);
+                            table.Cell().Background(bg).Padding(5).Text(pago.Estado).FontSize(8);
+                            n++;
+                        }
+                    });
+
+                    if (_pagos.MontoContrato > 0)
+                    {
+                        var pct = _pagos.TotalPagado / _pagos.MontoContrato * 100;
+                        col.Item().PaddingTop(10).Text($"Porcentaje cubierto: {pct:N1}% del contrato")
+                            .FontSize(9).Italic().FontColor(ReporteEstilos.ColorGris);
+                    }
+                }
+                else
+                {
+                    col.Item().PaddingTop(10).Text("Sin pagos registrados.")
+                        .FontSize(9).FontColor(ReporteEstilos.ColorGris).Italic();
                 }
             });
         });
