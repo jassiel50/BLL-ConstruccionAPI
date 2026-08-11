@@ -1,4 +1,5 @@
 using BLL_ConstruccionAPI.Models.Auth;
+using BLL_ConstruccionAPI.Models.Cotizaciones;
 using BLL_ConstruccionAPI.Models.Enums;
 using BLL_ConstruccionAPI.Models.Inventario;
 using BLL_ConstruccionAPI.Models.Inventario.Cátalogos;
@@ -92,6 +93,8 @@ public class AppDbContext : DbContext
     public DbSet<PeriodoNomina> PeriodosNomina { get; set; }
     public DbSet<NominaDetalle> NominaDetalles { get; set; }
     public DbSet<AsistenciaDiaria> AsistenciasDiarias { get; set; }
+    public DbSet<Cotizacion> Cotizaciones { get; set; }
+    public DbSet<CotizacionItem> CotizacionItems { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -633,5 +636,35 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(a => a.EmpleadoId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // ─── Cotizaciones ──────────────────────────────────────────────────────
+
+        modelBuilder.Entity<Cotizacion>()
+            .Property(c => c.Subtotal)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<Cotizacion>()
+            .Property(c => c.Iva)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<Cotizacion>()
+            .Property(c => c.Total)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<Cotizacion>()
+            .HasOne(c => c.Cliente)
+            .WithMany()
+            .HasForeignKey(c => c.ClienteId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<CotizacionItem>()
+            .Property(i => i.Total)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<CotizacionItem>()
+            .HasOne(i => i.Cotizacion)
+            .WithMany(c => c.Items)
+            .HasForeignKey(i => i.CotizacionId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

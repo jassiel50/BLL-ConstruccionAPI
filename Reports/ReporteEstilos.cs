@@ -1,3 +1,4 @@
+using System.Reflection;
 using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
 
@@ -15,12 +16,38 @@ public static class ReporteEstilos
     public static readonly string ColorFondoTabla  = "#f8fafc";
     public static readonly string ColorBordeTabla  = "#e2e8f0";
 
-    public static void AgregarEncabezado(IContainer container, string titulo, string subtitulo = "")
+    private static byte[]? _logoBytes;
+
+    // Logo embebido en el ensamblado (Assets/logo-bll.png). Se lee una sola vez.
+    public static byte[]? ObtenerLogo()
+    {
+        if (_logoBytes is not null) return _logoBytes;
+
+        var assembly = Assembly.GetExecutingAssembly();
+        var nombreRecurso = assembly.GetManifestResourceNames()
+            .FirstOrDefault(n => n.EndsWith("logo-bll.png", StringComparison.OrdinalIgnoreCase));
+        if (nombreRecurso is null) return null;
+
+        using var stream = assembly.GetManifestResourceStream(nombreRecurso);
+        if (stream is null) return null;
+
+        using var ms = new MemoryStream();
+        stream.CopyTo(ms);
+        _logoBytes = ms.ToArray();
+        return _logoBytes;
+    }
+
+    public static void AgregarEncabezado(IContainer container, string titulo, string subtitulo = "", bool conLogo = false)
     {
         container.Column(col =>
         {
             col.Item().Row(row =>
             {
+                if (conLogo && ObtenerLogo() is { } logo)
+                {
+                    row.ConstantItem(70).Height(50).Image(logo).FitArea();
+                    row.ConstantItem(10);
+                }
                 row.RelativeItem().Column(c =>
                 {
                     c.Item().Text("B.L.L. Servicios y Proyectos Industriales")
