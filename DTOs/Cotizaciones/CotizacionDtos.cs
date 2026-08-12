@@ -37,3 +37,26 @@ public class CotizacionResponseDto
     public DateTime FechaCotizacion { get; set; }
     public decimal Total { get; set; }
 }
+
+// Detalle completo, usado para precargar el formulario de edición.
+public class CotizacionDetalleDto
+{
+    public int Id { get; set; }
+    public string Folio { get; set; } = string.Empty;
+
+    public int? ClienteId { get; set; }
+    public string? EmpresaNombreLibre { get; set; }
+    public string? ContactoNombre { get; set; }
+
+    public string Titulo { get; set; } = string.Empty;
+    public string? Introduccion { get; set; }
+    public string? AlcanceGeneral { get; set; }
+
+    public int? TiempoEntregaDias { get; set; }
+    public string? Clausulas { get; set; }
+    public int ValidezDias { get; set; }
+    public string CondicionesPago { get; set; } = string.Empty;
+    public string MetodoPago { get; set; } = string.Empty;
+
+    public List<CotizacionItemDto> Items { get; set; } = [];
+}
