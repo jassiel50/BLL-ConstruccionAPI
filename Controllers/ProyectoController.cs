@@ -192,6 +192,38 @@ public class ProyectoController : ControllerBase
         return File(pdf, "application/pdf", $"Avance_Proyecto_{id}_{DateTime.UtcNow:yyyyMMdd}.pdf");
     }
 
+    // POST api/proyectos/{id}/avance-cliente/pdf-con-evidencia (multipart/form-data)
+    // Igual que el GET de arriba, pero permite adjuntar imágenes (solo evidencia visual,
+    // nunca se guardan en base de datos) que se agregan al final del documento.
+    [HttpPost("{id:int}/avance-cliente/pdf-con-evidencia")]
+    [RequestSizeLimit(60_000_000)]
+    public async Task<IActionResult> DescargarAvanceClienteConEvidencia(int id, [FromForm] List<IFormFile> evidencias)
+    {
+        const int maxImagenes = 12;
+        const long maxTamanioPorImagen = 8_000_000;
+
+        if (evidencias.Count > maxImagenes)
+            return BadRequest(new { message = $"Se permiten hasta {maxImagenes} imágenes por reporte." });
+
+        var imagenes = new List<byte[]>();
+        foreach (var archivo in evidencias)
+        {
+            if (archivo.Length == 0) continue;
+            if (!archivo.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+                return BadRequest(new { message = $"'{archivo.FileName}' no es una imagen válida." });
+            if (archivo.Length > maxTamanioPorImagen)
+                return BadRequest(new { message = $"'{archivo.FileName}' supera el límite de 8 MB." });
+
+            using var ms = new MemoryStream();
+            await archivo.CopyToAsync(ms);
+            imagenes.Add(ms.ToArray());
+        }
+
+        var pdf = await _reportesService.GenerarAvanceClienteAsync(id, imagenes);
+        if (pdf.Length == 0) return NotFound(new { message = "Proyecto no encontrado." });
+        return File(pdf, "application/pdf", $"Avance_Proyecto_{id}_{DateTime.UtcNow:yyyyMMdd}.pdf");
+    }
+
     // POST api/proyectos/{id}/avance-cliente/enviarme
     // Igual que el anterior pero enviado por correo al usuario autenticado (para que él
     // mismo lo reenvíe al cliente). Nunca incluye utilidad, presupuesto ni gasto real.

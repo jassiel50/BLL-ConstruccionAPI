@@ -157,7 +157,7 @@ public class ReportesService : IReportesService
             .GeneratePdf();
     }
 
-    public async Task<byte[]> GenerarAvanceClienteAsync(int proyectoId)
+    public async Task<byte[]> GenerarAvanceClienteAsync(int proyectoId, List<byte[]>? imagenesEvidencia = null)
     {
         var proyecto = await _context.Proyectos
             .AsNoTracking()
@@ -190,7 +190,7 @@ public class ReportesService : IReportesService
         }).ToList();
 
         return Document.Create(container =>
-            new AvanceProyectoClienteDocument(proyecto, fasesDto).Compose(container))
+            new AvanceProyectoClienteDocument(proyecto, fasesDto, imagenesEvidencia).Compose(container))
             .GeneratePdf();
     }
 

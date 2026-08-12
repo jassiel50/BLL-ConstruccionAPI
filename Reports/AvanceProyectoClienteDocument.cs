@@ -16,11 +16,13 @@ public class AvanceProyectoClienteDocument : IDocument
 {
     private readonly Proyecto _proyecto;
     private readonly List<FaseResponseDto> _fases;
+    private readonly List<byte[]> _imagenesEvidencia;
 
-    public AvanceProyectoClienteDocument(Proyecto proyecto, List<FaseResponseDto> fases)
+    public AvanceProyectoClienteDocument(Proyecto proyecto, List<FaseResponseDto> fases, List<byte[]>? imagenesEvidencia = null)
     {
         _proyecto = proyecto;
         _fases = fases;
+        _imagenesEvidencia = imagenesEvidencia ?? [];
     }
 
     public void Compose(IDocumentContainer container)
@@ -145,6 +147,22 @@ public class AvanceProyectoClienteDocument : IDocument
                                         .FontColor(item.Completado ? ReporteEstilos.ColorGris : ReporteEstilos.ColorPrimario);
                                 });
                             }
+                        });
+                    }
+                }
+
+                // ─── Evidencia fotográfica ────────────────────────────────
+                if (_imagenesEvidencia.Count > 0)
+                {
+                    col.Item().PaddingTop(20);
+                    col.Item().Text("Evidencia Fotográfica").FontSize(11).Bold().FontColor(ReporteEstilos.ColorPrimario);
+
+                    foreach (var fila in _imagenesEvidencia.Chunk(2))
+                    {
+                        col.Item().PaddingTop(8).Row(row =>
+                        {
+                            foreach (var imagen in fila)
+                                row.RelativeItem().Padding(3).Height(220).Image(imagen).FitArea();
                         });
                     }
                 }

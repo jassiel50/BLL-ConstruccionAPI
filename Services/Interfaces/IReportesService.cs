@@ -9,8 +9,9 @@ public interface IReportesService
     Task<byte[]> GenerarPerdidasAsync(DateTime desde, DateTime hasta);
     Task<byte[]> GenerarPagosPorProyectoAsync(int proyectoId);
 
-    /// <summary>Reporte de avance para compartir con el cliente: fases + estado de cuenta, sin datos financieros internos.</summary>
-    Task<byte[]> GenerarAvanceClienteAsync(int proyectoId);
+    /// <summary>Reporte de avance para compartir con el cliente: fases + estado de cuenta, sin datos financieros internos.
+    /// Si se pasan imágenes, se agregan al final del documento como evidencia fotográfica.</summary>
+    Task<byte[]> GenerarAvanceClienteAsync(int proyectoId, List<byte[]>? imagenesEvidencia = null);
 
     /// <summary>Reporte de avance para uso interno: fases + estado de cuenta + resumen financiero completo (presupuesto, gasto real, utilidad).</summary>
     Task<byte[]> GenerarAvanceInternoAsync(int proyectoId);
