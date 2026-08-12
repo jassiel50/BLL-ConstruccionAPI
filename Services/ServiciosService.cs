@@ -149,6 +149,18 @@ public class ServiciosService : IServiciosService
         servicio.DescripcionTrabajo   = dto.DescripcionTrabajo;
         servicio.MaterialesUtilizados = dto.MaterialesUtilizados;
         servicio.Observaciones        = dto.Observaciones;
+        servicio.HorarioTrabajo       = dto.HorarioTrabajo;
+        servicio.NumeroTrabajadores   = dto.NumeroTrabajadores;
+        servicio.TotalHorasTrabajadas = dto.TotalHorasTrabajadas;
+        servicio.RecursoManoDeObra    = dto.RecursoManoDeObra;
+        servicio.RecursoHerramienta   = dto.RecursoHerramienta;
+        servicio.RecursoRefacciones   = dto.RecursoRefacciones;
+        servicio.RecursoConsumibles   = dto.RecursoConsumibles;
+        servicio.TiposTrabajo         = dto.TiposTrabajo is { Count: > 0 } ? string.Join(',', dto.TiposTrabajo) : null;
+        servicio.EquipoTrabajo        = dto.EquipoTrabajo is { Count: > 0 } ? string.Join(',', dto.EquipoTrabajo) : null;
+        servicio.NombreSolicitante    = dto.NombreSolicitante;
+        if (!string.IsNullOrWhiteSpace(dto.OperadorNombre))
+            servicio.OperadorNombre = dto.OperadorNombre;
 
         await _context.SaveChangesAsync();
 
@@ -156,6 +168,8 @@ public class ServiciosService : IServiciosService
             .AsNoTracking()
             .Include(s => s.Cliente)
             .FirstAsync(s => s.Id == id);
+
+        await _bitacora.RegistrarAsync(usuarioId, servicio.OperadorNombre, "Editó", "Servicio", $"Servicio #{id} editado");
 
         return (true, "Servicio actualizado correctamente.", ServicioResponseDto.FromEntity(result));
     }

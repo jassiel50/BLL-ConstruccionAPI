@@ -28,4 +28,11 @@ public class ServicioRequestDto
 
     // Tipo de Trabajo (disciplinas seleccionadas)
     public List<string> TiposTrabajo { get; set; } = [];
+
+    // Equipo de trabajo (nombres adicionales al operador responsable).
+    public List<string> EquipoTrabajo { get; set; } = [];
+
+    // Solo usados por UpdateAsync (edición interna) — en creación se llenan desde la liga.
+    public string? NombreSolicitante { get; set; }
+    public string? OperadorNombre { get; set; }
 }
