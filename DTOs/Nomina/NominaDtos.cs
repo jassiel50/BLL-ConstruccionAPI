@@ -61,6 +61,23 @@ public class NominaDetalleDto
     public DateTime? FechaPago { get; set; }
 }
 
+// Edición de un periodo ya generado (solo permitido si ningún detalle está pagado).
+public class EditarPeriodoNominaRequestDto
+{
+    public List<EditarNominaDetalleDto> Detalles { get; set; } = [];
+}
+
+public class EditarNominaDetalleDto
+{
+    public int DetalleId { get; set; }
+    public int DiasTrabajados { get; set; }
+    public int Faltas { get; set; }
+    public int Retardos { get; set; }
+    public decimal HorasExtra { get; set; }
+    public decimal MontoAjuste { get; set; }
+    public string? MotivoAjuste { get; set; }
+}
+
 public class PeriodoNominaDto
 {
     public int Id { get; set; }

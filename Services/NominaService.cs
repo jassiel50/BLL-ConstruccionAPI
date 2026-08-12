@@ -283,6 +283,71 @@ public class NominaService : INominaService
         return (true, "Pago registrado correctamente.");
     }
 
+    public async Task<(bool Success, string Message)> EliminarPeriodoAsync(int periodoId)
+    {
+        var periodo = await _context.PeriodosNomina
+            .Include(p => p.Detalles)
+            .FirstOrDefaultAsync(p => p.Id == periodoId);
+        if (periodo is null) return (false, "Periodo de nómina no encontrado.");
+
+        if (periodo.Detalles.Any(d => d.Pagado))
+            return (false, "No se puede eliminar: al menos un pago de este periodo ya se realizó.");
+
+        _context.PeriodosNomina.Remove(periodo);
+        await _context.SaveChangesAsync();
+
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Eliminó", "Nómina",
+            $"Periodo de nómina {periodo.FechaInicio:dd/MM/yyyy} - {periodo.FechaFin:dd/MM/yyyy} eliminado (sin pagos realizados)");
+
+        return (true, "Periodo de nómina eliminado.");
+    }
+
+    public async Task<(bool Success, string Message, PeriodoNominaDto? Data)> ActualizarPeriodoAsync(int periodoId, EditarPeriodoNominaRequestDto dto)
+    {
+        var periodo = await _context.PeriodosNomina
+            .Include(p => p.Detalles)
+            .FirstOrDefaultAsync(p => p.Id == periodoId);
+        if (periodo is null) return (false, "Periodo de nómina no encontrado.", null);
+
+        if (periodo.Detalles.Any(d => d.Pagado))
+            return (false, "No se puede editar: al menos un pago de este periodo ya se realizó.", null);
+
+        var edicionesPorId = dto.Detalles.ToDictionary(e => e.DetalleId);
+
+        foreach (var detalle in periodo.Detalles)
+        {
+            if (!edicionesPorId.TryGetValue(detalle.Id, out var edicion)) continue;
+
+            var penalizacionPorRetardos = edicion.Retardos / 3; // 3 retardos = 1 falta
+            var diasEfectivos = Math.Max(0, edicion.DiasTrabajados - penalizacionPorRetardos);
+            var bruto = diasEfectivos * detalle.SueldoDiario + edicion.HorasExtra * TarifaHoraExtra;
+
+            detalle.DiasTrabajados = edicion.DiasTrabajados;
+            detalle.Faltas = edicion.Faltas;
+            detalle.Retardos = edicion.Retardos;
+            detalle.HorasExtra = edicion.HorasExtra;
+            detalle.MontoAjuste = edicion.MontoAjuste;
+            detalle.MotivoAjuste = edicion.MotivoAjuste;
+            detalle.SueldoBruto = bruto;
+            detalle.SueldoNeto = bruto - detalle.DescuentoInfonavit + edicion.MontoAjuste;
+        }
+
+        await _context.SaveChangesAsync();
+
+        var (uid, uname) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Editó", "Nómina",
+            $"Periodo de nómina {periodo.FechaInicio:dd/MM/yyyy} - {periodo.FechaFin:dd/MM/yyyy} editado");
+
+        var actualizado = await _context.PeriodosNomina
+            .AsNoTracking()
+            .Include(p => p.Detalles).ThenInclude(d => d.Empleado)
+            .Include(p => p.Detalles).ThenInclude(d => d.Proyecto)
+            .FirstAsync(p => p.Id == periodoId);
+
+        return (true, "Periodo de nómina actualizado.", ToDto(actualizado, incluirDetalles: true));
+    }
+
     public async Task<List<HistorialNominaEmpleadoDto>> GetHistorialEmpleadoAsync(int empleadoId) =>
         await _context.NominaDetalles
             .AsNoTracking()

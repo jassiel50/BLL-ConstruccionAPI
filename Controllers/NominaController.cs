@@ -83,6 +83,26 @@ public class NominaController : ControllerBase
         return Ok(new { message });
     }
 
+    // PUT api/nomina/periodos/{id}
+    [HttpPut("periodos/{id:int}")]
+    public async Task<IActionResult> ActualizarPeriodo(int id, [FromBody] EditarPeriodoNominaRequestDto dto)
+    {
+        if (!EsAdminOSistemas()) return Forbid();
+        var (success, message, data) = await _service.ActualizarPeriodoAsync(id, dto);
+        if (!success) return BadRequest(new { message });
+        return Ok(new { message, data });
+    }
+
+    // DELETE api/nomina/periodos/{id}
+    [HttpDelete("periodos/{id:int}")]
+    public async Task<IActionResult> EliminarPeriodo(int id)
+    {
+        if (!EsAdminOSistemas()) return Forbid();
+        var (success, message) = await _service.EliminarPeriodoAsync(id);
+        if (!success) return BadRequest(new { message });
+        return Ok(new { message });
+    }
+
     // GET api/nomina/empleados/{empleadoId}/historial
     [HttpGet("empleados/{empleadoId:int}/historial")]
     public async Task<IActionResult> GetHistorialEmpleado(int empleadoId)
