@@ -53,6 +53,9 @@ public class Servicio
     // Tipo de Trabajo — CSV de disciplinas seleccionadas (aditivo, no reemplaza Tipo)
     public string? TiposTrabajo { get; set; }
 
+    // Equipo de trabajo — CSV de nombres de quienes ayudaron, además del operador responsable.
+    public string? EquipoTrabajo { get; set; }
+
     public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
 
     // Liga pública de un solo uso para llenado sin sesión (operador de servicio externo)

@@ -44,6 +44,7 @@ public class ServicioResponseDto
     public string? RecursoConsumibles { get; set; }
 
     public List<string> TiposTrabajo { get; set; } = [];
+    public List<string> EquipoTrabajo { get; set; } = [];
 
     public DateTime FechaCreacion { get; set; }
 
@@ -81,6 +82,9 @@ public class ServicioResponseDto
         TiposTrabajo           = string.IsNullOrWhiteSpace(s.TiposTrabajo)
             ? []
             : s.TiposTrabajo.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList(),
+        EquipoTrabajo          = string.IsNullOrWhiteSpace(s.EquipoTrabajo)
+            ? []
+            : s.EquipoTrabajo.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList(),
         FechaCreacion        = s.FechaCreacion
     };
 }

@@ -93,6 +93,11 @@ public class ReporteServicioDocument : IDocument
 
                 // ── 2. Datos del Servicio ─────────────────────────────────
                 Seccion(col, "2. Datos del Servicio");
+                DatoFila(col, "Operador responsable", ValorOGuion(_servicio.OperadorNombre));
+                var equipo = (_servicio.EquipoTrabajo ?? string.Empty)
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                if (equipo.Length > 0)
+                    DatoFila(col, "Equipo de trabajo", string.Join(", ", equipo));
                 DatoFila(col, "Cliente", ValorOGuion(NombreCliente));
                 DatoFila(col, "Dirección del servicio", ValorOGuion(_servicio.DireccionServicio));
                 DatoFila(col, "Tipo de servicio", ValorOGuion(_servicio.Tipo.ToString()));

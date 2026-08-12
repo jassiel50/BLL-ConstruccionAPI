@@ -24,4 +24,7 @@ public class ServicioPublicoUpdateDto
     public string? RecursoConsumibles { get; set; }
 
     public List<string> TiposTrabajo { get; set; } = [];
+
+    // Nombres de quienes ayudaron en el servicio, además del operador responsable.
+    public List<string> EquipoTrabajo { get; set; } = [];
 }

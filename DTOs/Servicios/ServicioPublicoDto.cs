@@ -37,6 +37,7 @@ public class ServicioPublicoDto
     public string? RecursoConsumibles { get; set; }
 
     public List<string> TiposTrabajo { get; set; } = [];
+    public List<string> EquipoTrabajo { get; set; } = [];
 
     public DateTime TokenExpira { get; set; }
 
@@ -67,6 +68,9 @@ public class ServicioPublicoDto
         TiposTrabajo           = string.IsNullOrWhiteSpace(s.TiposTrabajo)
             ? []
             : s.TiposTrabajo.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList(),
+        EquipoTrabajo          = string.IsNullOrWhiteSpace(s.EquipoTrabajo)
+            ? []
+            : s.EquipoTrabajo.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList(),
         TokenExpira          = s.TokenExpira ?? DateTime.UtcNow
     };
 }

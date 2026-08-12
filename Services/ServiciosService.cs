@@ -420,6 +420,7 @@ public class ServiciosService : IServiciosService
         servicio.RecursoRefacciones   = dto.RecursoRefacciones;
         servicio.RecursoConsumibles   = dto.RecursoConsumibles;
         servicio.TiposTrabajo         = dto.TiposTrabajo is { Count: > 0 } ? string.Join(',', dto.TiposTrabajo) : null;
+        servicio.EquipoTrabajo        = dto.EquipoTrabajo is { Count: > 0 } ? string.Join(',', dto.EquipoTrabajo) : null;
 
         await _context.SaveChangesAsync();
 
