@@ -7,10 +7,10 @@ using QuestPDF.Infrastructure;
 namespace BLL_ConstruccionAPI.Reports;
 
 /// <summary>
-/// Reporte de avance de proyecto pensado para compartirse con el cliente: solo
-/// progreso general de fases y checklist de actividades. No incluye fechas límite
-/// por fase, estado de atraso, ni ningún dato financiero (contrato, pagos, saldo,
-/// presupuesto, gasto real ni utilidad).
+/// Reporte de avance de proyecto pensado para compartirse con el cliente: progreso
+/// general de fases, diagrama de Gantt real (con fechas y estado de atraso, a
+/// petición del cliente) y checklist de actividades. No incluye ningún dato
+/// financiero (contrato, pagos, saldo, presupuesto, gasto real ni utilidad).
 /// </summary>
 public class AvanceProyectoClienteDocument : IDocument
 {
@@ -77,6 +77,33 @@ public class AvanceProyectoClienteDocument : IDocument
                     row.ConstantItem(8);
                     InfoBox(row.RelativeItem(), "Fases Pendientes", pendientes.ToString(), ReporteEstilos.ColorGris);
                 });
+
+                col.Item().PaddingTop(18);
+
+                // ─── Diagrama de Gantt ──────────────────────────────────────
+                if (_fases.Count > 0)
+                {
+                    col.Item().Text("Diagrama de Gantt").FontSize(11).Bold().FontColor(ReporteEstilos.ColorPrimario);
+
+                    col.Item().PaddingTop(6).Row(row =>
+                    {
+                        void Leyenda(string color, string texto)
+                        {
+                            row.AutoItem().Height(9).Width(9).Background(color);
+                            row.ConstantItem(4);
+                            row.AutoItem().Text(texto).FontSize(7.5f).FontColor(ReporteEstilos.ColorGris);
+                            row.ConstantItem(10);
+                        }
+                        Leyenda("#16a34a", "Completada");
+                        Leyenda("#1e40af", "En curso");
+                        Leyenda("#dc2626", "Atrasada");
+                        Leyenda("#f59e0b", "Por vencer");
+                        row.RelativeItem();
+                    });
+
+                    var svgGantt = GanttSvgBuilder.Build(_proyecto.FechaInicio, _fases);
+                    col.Item().PaddingTop(8).Svg(svgGantt);
+                }
 
                 col.Item().PaddingTop(18);
 
