@@ -293,6 +293,18 @@ public class NominaService : INominaService
         if (periodo.Detalles.Any(d => d.Pagado))
             return (false, "No se puede eliminar: al menos un pago de este periodo ya se realizó.");
 
+        // AsistenciaDiaria no tiene relación por FK con PeriodoNomina (solo EmpleadoId+Fecha),
+        // así que hay que limpiarla a mano o queda huérfana y bloquea futuras generaciones
+        // para ese mismo empleado/día por el índice único (EmpleadoId, Fecha).
+        var empleadoIds = periodo.Detalles.Select(d => d.EmpleadoId).ToList();
+        var excepcionesAsociadas = await _context.AsistenciasDiarias
+            .Where(a => empleadoIds.Contains(a.EmpleadoId)
+                        && a.Fecha >= periodo.FechaInicio.Date
+                        && a.Fecha <= periodo.FechaFin.Date)
+            .ToListAsync();
+        if (excepcionesAsociadas.Count > 0)
+            _context.AsistenciasDiarias.RemoveRange(excepcionesAsociadas);
+
         _context.PeriodosNomina.Remove(periodo);
         await _context.SaveChangesAsync();
 
