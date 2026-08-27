@@ -15,6 +15,10 @@ public class NotificacionFasesService : BackgroundService
     private static readonly int[] RolesDestinatarios = [1, 3];
     private const int HoraMinima = 7; // No enviar antes de las 7am hora México
 
+    // Usuarios con acceso temporal de prueba mientras el módulo se restringe por rol.
+    // TODO: quitar esta excepción cuando se defina el rol/permiso definitivo para estos usuarios.
+    private static readonly HashSet<int> UsuariosPruebaTemporal = [3]; // vannia.dionisio
+
     private static readonly TimeZoneInfo ZonaMexico = ObtenerZonaMexico();
 
     public NotificacionFasesService(
@@ -104,7 +108,7 @@ public class NotificacionFasesService : BackgroundService
         }
 
         var destinatarios = await context.Usuarios
-            .Where(u => RolesDestinatarios.Contains(u.RolId) && u.Activo)
+            .Where(u => (RolesDestinatarios.Contains(u.RolId) || UsuariosPruebaTemporal.Contains(u.Id)) && u.Activo)
             .ToListAsync();
 
         if (destinatarios.Count == 0)
@@ -182,7 +186,7 @@ public class NotificacionFasesService : BackgroundService
         }
 
         var destinatarios = await context.Usuarios
-            .Where(u => RolesDestinatarios.Contains(u.RolId) && u.Activo)
+            .Where(u => (RolesDestinatarios.Contains(u.RolId) || UsuariosPruebaTemporal.Contains(u.Id)) && u.Activo)
             .ToListAsync();
 
         if (destinatarios.Count == 0)
