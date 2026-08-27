@@ -1,4 +1,5 @@
 using BLL_ConstruccionAPI.DTOs.Alertas;
+using BLL_ConstruccionAPI.Helpers;
 using BLL_ConstruccionAPI.Models.Enums;
 using BLL_ConstruccionAPI.Repositories.Interfaces;
 using BLL_ConstruccionAPI.Services.Interfaces;
@@ -14,19 +15,22 @@ public class AlertasService : IAlertasService
     private readonly IProyectosRepository _proyectosRepo;
     private readonly IHerramientasRepository _herramientasRepo;
     private readonly AppDbContext _context;
+    private readonly IEmailService _emailService;
 
     public AlertasService(
         IMaterialesRepository materialesRepo,
         IFasesRepository fasesRepo,
         IProyectosRepository proyectosRepo,
         IHerramientasRepository herramientasRepo,
-        AppDbContext context)
+        AppDbContext context,
+        IEmailService emailService)
     {
         _materialesRepo = materialesRepo;
         _fasesRepo = fasesRepo;
         _proyectosRepo = proyectosRepo;
         _herramientasRepo = herramientasRepo;
         _context = context;
+        _emailService = emailService;
     }
 
     public async Task<List<AlertaDto>> GetStockBajoAsync()
@@ -294,5 +298,64 @@ public class AlertasService : IAlertasService
             ContratosPorVencer         = contratos.Count,
             Detalle                    = detalle
         };
+    }
+
+    public async Task<(bool Success, string Message)> ReenviarNotificacionesFasesAsync(int usuarioId)
+    {
+        var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == usuarioId && u.Activo);
+        if (usuario is null) return (false, "Usuario no encontrado o inactivo.");
+
+        var correos = usuario.CorreosNotificacion().ToList();
+        if (correos.Count == 0) return (false, "El usuario no tiene correo configurado.");
+
+        var hoy = DateTime.UtcNow.Date;
+        var manana = hoy.AddDays(1);
+
+        var fasesActivasQuery = _context.FaseProyectos
+            .Include(f => f.Proyecto)
+            .Where(f => f.Estado != EstadoFase.Completada && f.Proyecto != null && f.Proyecto.Activo);
+
+        var fasesVencenHoy = await fasesActivasQuery
+            .Where(f => f.FechaLimite.Date == hoy)
+            .OrderBy(f => f.Proyecto!.Nombre).ThenBy(f => f.Orden)
+            .Select(f => new { ProyectoNombre = f.Proyecto!.Nombre, FaseNombre = f.Nombre, f.Descripcion, f.FechaLimite })
+            .ToListAsync();
+
+        var fasesVencenManana = await fasesActivasQuery
+            .Where(f => f.FechaLimite.Date == manana)
+            .OrderBy(f => f.Proyecto!.Nombre).ThenBy(f => f.Orden)
+            .Select(f => new { ProyectoNombre = f.Proyecto!.Nombre, FaseNombre = f.Nombre, f.Descripcion, f.FechaLimite })
+            .ToListAsync();
+
+        var fasesAtrasadas = await fasesActivasQuery
+            .Where(f => f.FechaLimite.Date < hoy)
+            .OrderBy(f => f.Proyecto!.Nombre).ThenBy(f => f.Orden)
+            .Select(f => new { ProyectoNombre = f.Proyecto!.Nombre, FaseNombre = f.Nombre, f.Descripcion, f.FechaLimite })
+            .ToListAsync();
+
+        var enviados = 0;
+        foreach (var correo in correos)
+        {
+            if (fasesVencenHoy.Count > 0 && await _emailService.SendNotificacionFasesVencenAsync(
+                    correo, usuario.Nombre, esHoy: true,
+                    fasesVencenHoy.Select(f => (f.ProyectoNombre, f.FaseNombre, f.Descripcion, f.FechaLimite)).ToList()))
+                enviados++;
+
+            if (fasesVencenManana.Count > 0 && await _emailService.SendNotificacionFasesVencenAsync(
+                    correo, usuario.Nombre, esHoy: false,
+                    fasesVencenManana.Select(f => (f.ProyectoNombre, f.FaseNombre, f.Descripcion, f.FechaLimite)).ToList()))
+                enviados++;
+
+            if (fasesAtrasadas.Count > 0 && await _emailService.SendNotificacionFasesAtrasadasAsync(
+                    correo, usuario.Nombre,
+                    fasesAtrasadas.Select(f => (f.ProyectoNombre, f.FaseNombre, f.Descripcion, f.FechaLimite,
+                        DiasAtraso: (int)(hoy - f.FechaLimite.Date).TotalDays)).ToList()))
+                enviados++;
+        }
+
+        var totalTipos = (fasesVencenHoy.Count > 0 ? 1 : 0) + (fasesVencenManana.Count > 0 ? 1 : 0) + (fasesAtrasadas.Count > 0 ? 1 : 0);
+        if (totalTipos == 0) return (true, "No hay fases por vencer, por vencer mañana ni atrasadas: no se envió ningún correo.");
+
+        return (true, $"Se enviaron {enviados} correo(s) a {string.Join(", ", correos)}.");
     }
 }

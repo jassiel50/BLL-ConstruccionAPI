@@ -1,6 +1,7 @@
 using BLL_ConstruccionAPI.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace BLL_ConstruccionAPI.Controllers;
 
@@ -13,6 +14,12 @@ public class AlertasController : ControllerBase
     public AlertasController(IAlertasService service)
     {
         _service = service;
+    }
+
+    private bool EsAdminOSistemas()
+    {
+        var rolId = User.FindFirstValue("rolId");
+        return rolId == "1" || rolId == "3";
     }
 
     // GET api/alertas/resumen
@@ -85,5 +92,18 @@ public class AlertasController : ControllerBase
     {
         var alertas = await _service.GetContratosPorVencerAsync();
         return Ok(alertas);
+    }
+
+    // POST api/alertas/fases/reenviar/{usuarioId}
+    // Envío manual (fuera del ciclo automático) de los correos de fases vencen
+    // hoy/mañana/atrasadas a un usuario puntual. Útil cuando se agrega a alguien
+    // como destinatario a media semana y no quiere esperar hasta el día siguiente.
+    [HttpPost("api/alertas/fases/reenviar/{usuarioId:int}")]
+    public async Task<IActionResult> ReenviarNotificacionesFases(int usuarioId)
+    {
+        if (!EsAdminOSistemas()) return Forbid();
+        var (success, message) = await _service.ReenviarNotificacionesFasesAsync(usuarioId);
+        if (!success) return BadRequest(new { message });
+        return Ok(new { message });
     }
 }
