@@ -42,6 +42,8 @@ public class RequisicionMaterialService : IRequisicionMaterialService
         FechaSolicitud = r.FechaSolicitud,
         SolicitoNombre = r.SolicitoNombre,
         FechaCreacion = r.FechaCreacion,
+        FaseId = r.FaseId,
+        FaseNombre = r.Fase?.Nombre,
         Detalles = r.Detalles
             .OrderBy(d => d.Orden)
             .Select(d => new RequisicionMaterialDetalleDto
@@ -53,7 +55,10 @@ public class RequisicionMaterialService : IRequisicionMaterialService
                 Cantidad = d.Cantidad,
                 AreaComentarios = d.AreaComentarios,
                 Status = d.Status,
-                MaterialId = d.MaterialId
+                MaterialId = d.MaterialId,
+                Responsable = d.Responsable,
+                CostoUnitario = d.CostoUnitario,
+                GastoExtraId = d.GastoExtraId
             }).ToList()
     };
 
@@ -62,6 +67,7 @@ public class RequisicionMaterialService : IRequisicionMaterialService
         var lista = await _context.RequisicionesMaterial
             .AsNoTracking()
             .Include(r => r.Proyecto)
+            .Include(r => r.Fase)
             .Include(r => r.Detalles)
             .Where(r => r.ProyectoId == proyectoId)
             .OrderByDescending(r => r.FechaCreacion)
@@ -75,6 +81,7 @@ public class RequisicionMaterialService : IRequisicionMaterialService
         var entity = await _context.RequisicionesMaterial
             .AsNoTracking()
             .Include(r => r.Proyecto)
+            .Include(r => r.Fase)
             .Include(r => r.Detalles)
             .FirstOrDefaultAsync(r => r.Id == id);
 
@@ -91,6 +98,16 @@ public class RequisicionMaterialService : IRequisicionMaterialService
 
         if (dto.Detalles.Any(d => string.IsNullOrWhiteSpace(d.Descripcion)))
             return (false, "Todos los renglones deben tener descripción.", null);
+
+        var tieneRenglonesEmpresa = dto.Detalles.Any(d => d.Responsable == "Empresa" && d.CostoUnitario > 0);
+        if (tieneRenglonesEmpresa && dto.FaseId is null)
+            return (false, "Selecciona la fase del proyecto para registrar el gasto de los materiales que le tocan a la empresa.", null);
+
+        if (dto.FaseId.HasValue)
+        {
+            var faseValida = await _context.FaseProyectos.AnyAsync(f => f.Id == dto.FaseId.Value && f.ProyectoId == proyectoId);
+            if (!faseValida) return (false, "La fase seleccionada no pertenece a este proyecto.", null);
+        }
 
         var (uid, uname, ip) = GetUsuarioInfo();
 
@@ -109,6 +126,7 @@ public class RequisicionMaterialService : IRequisicionMaterialService
             SolicitoNombre = string.IsNullOrWhiteSpace(dto.SolicitoNombre) ? uname : dto.SolicitoNombre.Trim(),
             CreadoPorId = uid,
             FechaCreacion = DateTime.UtcNow,
+            FaseId = dto.FaseId,
             Detalles = dto.Detalles.Select((d, i) => new RequisicionMaterialDetalle
             {
                 Orden = i + 1,
@@ -117,11 +135,33 @@ public class RequisicionMaterialService : IRequisicionMaterialService
                 Cantidad = d.Cantidad,
                 AreaComentarios = d.AreaComentarios,
                 Status = string.IsNullOrWhiteSpace(d.Status) ? "Pendiente" : d.Status.Trim(),
-                MaterialId = d.MaterialId
+                MaterialId = d.MaterialId,
+                Responsable = d.Responsable == "Empresa" ? "Empresa" : "Cliente",
+                CostoUnitario = d.CostoUnitario
             }).ToList()
         };
 
         _context.RequisicionesMaterial.Add(entity);
+        await _context.SaveChangesAsync();
+
+        // Los renglones a cargo de la empresa generan su gasto extra en la fase indicada,
+        // para que aparezcan en el panel financiero del proyecto (solo lo que nos toca poner a nosotros).
+        foreach (var detalle in entity.Detalles.Where(d => d.Responsable == "Empresa" && d.CostoUnitario > 0 && d.Cantidad > 0))
+        {
+            var gastoExtra = new GastoExtra
+            {
+                FaseId = dto.FaseId!.Value,
+                Concepto = $"Material (Requisición #{entity.Folio}): {detalle.Descripcion}",
+                Monto = detalle.CostoUnitario * detalle.Cantidad,
+                Categoria = "Material",
+                Fecha = entity.FechaSolicitud,
+                Observaciones = $"Generado automáticamente desde la requisición de materiales #{entity.Folio}.",
+                FechaRegistro = DateTime.UtcNow
+            };
+            _context.GastosExtras.Add(gastoExtra);
+            await _context.SaveChangesAsync();
+            detalle.GastoExtraId = gastoExtra.Id;
+        }
         await _context.SaveChangesAsync();
 
         await _bitacora.RegistrarAsync(uid, uname, "Creó requisición de materiales", "RequisicionMaterial",
@@ -133,8 +173,17 @@ public class RequisicionMaterialService : IRequisicionMaterialService
 
     public async Task<(bool Success, string Message)> DeleteAsync(int id)
     {
-        var entity = await _context.RequisicionesMaterial.FirstOrDefaultAsync(r => r.Id == id);
+        var entity = await _context.RequisicionesMaterial
+            .Include(r => r.Detalles)
+            .FirstOrDefaultAsync(r => r.Id == id);
         if (entity is null) return (false, "Requisición no encontrada.");
+
+        var gastoExtraIds = entity.Detalles.Where(d => d.GastoExtraId.HasValue).Select(d => d.GastoExtraId!.Value).ToList();
+        if (gastoExtraIds.Count > 0)
+        {
+            var gastos = await _context.GastosExtras.Where(g => gastoExtraIds.Contains(g.Id)).ToListAsync();
+            _context.GastosExtras.RemoveRange(gastos);
+        }
 
         _context.RequisicionesMaterial.Remove(entity);
         await _context.SaveChangesAsync();

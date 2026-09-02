@@ -22,6 +22,13 @@ public class CotizacionesService : ICotizacionesService
     private static string ObtenerEmpresa(Cotizacion c) =>
         c.Cliente?.Nombre ?? (string.IsNullOrWhiteSpace(c.EmpresaNombreLibre) ? "-" : c.EmpresaNombreLibre!);
 
+    private async Task<string> GenerarFolioAsync()
+    {
+        var hoy = DateTime.UtcNow.Date;
+        var consecutivo = await _context.Cotizaciones.CountAsync(c => c.FechaCreacion.Date == hoy) + 1;
+        return $"BLL{hoy:ddMMyy}{consecutivo}";
+    }
+
     public async Task<List<CotizacionResponseDto>> GetAllAsync() =>
         await _context.Cotizaciones
             .AsNoTracking()
@@ -31,6 +38,7 @@ public class CotizacionesService : ICotizacionesService
             {
                 Id = c.Id,
                 Folio = c.Folio,
+                Estado = c.Estado,
                 Empresa = c.Cliente != null ? c.Cliente.Nombre : (c.EmpresaNombreLibre ?? "-"),
                 ContactoNombre = c.ContactoNombre,
                 Titulo = c.Titulo,
@@ -48,10 +56,7 @@ public class CotizacionesService : ICotizacionesService
         if (dto.Items.Count == 0)
             return (false, "Agrega al menos una partida a la cotización.", null);
 
-        var hoy = DateTime.UtcNow.Date;
-        var consecutivo = await _context.Cotizaciones.CountAsync(c => c.FechaCreacion.Date == hoy) + 1;
-        var folio = $"BLL{hoy:ddMMyy}{consecutivo}";
-
+        var folio = await GenerarFolioAsync();
         var subtotal = dto.Items.Sum(i => i.Total);
         var iva = Math.Round(subtotal * TasaIva, 2);
         var total = subtotal + iva;
@@ -59,13 +64,14 @@ public class CotizacionesService : ICotizacionesService
         var entity = new Cotizacion
         {
             Folio = folio,
+            Estado = "Generada",
             ClienteId = dto.ClienteId,
             EmpresaNombreLibre = dto.EmpresaNombreLibre,
             ContactoNombre = dto.ContactoNombre,
             Titulo = dto.Titulo,
             Introduccion = dto.Introduccion,
             AlcanceGeneral = dto.AlcanceGeneral,
-            FechaCotizacion = hoy,
+            FechaCotizacion = DateTime.UtcNow.Date,
             TiempoEntregaDias = dto.TiempoEntregaDias,
             Clausulas = dto.Clausulas,
             ValidezDias = dto.ValidezDias,
@@ -100,6 +106,7 @@ public class CotizacionesService : ICotizacionesService
         {
             Id = entity.Id,
             Folio = entity.Folio,
+            Estado = entity.Estado,
             Empresa = empresaTexto,
             ContactoNombre = entity.ContactoNombre,
             Titulo = entity.Titulo,
@@ -120,6 +127,7 @@ public class CotizacionesService : ICotizacionesService
         {
             Id = c.Id,
             Folio = c.Folio,
+            Estado = c.Estado,
             ClienteId = c.ClienteId,
             EmpresaNombreLibre = c.EmpresaNombreLibre,
             ContactoNombre = c.ContactoNombre,
@@ -155,6 +163,16 @@ public class CotizacionesService : ICotizacionesService
             .FirstOrDefaultAsync(c => c.Id == id);
         if (entity is null)
             return (false, "Cotización no encontrada.", null);
+
+        // Si era un borrador autoguardado, esta es la acción que lo finaliza: se le asigna
+        // folio definitivo y pasa a "Generada" (igual que si se hubiera creado desde cero).
+        var eraBorrador = entity.Estado == "Borrador";
+        if (eraBorrador)
+        {
+            entity.Folio = await GenerarFolioAsync();
+            entity.Estado = "Generada";
+            entity.FechaCotizacion = DateTime.UtcNow.Date;
+        }
 
         var subtotal = dto.Items.Sum(i => i.Total);
         var iva = Math.Round(subtotal * TasaIva, 2);
@@ -194,10 +212,11 @@ public class CotizacionesService : ICotizacionesService
 
         await _context.SaveChangesAsync();
 
-        return (true, "Cotización actualizada correctamente.", new CotizacionResponseDto
+        return (true, eraBorrador ? "Cotización generada correctamente." : "Cotización actualizada correctamente.", new CotizacionResponseDto
         {
             Id = entity.Id,
             Folio = entity.Folio,
+            Estado = entity.Estado,
             Empresa = empresaTexto,
             ContactoNombre = entity.ContactoNombre,
             Titulo = entity.Titulo,
@@ -210,5 +229,115 @@ public class CotizacionesService : ICotizacionesService
     {
         var cot = await _context.Cotizaciones.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
         return cot is null ? (false, null, "") : (true, cot.PdfContenido, cot.Folio);
+    }
+
+    // ─── Borradores (autoguardado) ─────────────────────────────────────────────
+
+    public async Task<(bool Success, string Message, CotizacionResponseDto? Data)> GuardarBorradorNuevoAsync(CotizacionRequestDto dto, int usuarioId)
+    {
+        var subtotal = dto.Items.Sum(i => i.Total);
+        var iva = Math.Round(subtotal * TasaIva, 2);
+
+        var entity = new Cotizacion
+        {
+            Folio = string.Empty,
+            Estado = "Borrador",
+            ClienteId = dto.ClienteId,
+            EmpresaNombreLibre = dto.EmpresaNombreLibre,
+            ContactoNombre = dto.ContactoNombre,
+            Titulo = dto.Titulo,
+            Introduccion = dto.Introduccion,
+            AlcanceGeneral = dto.AlcanceGeneral,
+            FechaCotizacion = DateTime.UtcNow.Date,
+            TiempoEntregaDias = dto.TiempoEntregaDias,
+            Clausulas = dto.Clausulas,
+            ValidezDias = dto.ValidezDias,
+            CondicionesPago = dto.CondicionesPago,
+            MetodoPago = dto.MetodoPago,
+            Subtotal = subtotal,
+            Iva = iva,
+            Total = subtotal + iva,
+            CreadoPorId = usuarioId,
+            Items = dto.Items.Select((i, idx) => new CotizacionItem
+            {
+                Orden = idx + 1,
+                Descripcion = i.Descripcion,
+                Cantidad = i.Cantidad,
+                Unidad = i.Unidad,
+                Total = i.Total
+            }).ToList()
+        };
+
+        if (dto.ClienteId.HasValue)
+            entity.Cliente = await _context.Clientes.FindAsync(dto.ClienteId.Value);
+
+        _context.Cotizaciones.Add(entity);
+        await _context.SaveChangesAsync();
+
+        return (true, "Borrador guardado.", new CotizacionResponseDto
+        {
+            Id = entity.Id,
+            Folio = entity.Folio,
+            Estado = entity.Estado,
+            Empresa = ObtenerEmpresa(entity),
+            ContactoNombre = entity.ContactoNombre,
+            Titulo = entity.Titulo,
+            FechaCotizacion = entity.FechaCotizacion,
+            Total = entity.Total
+        });
+    }
+
+    public async Task<(bool Success, string Message)> GuardarBorradorExistenteAsync(int id, CotizacionRequestDto dto)
+    {
+        var entity = await _context.Cotizaciones
+            .Include(c => c.Items)
+            .FirstOrDefaultAsync(c => c.Id == id);
+        if (entity is null) return (false, "Cotización no encontrada.");
+
+        var subtotal = dto.Items.Sum(i => i.Total);
+        var iva = Math.Round(subtotal * TasaIva, 2);
+
+        entity.ClienteId = dto.ClienteId;
+        entity.EmpresaNombreLibre = dto.EmpresaNombreLibre;
+        entity.ContactoNombre = dto.ContactoNombre;
+        entity.Titulo = dto.Titulo;
+        entity.Introduccion = dto.Introduccion;
+        entity.AlcanceGeneral = dto.AlcanceGeneral;
+        entity.TiempoEntregaDias = dto.TiempoEntregaDias;
+        entity.Clausulas = dto.Clausulas;
+        entity.ValidezDias = dto.ValidezDias;
+        entity.CondicionesPago = dto.CondicionesPago;
+        entity.MetodoPago = dto.MetodoPago;
+        entity.Subtotal = subtotal;
+        entity.Iva = iva;
+        entity.Total = subtotal + iva;
+
+        _context.CotizacionItems.RemoveRange(entity.Items);
+        entity.Items = dto.Items.Select((i, idx) => new CotizacionItem
+        {
+            Orden = idx + 1,
+            Descripcion = i.Descripcion,
+            Cantidad = i.Cantidad,
+            Unidad = i.Unidad,
+            Total = i.Total
+        }).ToList();
+
+        await _context.SaveChangesAsync();
+
+        return (true, "Borrador guardado.");
+    }
+
+    public async Task<(bool Success, string Message)> EliminarAsync(int id)
+    {
+        var entity = await _context.Cotizaciones.FirstOrDefaultAsync(c => c.Id == id);
+        if (entity is null) return (false, "Cotización no encontrada.");
+
+        if (entity.Estado != "Borrador")
+            return (false, "Solo se pueden eliminar cotizaciones en borrador; una cotización ya generada no se puede eliminar.");
+
+        _context.Cotizaciones.Remove(entity);
+        await _context.SaveChangesAsync();
+
+        return (true, "Borrador eliminado.");
     }
 }

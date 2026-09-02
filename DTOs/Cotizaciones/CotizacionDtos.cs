@@ -31,6 +31,7 @@ public class CotizacionResponseDto
 {
     public int Id { get; set; }
     public string Folio { get; set; } = string.Empty;
+    public string Estado { get; set; } = string.Empty;
     public string Empresa { get; set; } = string.Empty;
     public string? ContactoNombre { get; set; }
     public string Titulo { get; set; } = string.Empty;
@@ -43,6 +44,7 @@ public class CotizacionDetalleDto
 {
     public int Id { get; set; }
     public string Folio { get; set; } = string.Empty;
+    public string Estado { get; set; } = string.Empty;
 
     public int? ClienteId { get; set; }
     public string? EmpresaNombreLibre { get; set; }

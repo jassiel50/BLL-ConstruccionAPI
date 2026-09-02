@@ -73,6 +73,36 @@ public class CotizacionesController : ControllerBase
         return Ok(new { message, data });
     }
 
+    // POST api/cotizaciones/borrador
+    [HttpPost("borrador")]
+    public async Task<IActionResult> GuardarBorradorNuevo([FromBody] CotizacionRequestDto dto)
+    {
+        if (!EsAdminOSistemas()) return Forbid();
+        var (success, message, data) = await _service.GuardarBorradorNuevoAsync(dto, GetUsuarioId());
+        if (!success) return BadRequest(new { message });
+        return Created(string.Empty, new { message, data });
+    }
+
+    // PUT api/cotizaciones/{id}/borrador
+    [HttpPut("{id:int}/borrador")]
+    public async Task<IActionResult> GuardarBorradorExistente(int id, [FromBody] CotizacionRequestDto dto)
+    {
+        if (!EsAdminOSistemas()) return Forbid();
+        var (success, message) = await _service.GuardarBorradorExistenteAsync(id, dto);
+        if (!success) return BadRequest(new { message });
+        return Ok(new { message });
+    }
+
+    // DELETE api/cotizaciones/{id}
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Eliminar(int id)
+    {
+        if (!EsAdminOSistemas()) return Forbid();
+        var (success, message) = await _service.EliminarAsync(id);
+        if (!success) return BadRequest(new { message });
+        return Ok(new { message });
+    }
+
     // GET api/cotizaciones/{id}/pdf
     [HttpGet("{id:int}/pdf")]
     public async Task<IActionResult> DescargarPdf(int id)

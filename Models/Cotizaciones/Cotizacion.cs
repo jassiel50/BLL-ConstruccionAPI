@@ -8,6 +8,9 @@ public class Cotizacion
 
     public string Folio { get; set; } = string.Empty;
 
+    // "Borrador" mientras se captura (se autoguarda), "Generada" una vez finalizada con folio y PDF.
+    public string Estado { get; set; } = "Generada";
+
     public int? ClienteId { get; set; }
     // Respaldo si el cliente no está en el catálogo (mismo patrón que Servicio.ClienteNombre).
     public string? EmpresaNombreLibre { get; set; }
