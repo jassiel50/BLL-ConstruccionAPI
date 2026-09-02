@@ -104,12 +104,9 @@ public class GastoExtraService : IGastoExtraService
             var totalGastosExtras = await _context.GastosExtras
                 .Where(g => faseIds.Contains(g.FaseId))
                 .SumAsync(g => g.Monto);
-            var gastoMateriales = (await _context.Salidas
-                .Include(s => s.Detalles)
-                .Where(s => s.ProyectoId == proyectoId)
-                .ToListAsync())
-                .SelectMany(s => s.Detalles)
-                .Sum(d => d.Cantidad * d.PrecioUnitario);
+            var gastoMateriales = await _context.GastosMaterial
+                .Where(g => g.ProyectoId == proyectoId)
+                .SumAsync(g => g.Cantidad * g.CostoUnitario);
             var gastoTotal = totalGastosExtras + gastoMateriales;
             var porcentaje = gastoTotal / fase.Proyecto.PresupuestoEstimado;
             if (porcentaje >= 0.85m)

@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BLL_ConstruccionAPI.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260902223839_AddCotizacionEstadoYRequisicionGastoExtra")]
-    partial class AddCotizacionEstadoYRequisicionGastoExtra
+    [Migration("20260902225346_AddCotizacionEstadoYGastoMaterial")]
+    partial class AddCotizacionEstadoYGastoMaterial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -1472,6 +1472,63 @@ namespace BLL_ConstruccionAPI.Migrations
                     b.ToTable("GastosExtras");
                 });
 
+            modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Proyectos.GastoMaterial", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Cantidad")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Caracteristicas")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("CostoUnitario")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("CreadoPorId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Descripcion")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("Fecha")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaRegistro")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("MaterialId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Observaciones")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("ProveedorId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProyectoId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Unidad")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MaterialId");
+
+                    b.HasIndex("ProveedorId");
+
+                    b.HasIndex("ProyectoId");
+
+                    b.ToTable("GastosMaterial");
+                });
+
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Proyectos.GastoSemanal", b =>
                 {
                     b.Property<int>("Id")
@@ -1665,9 +1722,6 @@ namespace BLL_ConstruccionAPI.Migrations
                     b.Property<int>("CreadoPorId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("FaseId")
-                        .HasColumnType("int");
-
                     b.Property<DateTime>("FechaCreacion")
                         .HasColumnType("datetime2");
 
@@ -1694,8 +1748,6 @@ namespace BLL_ConstruccionAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FaseId");
-
                     b.HasIndex("ProyectoId");
 
                     b.ToTable("RequisicionesMaterial");
@@ -1715,15 +1767,9 @@ namespace BLL_ConstruccionAPI.Migrations
                     b.Property<decimal>("Cantidad")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<decimal>("CostoUnitario")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<string>("Descripcion")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("GastoExtraId")
-                        .HasColumnType("int");
 
                     b.Property<int?>("MaterialId")
                         .HasColumnType("int");
@@ -1734,10 +1780,6 @@ namespace BLL_ConstruccionAPI.Migrations
                     b.Property<int>("RequisicionMaterialId")
                         .HasColumnType("int");
 
-                    b.Property<string>("Responsable")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -1747,8 +1789,6 @@ namespace BLL_ConstruccionAPI.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("GastoExtraId");
 
                     b.HasIndex("MaterialId");
 
@@ -2608,6 +2648,31 @@ namespace BLL_ConstruccionAPI.Migrations
                     b.Navigation("Proveedor");
                 });
 
+            modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Proyectos.GastoMaterial", b =>
+                {
+                    b.HasOne("BLL_ConstruccionAPI.Models.Inventario.Materiales.Material", "Material")
+                        .WithMany()
+                        .HasForeignKey("MaterialId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("BLL_ConstruccionAPI.Models.Inventario.Proveedor", "Proveedor")
+                        .WithMany()
+                        .HasForeignKey("ProveedorId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("BLL_ConstruccionAPI.Models.Inventario.Proyectos.Proyecto", "Proyecto")
+                        .WithMany()
+                        .HasForeignKey("ProyectoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Material");
+
+                    b.Navigation("Proveedor");
+
+                    b.Navigation("Proyecto");
+                });
+
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Proyectos.GastoSemanal", b =>
                 {
                     b.HasOne("BLL_ConstruccionAPI.Models.Nomina.PeriodoNomina", "PeriodoNomina")
@@ -2650,29 +2715,17 @@ namespace BLL_ConstruccionAPI.Migrations
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Proyectos.RequisicionMaterial", b =>
                 {
-                    b.HasOne("BLL_ConstruccionAPI.Models.Inventario.Proyectos.FaseProyecto", "Fase")
-                        .WithMany()
-                        .HasForeignKey("FaseId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("BLL_ConstruccionAPI.Models.Inventario.Proyectos.Proyecto", "Proyecto")
                         .WithMany()
                         .HasForeignKey("ProyectoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Fase");
-
                     b.Navigation("Proyecto");
                 });
 
             modelBuilder.Entity("BLL_ConstruccionAPI.Models.Inventario.Proyectos.RequisicionMaterialDetalle", b =>
                 {
-                    b.HasOne("BLL_ConstruccionAPI.Models.Inventario.Proyectos.GastoExtra", "GastoExtra")
-                        .WithMany()
-                        .HasForeignKey("GastoExtraId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("BLL_ConstruccionAPI.Models.Inventario.Materiales.Material", "Material")
                         .WithMany()
                         .HasForeignKey("MaterialId")
@@ -2683,8 +2736,6 @@ namespace BLL_ConstruccionAPI.Migrations
                         .HasForeignKey("RequisicionMaterialId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("GastoExtra");
 
                     b.Navigation("Material");
 

@@ -56,6 +56,7 @@ public class AppDbContext : DbContext
     public DbSet<PagoCliente> PagosCliente { get; set; }
     public DbSet<RequisicionMaterial> RequisicionesMaterial { get; set; }
     public DbSet<RequisicionMaterialDetalle> RequisicionesMaterialDetalle { get; set; }
+    public DbSet<GastoMaterial> GastosMaterial { get; set; }
 
     // ─── MATERIALES ───────────────────────────────────────────────────────────
     public DbSet<Material> Materiales { get; set; }
@@ -381,22 +382,6 @@ public class AppDbContext : DbContext
             .HasForeignKey(r => r.ProyectoId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        modelBuilder.Entity<RequisicionMaterial>()
-            .HasOne(r => r.Fase)
-            .WithMany()
-            .HasForeignKey(r => r.FaseId)
-            .OnDelete(DeleteBehavior.SetNull);
-
-        modelBuilder.Entity<RequisicionMaterialDetalle>()
-            .HasOne(d => d.GastoExtra)
-            .WithMany()
-            .HasForeignKey(d => d.GastoExtraId)
-            .OnDelete(DeleteBehavior.SetNull);
-
-        modelBuilder.Entity<RequisicionMaterialDetalle>()
-            .Property(d => d.CostoUnitario)
-            .HasColumnType("decimal(18,2)");
-
         modelBuilder.Entity<RequisicionMaterialDetalle>()
             .HasOne(d => d.RequisicionMaterial)
             .WithMany(r => r.Detalles)
@@ -411,6 +396,34 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<RequisicionMaterialDetalle>()
             .Property(d => d.Cantidad)
+            .HasColumnType("decimal(18,2)");
+
+        // ─── GastoMaterial ──────────────────────────────────────────────────────
+
+        modelBuilder.Entity<GastoMaterial>()
+            .HasOne(g => g.Proyecto)
+            .WithMany()
+            .HasForeignKey(g => g.ProyectoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<GastoMaterial>()
+            .HasOne(g => g.Material)
+            .WithMany()
+            .HasForeignKey(g => g.MaterialId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<GastoMaterial>()
+            .HasOne(g => g.Proveedor)
+            .WithMany()
+            .HasForeignKey(g => g.ProveedorId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<GastoMaterial>()
+            .Property(g => g.Cantidad)
+            .HasColumnType("decimal(18,2)");
+
+        modelBuilder.Entity<GastoMaterial>()
+            .Property(g => g.CostoUnitario)
             .HasColumnType("decimal(18,2)");
 
         // ─── RegistroPerdida ──────────────────────────────────────────────────

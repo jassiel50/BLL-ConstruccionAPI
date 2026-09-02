@@ -77,11 +77,10 @@ public class ProyectosService : IProyectosService
         if (dtos.Count == 0) return;
         var proyectoIds = dtos.Select(d => d.Id).ToList();
 
-        var gastoMaterialesPorProyecto = await _context.Salidas
-            .Where(s => proyectoIds.Contains(s.ProyectoId))
-            .SelectMany(s => s.Detalles.Select(d => new { s.ProyectoId, Monto = d.Cantidad * d.PrecioUnitario }))
-            .GroupBy(x => x.ProyectoId)
-            .Select(g => new { ProyectoId = g.Key, Total = g.Sum(x => x.Monto) })
+        var gastoMaterialesPorProyecto = await _context.GastosMaterial
+            .Where(g => proyectoIds.Contains(g.ProyectoId))
+            .GroupBy(g => g.ProyectoId)
+            .Select(g => new { ProyectoId = g.Key, Total = g.Sum(x => x.Cantidad * x.CostoUnitario) })
             .ToDictionaryAsync(g => g.ProyectoId, g => g.Total);
 
         var gastoHerramientasPorProyecto = await _context.AsignacionesHerramienta
@@ -153,23 +152,19 @@ public class ProyectosService : IProyectosService
             Referencia = string.IsNullOrWhiteSpace(p.NumeroFactura) ? null : p.NumeroFactura
         }));
 
-        // Gastos: salidas de materiales
-        var salidas = await _context.Salidas
+        // Gastos: compras de material (registradas manualmente en el proyecto)
+        var comprasMaterial = await _context.GastosMaterial
             .AsNoTracking()
-            .Include(s => s.Detalles)
-            .Where(s => s.ProyectoId == proyectoId)
+            .Where(g => g.ProyectoId == proyectoId)
             .ToListAsync();
-        items.AddRange(salidas
-            .Where(s => s.Detalles.Count > 0)
-            .Select(s => new HistorialFinancieroItemDto
-            {
-                Fecha = s.Fecha,
-                Tipo = "Gasto",
-                Categoria = "Material",
-                Concepto = $"Salida de materiales ({s.Detalles.Count} artículo{(s.Detalles.Count == 1 ? "" : "s")})",
-                Monto = s.Detalles.Sum(d => d.Cantidad * d.PrecioUnitario),
-                Referencia = s.NumeroFolio
-            }));
+        items.AddRange(comprasMaterial.Select(g => new HistorialFinancieroItemDto
+        {
+            Fecha = g.Fecha,
+            Tipo = "Gasto",
+            Categoria = "Material",
+            Concepto = g.Descripcion,
+            Monto = g.Cantidad * g.CostoUnitario
+        }));
 
         // Gastos: herramientas asignadas (costo de adquisición, al momento de asignarse)
         var asignaciones = await _context.AsignacionesHerramienta
