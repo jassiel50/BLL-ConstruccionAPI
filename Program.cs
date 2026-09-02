@@ -58,6 +58,7 @@ builder.Services.AddScoped<IGastoExtraService, GastoExtraService>();
 
 // Gastos semanales, Archivos y Pagos
 builder.Services.AddScoped<IGastoSemanalService, GastoSemanalService>();
+builder.Services.AddScoped<IRequisicionMaterialService, RequisicionMaterialService>();
 builder.Services.AddScoped<IArchivosProyectoService, ArchivosProyectoService>();
 builder.Services.AddScoped<IPagosClienteService, PagosClienteService>();
 

@@ -113,6 +113,15 @@ public class FaseController : ControllerBase
         return Created(string.Empty, new { message, data });
     }
 
+    // PUT api/checklist/{itemId}
+    [HttpPut("api/checklist/{itemId:int}")]
+    public async Task<IActionResult> EditarChecklistItem(int itemId, [FromBody] ChecklistItemFaseRequestDto dto)
+    {
+        var (success, message) = await _service.EditarChecklistItemAsync(itemId, dto);
+        if (!success) return BadRequest(new { message });
+        return Ok(new { message });
+    }
+
     // PUT api/checklist/{itemId}/toggle
     [HttpPut("api/checklist/{itemId:int}/toggle")]
     public async Task<IActionResult> ToggleChecklistItem(int itemId)

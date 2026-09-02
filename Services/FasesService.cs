@@ -311,6 +311,26 @@ public class FasesService : IFasesService
         return (true, "Punto agregado al checklist.", ChecklistItemFaseDto.FromEntity(item));
     }
 
+    public async Task<(bool Success, string Message)> EditarChecklistItemAsync(int itemId, ChecklistItemFaseRequestDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Descripcion))
+            return (false, "La descripción del punto es requerida.");
+
+        var item = await _context.ChecklistItemsFase.FirstOrDefaultAsync(c => c.Id == itemId);
+        if (item is null) return (false, "Punto de checklist no encontrado.");
+
+        var descripcionAnterior = item.Descripcion;
+        item.Descripcion = dto.Descripcion.Trim();
+
+        await _context.SaveChangesAsync();
+
+        var (uid, uname, ip) = GetUsuarioInfo();
+        await _bitacora.RegistrarAsync(uid, uname, "Editó punto de checklist", "FaseProyecto",
+            $"Punto '{descripcionAnterior}' (ID {itemId}) actualizado a '{item.Descripcion}'", ip);
+
+        return (true, "Punto de checklist actualizado.");
+    }
+
     public async Task<(bool Success, string Message)> ToggleChecklistItemAsync(int itemId)
     {
         var item = await _context.ChecklistItemsFase.FirstOrDefaultAsync(c => c.Id == itemId);

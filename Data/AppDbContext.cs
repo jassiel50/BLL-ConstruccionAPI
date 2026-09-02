@@ -54,6 +54,8 @@ public class AppDbContext : DbContext
     public DbSet<ArchivoProyecto> ArchivosProyecto { get; set; }
     public DbSet<CarpetaProyecto> CarpetasProyecto { get; set; }
     public DbSet<PagoCliente> PagosCliente { get; set; }
+    public DbSet<RequisicionMaterial> RequisicionesMaterial { get; set; }
+    public DbSet<RequisicionMaterialDetalle> RequisicionesMaterialDetalle { get; set; }
 
     // ─── MATERIALES ───────────────────────────────────────────────────────────
     public DbSet<Material> Materiales { get; set; }
@@ -370,6 +372,30 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(c => c.FaseId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // ─── RequisicionMaterial ────────────────────────────────────────────────
+
+        modelBuilder.Entity<RequisicionMaterial>()
+            .HasOne(r => r.Proyecto)
+            .WithMany()
+            .HasForeignKey(r => r.ProyectoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<RequisicionMaterialDetalle>()
+            .HasOne(d => d.RequisicionMaterial)
+            .WithMany(r => r.Detalles)
+            .HasForeignKey(d => d.RequisicionMaterialId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<RequisicionMaterialDetalle>()
+            .HasOne(d => d.Material)
+            .WithMany()
+            .HasForeignKey(d => d.MaterialId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<RequisicionMaterialDetalle>()
+            .Property(d => d.Cantidad)
+            .HasColumnType("decimal(18,2)");
 
         // ─── RegistroPerdida ──────────────────────────────────────────────────
 
