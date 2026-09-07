@@ -318,7 +318,7 @@ public class NominaService : INominaService
     public async Task<(bool Success, string Message, PeriodoNominaDto? Data)> ActualizarPeriodoAsync(int periodoId, EditarPeriodoNominaRequestDto dto)
     {
         var periodo = await _context.PeriodosNomina
-            .Include(p => p.Detalles)
+            .Include(p => p.Detalles).ThenInclude(d => d.Empleado)
             .FirstOrDefaultAsync(p => p.Id == periodoId);
         if (periodo is null) return (false, "Periodo de nómina no encontrado.", null);
 
@@ -335,6 +335,13 @@ public class NominaService : INominaService
             var diasEfectivos = Math.Max(0, edicion.DiasTrabajados - penalizacionPorRetardos);
             var bruto = diasEfectivos * detalle.SueldoDiario + edicion.HorasExtra * TarifaHoraExtra;
 
+            // Mientras no esté pagado, el descuento de INFONAVIT se recalcula con los datos
+            // actuales del empleado (por si se activó/desactivó o cambió la cuota después de
+            // haber generado originalmente este periodo). Ya pagado, se deja como quedó.
+            var descuentoInfonavit = detalle.Pagado
+                ? detalle.DescuentoInfonavit
+                : (detalle.Empleado?.CreditoInfonavit == true ? (detalle.Empleado?.CuotaInfonavit ?? 0m) : 0m);
+
             detalle.DiasTrabajados = edicion.DiasTrabajados;
             detalle.Faltas = edicion.Faltas;
             detalle.Retardos = edicion.Retardos;
@@ -342,7 +349,8 @@ public class NominaService : INominaService
             detalle.MontoAjuste = edicion.MontoAjuste;
             detalle.MotivoAjuste = edicion.MotivoAjuste;
             detalle.SueldoBruto = bruto;
-            detalle.SueldoNeto = bruto - detalle.DescuentoInfonavit + edicion.MontoAjuste;
+            detalle.DescuentoInfonavit = descuentoInfonavit;
+            detalle.SueldoNeto = bruto - descuentoInfonavit + edicion.MontoAjuste;
         }
 
         await _context.SaveChangesAsync();
