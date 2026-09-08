@@ -26,6 +26,8 @@ public class ReporteEntregaConformidad
     public string Descripcion { get; set; } = string.Empty;
     // Una condición por línea; se muestran como viñetas en el PDF.
     public string? CondicionesEntrega { get; set; }
+    // Texto libre opcional para notas u observaciones adicionales del reporte.
+    public string? TextoAdicional { get; set; }
 
     public string EntregaNombre { get; set; } = "Ing. Baldemar López";
     public string EntregaEmpresa { get; set; } = "Servicios y Proyectos Industriales BLL";

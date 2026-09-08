@@ -73,8 +73,15 @@ public class ReporteEntregaConformidadDocument : IDocument
                     });
                 }
 
-                // ── 4. Evidencias ──────────────────────────────────────────
-                Seccion(col, "4. Evidencias");
+                // ── 4. Notas adicionales ───────────────────────────────────
+                if (!string.IsNullOrWhiteSpace(_reporte.TextoAdicional))
+                {
+                    Seccion(col, "4. Notas Adicionales");
+                    col.Item().Text(_reporte.TextoAdicional);
+                }
+
+                // ── 5. Evidencias ──────────────────────────────────────────
+                Seccion(col, "5. Evidencias");
                 if (_reporte.Fotos.Count == 0)
                 {
                     col.Item().Text("Sin evidencias.").FontColor(ReporteEstilos.ColorGris);
@@ -91,8 +98,8 @@ public class ReporteEntregaConformidadDocument : IDocument
                     }
                 }
 
-                // ── 5. Conformidad de entrega ──────────────────────────────
-                Seccion(col, "5. Conformidad de Entrega");
+                // ── 6. Conformidad de entrega ──────────────────────────────
+                Seccion(col, "6. Conformidad de Entrega");
                 col.Item().PaddingTop(4).Row(row =>
                 {
                     row.RelativeItem().Column(c => ColumnaFirma(c, "ENTREGA", _reporte.EntregaNombre, _reporte.EntregaEmpresa, _reporte.Fecha.ToString("dd/MM/yyyy")));

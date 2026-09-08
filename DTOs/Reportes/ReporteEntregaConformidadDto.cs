@@ -19,6 +19,7 @@ public class ReporteEntregaConformidadDto
     public string? OrdenCompra { get; set; }
     public string Descripcion { get; set; } = string.Empty;
     public string? CondicionesEntrega { get; set; }
+    public string? TextoAdicional { get; set; }
 
     public string EntregaNombre { get; set; } = string.Empty;
     public string EntregaEmpresa { get; set; } = string.Empty;
@@ -53,6 +54,7 @@ public class ReporteEntregaConformidadRequestDto
     public string? OrdenCompra { get; set; }
     public string Descripcion { get; set; } = string.Empty;
     public string? CondicionesEntrega { get; set; }
+    public string? TextoAdicional { get; set; }
 
     public string? EntregaNombre { get; set; }
     public string? EntregaEmpresa { get; set; }
