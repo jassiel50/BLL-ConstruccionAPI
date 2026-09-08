@@ -88,12 +88,12 @@ public class ReporteEntregaConformidadDocument : IDocument
                 }
                 else
                 {
-                    foreach (var fila in _reporte.Fotos.Chunk(3))
+                    foreach (var fila in _reporte.Fotos.Chunk(2))
                     {
                         col.Item().Row(row =>
                         {
                             foreach (var foto in fila)
-                                row.RelativeItem().Padding(2).Height(140).Image(foto.Contenido).FitArea();
+                                row.RelativeItem().Padding(4).Height(230).Image(foto.Contenido).FitArea();
                         });
                     }
                 }
