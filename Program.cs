@@ -102,6 +102,7 @@ builder.Services.AddScoped<ICotizacionesService, CotizacionesService>();
 
 // Reportes
 builder.Services.AddScoped<IReportesService, ReportesService>();
+builder.Services.AddScoped<IReporteEntregaConformidadService, ReporteEntregaConformidadService>();
 builder.Services.AddScoped<IConfiguracionReporteRepository, ConfiguracionReporteRepository>();
 builder.Services.AddScoped<ConfiguracionReporteService>();
 builder.Services.AddScoped<IConfiguracionReporteService>(sp => sp.GetRequiredService<ConfiguracionReporteService>());

@@ -98,6 +98,8 @@ public class AppDbContext : DbContext
     public DbSet<AsistenciaDiaria> AsistenciasDiarias { get; set; }
     public DbSet<Cotizacion> Cotizaciones { get; set; }
     public DbSet<CotizacionItem> CotizacionItems { get; set; }
+    public DbSet<ReporteEntregaConformidad> ReportesEntregaConformidad { get; set; }
+    public DbSet<ReporteEntregaConformidadFoto> ReportesEntregaConformidadFotos { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -725,6 +727,26 @@ public class AppDbContext : DbContext
             .HasOne(i => i.Cotizacion)
             .WithMany(c => c.Items)
             .HasForeignKey(i => i.CotizacionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // ─── ReporteEntregaConformidad ──────────────────────────────────────────
+
+        modelBuilder.Entity<ReporteEntregaConformidad>()
+            .HasOne(r => r.Proyecto)
+            .WithMany()
+            .HasForeignKey(r => r.ProyectoId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<ReporteEntregaConformidad>()
+            .HasOne(r => r.Cliente)
+            .WithMany()
+            .HasForeignKey(r => r.ClienteId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<ReporteEntregaConformidadFoto>()
+            .HasOne(f => f.ReporteEntregaConformidad)
+            .WithMany(r => r.Fotos)
+            .HasForeignKey(f => f.ReporteEntregaConformidadId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }
