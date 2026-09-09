@@ -14,6 +14,7 @@ public class ServiciosService : IServiciosService
 {
     private const int RolOperadorServicio = 4;
     private const int LigaDuracionHoras = 24;
+    private const int UsuarioVanniaId = 3; // vannia.dionisio: excepción para editar/eliminar evidencias de cualquier servicio
 
     private readonly AppDbContext _context;
     private readonly IBitacoraService _bitacora;
@@ -192,10 +193,6 @@ public class ServiciosService : IServiciosService
         if (string.IsNullOrWhiteSpace(dto.NombreQuienFirma))
             return (false, "El nombre de quien firma es requerido.", null);
 
-        var totalFotos = await _context.ServiciosFotos.CountAsync(f => f.ServicioId == id);
-        if (totalFotos < 3)
-            return (false, "Se requieren al menos 3 fotos de evidencia antes de finalizar el servicio.", null);
-
         servicio.FirmaBase64      = dto.FirmaBase64;
         servicio.NombreQuienFirma = dto.NombreQuienFirma;
         servicio.FechaFirma       = DateTime.UtcNow;
@@ -260,11 +257,14 @@ public class ServiciosService : IServiciosService
         var servicio = await _context.Servicios.AsNoTracking().FirstOrDefaultAsync(s => s.Id == servicioId);
         if (servicio is null) return (false, "Servicio no encontrado.", null);
 
-        if (servicio.OperadorId != usuarioId)
-            return (false, "No tienes permiso para agregar evidencias a este servicio.", null);
+        if (usuarioId != UsuarioVanniaId)
+        {
+            if (servicio.OperadorId != usuarioId)
+                return (false, "No tienes permiso para agregar evidencias a este servicio.", null);
 
-        if (servicio.Estado != EstadoServicio.Activo)
-            return (false, "El servicio ya fue firmado/finalizado y no admite más evidencias.", null);
+            if (servicio.Estado != EstadoServicio.Activo)
+                return (false, "El servicio ya fue firmado/finalizado y no admite más evidencias.", null);
+        }
 
         if (foto.Length == 0) return (false, "El archivo está vacío.", null);
         if (foto.Length > MaxTamanioFotoBytes) return (false, "La foto supera el límite de 20 MB.", null);
@@ -308,11 +308,14 @@ public class ServiciosService : IServiciosService
             .FirstOrDefaultAsync(f => f.Id == fotoId);
         if (foto is null) return (false, "Foto no encontrada.");
 
-        if (foto.Servicio is not null && foto.Servicio.OperadorId != usuarioId)
-            return (false, "No tienes permiso para eliminar esta evidencia.");
+        if (usuarioId != UsuarioVanniaId)
+        {
+            if (foto.Servicio is not null && foto.Servicio.OperadorId != usuarioId)
+                return (false, "No tienes permiso para eliminar esta evidencia.");
 
-        if (foto.Servicio is not null && foto.Servicio.Estado != EstadoServicio.Activo)
-            return (false, "El servicio ya fue firmado/finalizado y no se pueden eliminar evidencias.");
+            if (foto.Servicio is not null && foto.Servicio.Estado != EstadoServicio.Activo)
+                return (false, "El servicio ya fue firmado/finalizado y no se pueden eliminar evidencias.");
+        }
 
         _context.ServiciosFotos.Remove(foto);
         await _context.SaveChangesAsync();
@@ -519,10 +522,6 @@ public class ServiciosService : IServiciosService
 
         if (string.IsNullOrWhiteSpace(dto.NombreQuienFirma))
             return (false, "El nombre de quien firma es requerido.", null);
-
-        var totalFotos = await _context.ServiciosFotos.CountAsync(f => f.ServicioId == servicio.Id);
-        if (totalFotos < 3)
-            return (false, "Se requieren al menos 3 fotos de evidencia antes de finalizar el servicio.", null);
 
         servicio.FirmaBase64      = dto.FirmaBase64;
         servicio.NombreQuienFirma = dto.NombreQuienFirma;
