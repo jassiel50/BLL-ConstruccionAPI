@@ -27,6 +27,10 @@ public class Cotizacion
     public string CondicionesPago { get; set; } = string.Empty;
     public string MetodoPago { get; set; } = string.Empty;
 
+    // Si tiene valor, el subtotal se captura directo en vez de sumar el Total de cada partida
+    // (para cotizaciones donde no se desglosa costo por partida, ej. "SET, SET, SET").
+    public decimal? SubtotalManual { get; set; }
+
     public decimal Subtotal { get; set; }
     public decimal Iva { get; set; }
     public decimal Total { get; set; }

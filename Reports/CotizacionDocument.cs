@@ -93,6 +93,9 @@ public class CotizacionDocument : IDocument
                 col.Item().PaddingTop(16);
 
                 // ─── Tabla de partidas ──────────────────────────────────────
+                // Con subtotal manual no se desglosa costo por partida (ej. "SET, SET, SET").
+                var conCostoPorPartida = !_cot.SubtotalManual.HasValue;
+
                 col.Item().Table(table =>
                 {
                     table.ColumnsDefinition(c =>
@@ -101,12 +104,15 @@ public class CotizacionDocument : IDocument
                         c.RelativeColumn(6);
                         c.ConstantColumn(55);
                         c.ConstantColumn(55);
-                        c.ConstantColumn(85);
+                        if (conCostoPorPartida) c.ConstantColumn(85);
                     });
 
+                    var encabezados = conCostoPorPartida
+                        ? new[] { "PT", "DESCRIPCIÓN", "CANT", "UNIDAD", "TOTAL" }
+                        : new[] { "PT", "DESCRIPCIÓN", "CANT", "UNIDAD" };
                     table.Header(h =>
                     {
-                        foreach (var t in new[] { "PT", "DESCRIPCIÓN", "CANT", "UNIDAD", "TOTAL" })
+                        foreach (var t in encabezados)
                             h.Cell().Background(ReporteEstilos.ColorPrimario).Padding(6)
                                 .Text(t).FontSize(8).Bold().FontColor("#FFFFFF");
                     });
@@ -119,7 +125,8 @@ public class CotizacionDocument : IDocument
                         table.Cell().Background(bg).Padding(5).Text(item.Descripcion).FontSize(8);
                         table.Cell().Background(bg).Padding(5).Text(item.Cantidad).FontSize(8);
                         table.Cell().Background(bg).Padding(5).Text(item.Unidad).FontSize(8);
-                        table.Cell().Background(bg).Padding(5).AlignRight().Text($"${item.Total:N2}").FontSize(8).Bold();
+                        if (conCostoPorPartida)
+                            table.Cell().Background(bg).Padding(5).AlignRight().Text($"${item.Total:N2}").FontSize(8).Bold();
                         num++;
                     }
                 });

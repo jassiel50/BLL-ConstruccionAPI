@@ -16,6 +16,9 @@ public class CotizacionRequestDto
     public string CondicionesPago { get; set; } = string.Empty;
     public string MetodoPago { get; set; } = string.Empty;
 
+    // Si tiene valor, se usa como subtotal en vez de sumar el Total de cada partida.
+    public decimal? SubtotalManual { get; set; }
+
     public List<CotizacionItemDto> Items { get; set; } = [];
 }
 
@@ -59,6 +62,8 @@ public class CotizacionDetalleDto
     public int ValidezDias { get; set; }
     public string CondicionesPago { get; set; } = string.Empty;
     public string MetodoPago { get; set; } = string.Empty;
+
+    public decimal? SubtotalManual { get; set; }
 
     public List<CotizacionItemDto> Items { get; set; } = [];
 }
