@@ -173,8 +173,11 @@ public class CotizacionesService : ICotizacionesService
         {
             entity.Folio = await GenerarFolioAsync();
             entity.Estado = "Generada";
-            entity.FechaCotizacion = DateTime.UtcNow.Date;
         }
+
+        // La fecha se actualiza a hoy cada vez que se modifica una cotización ya generada,
+        // para que el PDF refleje cuándo se hizo el último cambio (pedido explícito de Baldemar).
+        entity.FechaCotizacion = DateTime.UtcNow.Date;
 
         var subtotal = dto.SubtotalManual ?? dto.Items.Sum(i => i.Total);
         var iva = Math.Round(subtotal * TasaIva, 2);
