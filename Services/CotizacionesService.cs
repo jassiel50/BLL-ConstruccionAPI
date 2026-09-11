@@ -22,11 +22,31 @@ public class CotizacionesService : ICotizacionesService
     private static string ObtenerEmpresa(Cotizacion c) =>
         c.Cliente?.Nombre ?? (string.IsNullOrWhiteSpace(c.EmpresaNombreLibre) ? "-" : c.EmpresaNombreLibre!);
 
-    private async Task<string> GenerarFolioAsync()
+    // La empresa opera en Monterrey (Nuevo León); usar UTC directo hace que la fecha/folio
+    // cambien de día varias horas antes de medianoche local (ej. 11:27pm local ya era "otro día" en UTC).
+    private static readonly TimeZoneInfo ZonaHorariaMexico = ObtenerZonaHorariaMexico();
+
+    private static TimeZoneInfo ObtenerZonaHorariaMexico()
     {
-        var hoy = DateTime.UtcNow.Date;
-        var consecutivo = await _context.Cotizaciones.CountAsync(c => c.FechaCreacion.Date == hoy) + 1;
-        return $"BLL{hoy:ddMMyy}{consecutivo}";
+        try { return TimeZoneInfo.FindSystemTimeZoneById("America/Mexico_City"); }
+        catch (TimeZoneNotFoundException) { return TimeZoneInfo.FindSystemTimeZoneById("Central Standard Time (Mexico)"); }
+    }
+
+    private static DateTime FechaHoyMexico() =>
+        TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, ZonaHorariaMexico).Date;
+
+    // El folio codifica la fecha de generación (BLL + ddMMyy + consecutivo del día). Se excluye
+    // la propia cotización del conteo para que regenerar el folio de una edición sea estable
+    // (no cambie en cada autoguardado) y no choque con el folio de otra cotización del mismo día.
+    private async Task<string> GenerarFolioAsync(int? excluirId = null)
+    {
+        var hoy = FechaHoyMexico();
+        var prefijo = $"BLL{hoy:ddMMyy}";
+        var query = _context.Cotizaciones.Where(c => c.Folio.StartsWith(prefijo));
+        if (excluirId.HasValue)
+            query = query.Where(c => c.Id != excluirId.Value);
+        var consecutivo = await query.CountAsync() + 1;
+        return $"{prefijo}{consecutivo}";
     }
 
     public async Task<List<CotizacionResponseDto>> GetAllAsync() =>
@@ -71,7 +91,7 @@ public class CotizacionesService : ICotizacionesService
             Titulo = dto.Titulo,
             Introduccion = dto.Introduccion,
             AlcanceGeneral = dto.AlcanceGeneral,
-            FechaCotizacion = DateTime.UtcNow.Date,
+            FechaCotizacion = FechaHoyMexico(),
             TiempoEntregaDias = dto.TiempoEntregaDias,
             Clausulas = dto.Clausulas,
             ValidezDias = dto.ValidezDias,
@@ -171,13 +191,18 @@ public class CotizacionesService : ICotizacionesService
         var eraBorrador = entity.Estado == "Borrador";
         if (eraBorrador)
         {
-            entity.Folio = await GenerarFolioAsync();
+            entity.Folio = await GenerarFolioAsync(entity.Id);
             entity.Estado = "Generada";
+            entity.FechaCotizacion = FechaHoyMexico();
         }
-
-        // La fecha se actualiza a hoy cada vez que se modifica una cotización ya generada,
-        // para que el PDF refleje cuándo se hizo el último cambio (pedido explícito de Baldemar).
-        entity.FechaCotizacion = DateTime.UtcNow.Date;
+        else if (dto.RegenerarFolioYFecha)
+        {
+            // El folio codifica la fecha de generación, así que si se edita el documento
+            // (y no es solo el autoguardado silencioso de fondo) ambos se actualizan juntos
+            // para reflejar cuándo se hizo el último cambio (pedido explícito de Baldemar).
+            entity.Folio = await GenerarFolioAsync(entity.Id);
+            entity.FechaCotizacion = FechaHoyMexico();
+        }
 
         var subtotal = dto.SubtotalManual ?? dto.Items.Sum(i => i.Total);
         var iva = Math.Round(subtotal * TasaIva, 2);
@@ -254,7 +279,7 @@ public class CotizacionesService : ICotizacionesService
             Titulo = dto.Titulo,
             Introduccion = dto.Introduccion,
             AlcanceGeneral = dto.AlcanceGeneral,
-            FechaCotizacion = DateTime.UtcNow.Date,
+            FechaCotizacion = FechaHoyMexico(),
             TiempoEntregaDias = dto.TiempoEntregaDias,
             Clausulas = dto.Clausulas,
             ValidezDias = dto.ValidezDias,

@@ -19,6 +19,11 @@ public class CotizacionRequestDto
     // Si tiene valor, se usa como subtotal en vez de sumar el Total de cada partida.
     public decimal? SubtotalManual { get; set; }
 
+    // Solo aplica al editar una cotización ya generada (ActualizarAsync): si es true, se
+    // regenera el folio y la fecha para reflejar el momento de esta edición. El autoguardado
+    // periódico en segundo plano lo manda en false para no cambiar el folio en cada tick.
+    public bool RegenerarFolioYFecha { get; set; } = true;
+
     public List<CotizacionItemDto> Items { get; set; } = [];
 }
 
