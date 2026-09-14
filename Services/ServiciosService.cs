@@ -14,7 +14,7 @@ public class ServiciosService : IServiciosService
 {
     private const int RolOperadorServicio = 4;
     private const int LigaDuracionHoras = 24;
-    private const int UsuarioVanniaId = 3; // vannia.dionisio: excepción para editar/eliminar evidencias de cualquier servicio
+    private const int UsuarioVanniaId = 3; // vannia.dionisio: excepción para editar el servicio completo y sus evidencias, incluso ya firmado/finalizado
 
     private readonly AppDbContext _context;
     private readonly IBitacoraService _bitacora;
@@ -123,11 +123,14 @@ public class ServiciosService : IServiciosService
         if (servicio is null)
             return (false, "Servicio no encontrado.", null);
 
-        if (servicio.OperadorId != usuarioId)
-            return (false, "No tienes permiso para modificar este servicio.", null);
+        if (usuarioId != UsuarioVanniaId)
+        {
+            if (servicio.OperadorId != usuarioId)
+                return (false, "No tienes permiso para modificar este servicio.", null);
 
-        if (servicio.Estado != EstadoServicio.Activo)
-            return (false, "El servicio ya fue firmado/finalizado y no se puede modificar.", null);
+            if (servicio.Estado != EstadoServicio.Activo)
+                return (false, "El servicio ya fue firmado/finalizado y no se puede modificar.", null);
+        }
 
         TipoServicio? tipo = null;
         if (!string.IsNullOrWhiteSpace(dto.Tipo))
