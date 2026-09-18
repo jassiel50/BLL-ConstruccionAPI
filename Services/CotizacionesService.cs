@@ -78,7 +78,7 @@ public class CotizacionesService : ICotizacionesService
 
         var folio = await GenerarFolioAsync();
         var subtotal = dto.SubtotalManual ?? dto.Items.Sum(i => i.Total);
-        var iva = Math.Round(subtotal * TasaIva, 2);
+        var iva = dto.AplicarIva ? Math.Round(subtotal * TasaIva, 2) : 0m;
         var total = subtotal + iva;
 
         var entity = new Cotizacion
@@ -98,6 +98,7 @@ public class CotizacionesService : ICotizacionesService
             CondicionesPago = dto.CondicionesPago,
             MetodoPago = dto.MetodoPago,
             SubtotalManual = dto.SubtotalManual,
+            AplicarIva = dto.AplicarIva,
             Subtotal = subtotal,
             Iva = iva,
             Total = total,
@@ -161,6 +162,7 @@ public class CotizacionesService : ICotizacionesService
             CondicionesPago = c.CondicionesPago,
             MetodoPago = c.MetodoPago,
             SubtotalManual = c.SubtotalManual,
+            AplicarIva = c.AplicarIva,
             Items = c.Items.OrderBy(i => i.Orden).Select(i => new CotizacionItemDto
             {
                 Descripcion = i.Descripcion,
@@ -205,7 +207,7 @@ public class CotizacionesService : ICotizacionesService
         }
 
         var subtotal = dto.SubtotalManual ?? dto.Items.Sum(i => i.Total);
-        var iva = Math.Round(subtotal * TasaIva, 2);
+        var iva = dto.AplicarIva ? Math.Round(subtotal * TasaIva, 2) : 0m;
         var total = subtotal + iva;
 
         entity.ClienteId = dto.ClienteId;
@@ -220,6 +222,7 @@ public class CotizacionesService : ICotizacionesService
         entity.CondicionesPago = dto.CondicionesPago;
         entity.MetodoPago = dto.MetodoPago;
         entity.SubtotalManual = dto.SubtotalManual;
+        entity.AplicarIva = dto.AplicarIva;
         entity.Subtotal = subtotal;
         entity.Iva = iva;
         entity.Total = total;
@@ -267,7 +270,7 @@ public class CotizacionesService : ICotizacionesService
     public async Task<(bool Success, string Message, CotizacionResponseDto? Data)> GuardarBorradorNuevoAsync(CotizacionRequestDto dto, int usuarioId)
     {
         var subtotal = dto.SubtotalManual ?? dto.Items.Sum(i => i.Total);
-        var iva = Math.Round(subtotal * TasaIva, 2);
+        var iva = dto.AplicarIva ? Math.Round(subtotal * TasaIva, 2) : 0m;
 
         var entity = new Cotizacion
         {
@@ -286,6 +289,7 @@ public class CotizacionesService : ICotizacionesService
             CondicionesPago = dto.CondicionesPago,
             MetodoPago = dto.MetodoPago,
             SubtotalManual = dto.SubtotalManual,
+            AplicarIva = dto.AplicarIva,
             Subtotal = subtotal,
             Iva = iva,
             Total = subtotal + iva,
@@ -327,7 +331,7 @@ public class CotizacionesService : ICotizacionesService
         if (entity is null) return (false, "Cotización no encontrada.");
 
         var subtotal = dto.SubtotalManual ?? dto.Items.Sum(i => i.Total);
-        var iva = Math.Round(subtotal * TasaIva, 2);
+        var iva = dto.AplicarIva ? Math.Round(subtotal * TasaIva, 2) : 0m;
 
         entity.ClienteId = dto.ClienteId;
         entity.EmpresaNombreLibre = dto.EmpresaNombreLibre;
@@ -341,6 +345,7 @@ public class CotizacionesService : ICotizacionesService
         entity.CondicionesPago = dto.CondicionesPago;
         entity.MetodoPago = dto.MetodoPago;
         entity.SubtotalManual = dto.SubtotalManual;
+        entity.AplicarIva = dto.AplicarIva;
         entity.Subtotal = subtotal;
         entity.Iva = iva;
         entity.Total = subtotal + iva;

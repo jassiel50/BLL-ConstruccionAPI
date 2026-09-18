@@ -31,6 +31,9 @@ public class Cotizacion
     // (para cotizaciones donde no se desglosa costo por partida, ej. "SET, SET, SET").
     public decimal? SubtotalManual { get; set; }
 
+    // Algunos clientes no requieren factura y no se les cobra IVA. Si es false, Iva = 0 y Total = Subtotal.
+    public bool AplicarIva { get; set; } = true;
+
     public decimal Subtotal { get; set; }
     public decimal Iva { get; set; }
     public decimal Total { get; set; }

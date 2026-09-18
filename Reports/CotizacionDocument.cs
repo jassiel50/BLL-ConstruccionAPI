@@ -134,7 +134,8 @@ public class CotizacionDocument : IDocument
                 col.Item().PaddingTop(10).AlignRight().Column(c =>
                 {
                     c.Item().Text($"SUBTOTAL: ${_cot.Subtotal:N2}").FontSize(9.5f);
-                    c.Item().Text($"IVA: ${_cot.Iva:N2}").FontSize(9.5f);
+                    if (_cot.AplicarIva)
+                        c.Item().Text($"IVA: ${_cot.Iva:N2}").FontSize(9.5f);
                     c.Item().PaddingTop(2).Text($"TOTAL: ${_cot.Total:N2}").FontSize(12).Bold().FontColor(ReporteEstilos.ColorPrimario);
                 });
 

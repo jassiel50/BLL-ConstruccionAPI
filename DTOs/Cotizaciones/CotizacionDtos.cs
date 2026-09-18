@@ -19,6 +19,9 @@ public class CotizacionRequestDto
     // Si tiene valor, se usa como subtotal en vez de sumar el Total de cada partida.
     public decimal? SubtotalManual { get; set; }
 
+    // Algunos clientes no requieren factura y no se les cobra IVA.
+    public bool AplicarIva { get; set; } = true;
+
     // Solo aplica al editar una cotización ya generada (ActualizarAsync): si es true, se
     // regenera el folio y la fecha para reflejar el momento de esta edición. El autoguardado
     // periódico en segundo plano lo manda en false para no cambiar el folio en cada tick.
@@ -69,6 +72,7 @@ public class CotizacionDetalleDto
     public string MetodoPago { get; set; } = string.Empty;
 
     public decimal? SubtotalManual { get; set; }
+    public bool AplicarIva { get; set; } = true;
 
     public List<CotizacionItemDto> Items { get; set; } = [];
 }
