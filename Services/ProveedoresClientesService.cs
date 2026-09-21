@@ -196,7 +196,9 @@ public class ProveedoresClientesService : IProveedoresClientesService
 
     public async Task<(bool Success, string Message, ClienteResponseDto? Data)> CreateClienteAsync(ClienteRequestDto dto)
     {
-        if (await _repo.ExisteClienteRFCAsync(dto.RFC))
+        // Clientes extranjeros no tienen RFC — el campo es opcional y no se valida unicidad si viene vacío.
+        dto.RFC = dto.RFC?.Trim() ?? string.Empty;
+        if (!string.IsNullOrEmpty(dto.RFC) && await _repo.ExisteClienteRFCAsync(dto.RFC))
             return (false, "Ya existe un cliente con ese RFC.", null);
 
         var cliente = new Cliente
@@ -226,7 +228,8 @@ public class ProveedoresClientesService : IProveedoresClientesService
         var cliente = await _repo.GetClienteByIdAsync(id);
         if (cliente is null) return (false, "Cliente no encontrado.");
 
-        if (cliente.RFC != dto.RFC && await _repo.ExisteClienteRFCAsync(dto.RFC))
+        dto.RFC = dto.RFC?.Trim() ?? string.Empty;
+        if (!string.IsNullOrEmpty(dto.RFC) && cliente.RFC != dto.RFC && await _repo.ExisteClienteRFCAsync(dto.RFC))
             return (false, "Ya existe un cliente con ese RFC.");
 
         cliente.Nombre = dto.Nombre;

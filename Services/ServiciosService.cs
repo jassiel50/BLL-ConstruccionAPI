@@ -220,11 +220,14 @@ public class ServiciosService : IServiciosService
         if (servicio is null)
             return (false, "Servicio no encontrado.");
 
-        if (servicio.OperadorId != usuarioId)
-            return (false, "No tienes permiso para eliminar este servicio.");
+        if (usuarioId != UsuarioVanniaId)
+        {
+            if (servicio.OperadorId != usuarioId)
+                return (false, "No tienes permiso para eliminar este servicio.");
 
-        if (servicio.Estado != EstadoServicio.Activo)
-            return (false, "No se puede eliminar un servicio ya finalizado/firmado.");
+            if (servicio.Estado != EstadoServicio.Activo)
+                return (false, "No se puede eliminar un servicio ya finalizado/firmado.");
+        }
 
         _context.Servicios.Remove(servicio);
         await _context.SaveChangesAsync();

@@ -501,8 +501,10 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Proveedor>()
             .HasIndex(p => p.RFC).IsUnique();
 
+        // Clientes extranjeros no tienen RFC: el filtro deja que varios clientes se guarden con
+        // RFC vacío, solo exige unicidad cuando sí se capturó un RFC real.
         modelBuilder.Entity<Cliente>()
-            .HasIndex(c => c.RFC).IsUnique();
+            .HasIndex(c => c.RFC).IsUnique().HasFilter("[RFC] <> ''");
 
         modelBuilder.Entity<AlmacenCentral>()
             .HasIndex(a => a.MaterialId).IsUnique();

@@ -21,6 +21,10 @@ namespace BLL_ConstruccionAPI.Models.Inventario.Proyectos
         public decimal MontoContrato { get; set; } = 0;
         public decimal PresupuestoEstimado { get; set; } = 0;
 
+        // Lista de materiales puramente visual/informativa (texto libre, una línea por partida).
+        // No se relaciona con inventario, requisiciones ni costos — solo para anotar a mano.
+        public string? ListaMaterialesVisual { get; set; }
+
         // Navegación
         public Cliente? Cliente { get; set; }
     }

@@ -356,6 +356,17 @@ public class ProyectosService : IProyectosService
         return (true, "Proyecto marcado como Terminado correctamente.");
     }
 
+    public async Task<(bool Success, string Message)> ActualizarListaMaterialesVisualAsync(int id, string? contenido)
+    {
+        var proyecto = await _proyectosRepo.GetByIdAsync(id);
+        if (proyecto is null) return (false, "Proyecto no encontrado.");
+
+        proyecto.ListaMaterialesVisual = contenido;
+        await _proyectosRepo.UpdateAsync(proyecto);
+
+        return (true, "Lista de materiales actualizada.");
+    }
+
     public async Task<IEnumerable<AlmacenProyectoResponseDto>> GetMaterialesAsync(int proyectoId)
     {
         var materiales = await _proyectosRepo.GetMaterialesAsync(proyectoId);

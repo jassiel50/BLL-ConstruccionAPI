@@ -28,6 +28,7 @@ public class ProyectoResponseDto
     public decimal Varianza { get; set; } = 0;
     public bool SobrepasadoPresupuesto { get; set; }
     public bool SobrepasadoContrato { get; set; }
+    public string? ListaMaterialesVisual { get; set; }
 
     public static ProyectoResponseDto FromEntity(Proyecto e) => new()
     {
@@ -45,6 +46,7 @@ public class ProyectoResponseDto
         NumeroCotizacion = e.NumeroCotizacion,
         OrdenCompra = e.OrdenCompra,
         MontoContrato = e.MontoContrato,
-        PresupuestoEstimado = e.PresupuestoEstimado
+        PresupuestoEstimado = e.PresupuestoEstimado,
+        ListaMaterialesVisual = e.ListaMaterialesVisual
     };
 }

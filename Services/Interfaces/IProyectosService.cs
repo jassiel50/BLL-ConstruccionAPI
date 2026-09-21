@@ -13,6 +13,7 @@ public interface IProyectosService
     Task<(bool Success, string Message)> UpdateAsync(int id, ProyectoRequestDto dto);
     Task<(bool Success, string Message, object? InventarioAfectado)> DeleteAsync(int id, bool liberarInventario = false);
     Task<(bool Success, string Message)> TerminarAsync(int id);
+    Task<(bool Success, string Message)> ActualizarListaMaterialesVisualAsync(int id, string? contenido);
     Task<IEnumerable<AlmacenProyectoResponseDto>> GetMaterialesAsync(int proyectoId);
     Task<IEnumerable<AsignacionHerramientaResponseDto>> GetHerramientasAsync(int proyectoId);
     Task<(bool Success, string Message, int Count)> DevolverTodasHerramientasAsync(int proyectoId);

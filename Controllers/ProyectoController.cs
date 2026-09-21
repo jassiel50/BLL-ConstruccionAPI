@@ -104,6 +104,16 @@ public class ProyectoController : ControllerBase
         return Ok(new { message });
     }
 
+    // PUT api/proyectos/{id}/lista-materiales-visual
+    // Lista de materiales puramente informativa/visual (texto libre) — no toca inventario ni costos.
+    [HttpPut("{id:int}/lista-materiales-visual")]
+    public async Task<IActionResult> ActualizarListaMaterialesVisual(int id, [FromBody] ActualizarListaMaterialesVisualDto dto)
+    {
+        var (success, message) = await _service.ActualizarListaMaterialesVisualAsync(id, dto.Contenido);
+        if (!success) return BadRequest(new { message });
+        return Ok(new { message });
+    }
+
     // GET api/proyectos/{id}/materiales
     [HttpGet("{id:int}/materiales")]
     public async Task<IActionResult> GetMateriales(int id)

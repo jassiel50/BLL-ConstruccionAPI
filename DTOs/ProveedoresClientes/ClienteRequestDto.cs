@@ -8,7 +8,7 @@ public class ClienteRequestDto
     [StringLength(200, MinimumLength = 1, ErrorMessage = "El nombre debe tener entre 1 y 200 caracteres.")]
     public string Nombre { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "El RFC es obligatorio.")]
+    // Opcional: clientes extranjeros no tienen RFC mexicano.
     [StringLength(20, ErrorMessage = "El RFC no puede superar los 20 caracteres.")]
     public string RFC { get; set; } = string.Empty;
 
